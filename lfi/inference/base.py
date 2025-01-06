@@ -18,7 +18,10 @@ class InferenceBase:
             dim_y: int,
     ):
         self.name = name
+        print("InferenceBase Prior type received:", type(prior))
         self.prior = prior
+        print("InferenceBase Prior type assigned to self.prior:", type(self.prior))
+        print("InferenceBase Prior attribute sample: ", hasattr(self.prior, "sample"))
         self.simulator = simulator
         self.observation = observation # (1, Dy)
 
@@ -46,9 +49,10 @@ class InferenceBase:
             samples: np.ndarray, # (N, Dy)
             posterior_modes: np.ndarray = None, # (N, Dy)
             subset_dims: typing.Union[None, list] = None,
-            limits = [-10, 10],
+            limits=[-10, 10],
             savefig=None,
-            budget=None # Add budget as an argument
+            budget=None, # Add budget as an argument
+            num_components = None # Add num_component as an argument
     ):           
         # Convert samples to a DataFrame for easier Seaborn plotting
         samples_df = pd.DataFrame(
@@ -65,7 +69,14 @@ class InferenceBase:
             plot_kws={'alpha': 0.5}, # Scatter plot transparemcy
         )
 
-        g.fig.suptitle(f"{self.name}, D:{self.dim}, budget:{budget}")
+        # Create the base title
+        title = f"{self.name}, D:{self.dim}, budget:{budget}"
+
+        # Add num_components to the title if provided
+        if num_components is not None:
+            title += f", num_components:{num_components}"
+
+        g.fig.suptitle(title)
         
         # Optionally add posterior mode points
         if posterior_modes is not None:
@@ -80,7 +91,7 @@ class InferenceBase:
                                 posterior_modes_df[f"x_{dim_x+1}"],
                                 posterior_modes_df[f"x_{dim_y+1}"],
                                 color='red',
-                                label = 'Psterior Modes'
+                                label = 'Posterior Modes'
                             )
         # Save figure if a path is provided
         if savefig:

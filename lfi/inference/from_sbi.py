@@ -51,12 +51,18 @@ class NPEBase(InferenceBase):
         self.fit(budget)
         samples = self.sample(num_samples)
         toc = timeit.default_timer()
-        print(f"\nTraining/Samling time: {toc - tic:.2f} seconds")
+        print(f"\nTraining/Sampling time: {toc - tic:.2f} seconds")
         return samples, toc - tic
 
-    def plot_training_summary(self, budget, savefig=None):
+    def plot_training_summary(self, budget, savefig=None, num_components=None):
         fig, ax = plt.subplots()
-        ax.set_title("%s: D=%d, budget=%d" % (self.name, self.dim, budget))
+
+        # Create the base title
+        title = f"{self.name}: D={self.dim}, budget={budget}"
+        # Add num_components to the title if provided
+        if num_components is not None:
+            title += f", num_components ={num_components}"
+        ax.set_title(title)
         ax.plot(self.inference_method.summary["training_loss"], ".-", label = "tr")
         ax.plot(self.inference_method.summary["validation_loss"], ".-", label = "val")
         ax.set_xlim(1,1000),
@@ -70,7 +76,7 @@ class NPEBase(InferenceBase):
     
 
 class NPEASingleRound(NPEBase):
-    def __init__(self, prior, simulator, observation):
+    def __init__(self, prior, simulator, observation):       
         super().__init__("NPE-A (single round)", prior, simulator, observation)
 
     def fit(self, budget: int = 1_000, num_components=10):

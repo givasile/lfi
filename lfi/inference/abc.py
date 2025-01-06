@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 from lfi.priors import BasePrior
 from lfi.simulators import BaseSimulator
 from .base import InferenceBase
+import typing
+from typing import Optional 
 
 
 # Create Rejection abc class
@@ -14,7 +16,8 @@ class ABCRejection(InferenceBase):
             prior: BasePrior,
             simulator: BaseSimulator,
             observation: np.ndarray, # (1, Dy)
-            tolerance: float
+            eps: Optional[float]=None,
+            quantile: Optional[float]=None,
     ):
         # Compute dimensions from the prior and the observation
         dim = prior.dim
@@ -24,29 +27,33 @@ class ABCRejection(InferenceBase):
         super().__init__("ABC Rejection", prior, simulator, observation, dim, dim_y)
 
         # ABC rejection tolerance
-        self.tolerance = tolerance
+        self.eps = eps
+        self.quantile = quantile
 
         self.posterior = None
 
     def fit(self, budget: int = 1_000):
         # Sample from the prior
         thetas = self.prior.sample_numpy(budget)
-        #print(thetas.shape)
         
         # Compute the simulated data 
-        sim = self.simulator.sample_numpy(thetas)
-        # print(sim.shape)
-        # print(f"Print the first 10 simulated data: {sim[:10]}")
+        sim = self.simulator.sample_numpy(thetas)       
 
         # Compute the distances
-        distances = np.linalg.norm(self.observation - sim, axis=1)
-        #print(distances.shape)
-        #print(f"Print the first 10 distances: {distances[:10]}")
+        distances = np.linalg.norm(self.observation - sim, axis=1)      
 
-        # Identify accepted samples (satisfy the distance criterion)
-        accepted_indices = np.where(distances < self.tolerance)[0]
-        best_indices = np.argsort(distances)
-        accepted_samples = thetas[best_indices]
+        if self.eps is not None:
+            # Identify accepted samples (satisfy the distance criterion)
+            accepted_indices = np.where(distances < self.eps)[0]
+            #print("First 10 accepted distances: ", distances[best_indices][:10])
+            accepted_samples = thetas[accepted_indices]
+        elif self.quantile is not None:
+            num_top_samples = int(budget * self.quantile)
+            best_indices = np.argsort(distances)
+            accepted_samples = thetas[best_indices[:num_top_samples]]
+        else:
+            raise ValueError("one of epsilon or quantile has to be passed")
+
         self.posterior = accepted_samples
 
         
