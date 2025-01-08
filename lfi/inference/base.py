@@ -18,10 +18,10 @@ class InferenceBase:
             dim_y: int,
     ):
         self.name = name
-        print("InferenceBase Prior type received:", type(prior))
+        #print("InferenceBase Prior type received:", type(prior))
         self.prior = prior
-        print("InferenceBase Prior type assigned to self.prior:", type(self.prior))
-        print("InferenceBase Prior attribute sample: ", hasattr(self.prior, "sample"))
+        #print("InferenceBase Prior type assigned to self.prior:", type(self.prior))
+        #print("InferenceBase Prior attribute sample: ", hasattr(self.prior, "sample"))
         self.simulator = simulator
         self.observation = observation # (1, Dy)
 
