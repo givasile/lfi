@@ -16,8 +16,9 @@ OBSERVATION_TO_CLASS = {
 }
 
 INFERENCE_TO_CLASS = {
-    'npe_a_single_round': lfi.inference.from_sbi.NPEASingleRound,
-    'npe_c_single_round': lfi.inference.from_sbi.NPECSingleRound,
+    'npe_a_single_round': lfi.inference.from_sbi.NPE_A_SingleRound,
+    'npe_c_single_round': lfi.inference.from_sbi.NPE_C_SingleRound,
+    'mdn': lfi.inference.custom.MixtureDensityNetwork,
 }
 
 

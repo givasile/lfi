@@ -58,18 +58,28 @@ class MixtureDensityNetwork(InferenceBase):
         super().__init__(name, prior, simulator, observation, dim, dim_y)
 
 
-    def fit(self, budget: int = 1_000, nof_components=10, nof_epochs=100):
+    def fit(
+            self,
+            budget: int = 1_000,
+            fit_kwargs: dict = None,
+    ):
+        default_kwargs = {
+            "nof_components": 10,
+            "nof_epochs": 1000,
+        }
+        default_kwargs.update(fit_kwargs or {})
+
         # prepare dataset
         theta = self.prior.sample_pytorch(budget) # Shape: [budget, D]
         x = self.simulator.sample_pytorch(theta) # Shape: [budget, Dy]
 
         # Initialize the network
-        self.net = MDN(self.dim, nof_components)
+        self.net = MDN(self.dim, default_kwargs["nof_components"])
 
         # training loop
         optimizer = torch.optim.Adam(self.net.parameters(), lr=1e-3)
         loss_list = []
-        for i in range(nof_epochs):
+        for i in range(default_kwargs["nof_epochs"]):
             optimizer.zero_grad()
             loss = self.net.loss(theta, x)
             loss_list.append(loss.item())
@@ -78,6 +88,6 @@ class MixtureDensityNetwork(InferenceBase):
             if i % 10 == 0:
                 print(f"Epoch {i}, Loss: {loss.item()}")
 
-    def sample(self, nof_samples: int = 100):
+    def sample(self, nof_samples: int = 100, sample_kwargs: dict = None):
         samples = self.net.sample(nof_samples, torch.Tensor(self.observation))
         return samples.squeeze().detach().numpy()

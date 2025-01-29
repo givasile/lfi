@@ -1,12 +1,14 @@
 import numpy as np
 import torch
 import jax
-from jax import random
 import jax.numpy as jnp
+import scipy.stats as ss
 
 class BaseSimulator:
-    def __init__(self, name):
+    def __init__(self, name: str, dim: int, dim_y: int):
         self.name = name
+        self.dim = dim
+        self.dim_y = dim_y
 
     def sample_numpy(self, theta):
         raise NotImplementedError
@@ -17,11 +19,14 @@ class BaseSimulator:
     def sample_pytorch(self, theta):
         raise NotImplementedError
 
+    def return_elfi_callable(self):
+        raise NotImplementedError
+
 
 class GaussianNoise(BaseSimulator):
-    def __init__(self, sigma_noise):
+    def __init__(self, dim, dim_y, sigma_noise):
         self.sigma_noise = sigma_noise
-        super().__init__("gaussian_noise")
+        super().__init__("gaussian_noise", dim, dim_y)
 
     def sample_numpy(self, theta):
         return np.random.normal(theta, self.sigma_noise)
@@ -34,11 +39,19 @@ class GaussianNoise(BaseSimulator):
     def sample_pytorch(self, theta):
         return theta + torch.randn_like(theta)*self.sigma_noise
 
+    def return_elfi_callable(self):
+        def elfi_simulator(*th_params, batch_size=1, random_state=None):
+            theta = np.stack(th_params, axis=1)
+            samples_standard_normal = ss.norm.rvs(size=(batch_size, self.dim_y), random_state=random_state)
+            samples = theta + self.sigma_noise * samples_standard_normal
+            return samples
+        return elfi_simulator
+
 
 class BimodalGaussian(BaseSimulator):
-    def __init__(self, sigma_noise):
+    def __init__(self, dim, dim_y, sigma_noise):
         self.sigma_noise = sigma_noise
-        super().__init__("bimodal_gaussian")
+        super().__init__("bimodal_gaussian", dim, dim_y)
 
     def sample_numpy(self, theta):
         # for each theta in the batch select either the first or the second mode

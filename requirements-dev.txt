@@ -5,4 +5,5 @@ jupyterlab
 loguru
 mkdocs
 python-dotenv
+mlflow
 -e .

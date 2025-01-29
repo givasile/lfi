@@ -7,6 +7,7 @@ name = "lfi"
 version = "0.0.1"
 description = "LFI examples"
 authors = [
+  { name = "Vasilis Gkolemis" },
   { name = "Theodora Chrysoula" },
 ]
 license = { file = "LICENSE" }
@@ -15,7 +16,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License"
 ]
-requires-python = "~=3.9"
+requires-python = ">=3.9"
 dependencies = [
     "numpy",
     "sbi",
@@ -23,7 +24,7 @@ dependencies = [
     "matplotlib",
     "pandas",
     "seaborn",
-    "yaml",
+    "PyYAML",
     "sbibm",
 ]
 

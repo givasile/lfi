@@ -6,6 +6,7 @@ import jax
 from jax import random
 import jax.numpy as jnp
 import typing
+import elfi
 
 class BasePrior:
     def __init__(self, name: str, dim: int):
@@ -22,6 +23,9 @@ class BasePrior:
         raise NotImplementedError
 
     def return_sbi_object(self):
+        raise NotImplementedError
+
+    def return_elfi_objects(self):
         raise NotImplementedError
 
 
@@ -45,3 +49,7 @@ class UniformPrior(BasePrior):
 
     def return_sbi_object(self) -> sbi.utils.BoxUniform:
         return sbi.utils.BoxUniform(low=self.low*torch.ones(self.dim), high=self.high*torch.ones(self.dim))
+
+    def return_elfi_objects(self):
+        return [elfi.Prior("uniform", self.low, self.high) for _ in range(self.dim)]
+

@@ -1,1 +1,1 @@
-from lfi.inference import custom, from_sbi, base
+from lfi.inference import custom, from_sbi, base, from_elfi

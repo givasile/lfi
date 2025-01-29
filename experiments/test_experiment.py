@@ -1,6 +1,5 @@
-import lfi.experiment
 import lfi
-import torch
+import experiment
 
 # with open('config.yml', 'r') as file:
 #     config = yaml.safe_load(file)
@@ -61,7 +60,7 @@ config = {
     }
 }
 
-exp = lfi.experiment.SingleRun(
+exp = experiment.SingleRun(
     config=config,
     use_mlflow=True,
     experiment_name="test_experiment"
@@ -83,3 +82,4 @@ samples=gt.return_samples(500)
 c2st = exp.evaluate(gt_samples=samples)
 
 exp.end_experiment()
+

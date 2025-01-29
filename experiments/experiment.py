@@ -40,6 +40,7 @@ class SingleRun:
 
         # evaluation
         self.c2st = None
+        self.metrics = {}
 
         if self.use_mlflow:
             if experiment_name is not None:
@@ -93,6 +94,10 @@ class SingleRun:
 
     def evaluate(self, gt_samples):
         self.c2st = lfi.evaluation.c2st(self.samples, gt_samples)
+        self.metrics["c2st"] = self.c2st
+        # save dict to file
+        with open(os.path.join(self.path, "metrics.json"), "w") as f:
+            json.dump(self.metrics, f)
         logger.info(f"C2ST: {self.c2st}")
         mlflow.log_metric("c2st", self.c2st)
         return self.c2st

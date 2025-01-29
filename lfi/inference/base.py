@@ -1,9 +1,7 @@
 import numpy as np
-import pandas as pd
 import typing
 import timeit
 import pandas as pd
-import seaborn as sns
 import matplotlib.pyplot as plt
 from lfi.priors import BasePrior
 from lfi.simulators import BaseSimulator
@@ -29,19 +27,36 @@ class InferenceBase:
 
         self.posterior = None
 
-    def fit(self, budget: int = 1_000, *args, **kwargs):
+    def fit(self, budget: int = 1_000, fit_kwargs: dict = None):
+        """Estimate the posterior distribution.
+
+        Args:
+            budget: The simulation budget for training the posterior
+            fit_kwargs: Any additional arguments passed to the fit method
+        """
         raise NotImplementedError
 
-    def sample(self, nof_samples: int = 100, *args, **kwargs):
+    def sample(self, nof_samples: int = 100, sample_kwargs: dict = None):
+        """Sample from the posterior distribution.
+
+        Args:
+            nof_samples: The number of samples to draw from the posterior
+            sample_kwargs: Any additional arguments passed to the sample method
+        """
         raise NotImplementedError
 
-    def fit_and_sample(self, budget, num_samples):
+    def fit_and_sample(
+            self,
+            budget: int,
+            nof_samples: int,
+            fit_kwargs: dict = None,
+            sample_kwargs: dict = None
+    ):
         tic = timeit.default_timer()
-
-        self.fit(budget)
-        samples = self.sample(num_samples)
+        self.fit(budget, (fit_kwargs or {}))
+        samples = self.sample(nof_samples, (sample_kwargs or {}))
         toc = timeit.default_timer()
-        print(f"\nTraining/Sampling time: {toc - tic:.2f} seconds")
+        print(f"\nTraining and sampling time: {toc - tic:.2f} seconds")
         return samples, toc - tic
 
     @staticmethod
@@ -57,7 +72,8 @@ class InferenceBase:
             limits=limits,
             savefig=savefig
         )
-
+        plt.show()
+        return g
 
     @staticmethod
     def store(samples, path):
