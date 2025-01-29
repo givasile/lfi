@@ -4,13 +4,13 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import typing
 
-
 def plot_pairwise_posterior(
         samples: np.ndarray,  # (N, Dy)
         subset_dims: typing.Optional[list[int]] = None,
         limits: typing.Optional[typing.List[float]] = None,
         title: typing.Optional[str] = None,
-        savefig: typing.Optional[str] = None
+        savefig: typing.Optional[str] = None,
+        samples_gt: typing.Optional[np.ndarray] = None,
 ):
     """
     Plots pairwise relationships and marginal distributions of posterior samples.
@@ -36,13 +36,25 @@ def plot_pairwise_posterior(
         samples,
         columns=[f"x_{i + 1}" for i in range(samples.shape[1])]
     )
+    samples_df["Type"] = "Inferred"
+
+    if samples_gt is not None:
+        samples_gt_df = pd.DataFrame(
+            samples_gt,
+            columns=[f"x_{i + 1}" for i in range(samples_gt.shape[1])]
+        )
+        samples_gt_df["Type"] = "Ground truth"
+        samples_df = pd.concat([samples_df, samples_gt_df], ignore_index=True)
 
     # Select columns corresponding to subset_dims
     selected_vars = [f"x_{i + 1}" for i in subset_dims]
 
+    plt.figure()
     # Create the pairplot
     g = sns.pairplot(
         data=samples_df,
+        hue="Type",
+        markers=["o", "D"],
         vars=selected_vars,
         kind="scatter",  # Pairplot style
         diag_kind="kde",  # KDE for diagonal plots
@@ -54,6 +66,7 @@ def plot_pairwise_posterior(
         g.fig.suptitle(title)
 
     # # Set limits if provided
+    # TODO: fix it
     if limits is not None:
         for i in range(len(selected_vars)):
             for j in range(len(selected_vars)):
@@ -67,3 +80,5 @@ def plot_pairwise_posterior(
     # Save the figure if a file path is specified
     if savefig is not None:
         g.savefig(savefig)
+
+    plt.show(block=False)

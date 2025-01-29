@@ -24,6 +24,7 @@ class BaseSimulator:
 
 
 class GaussianNoise(BaseSimulator):
+    # TODO: check if sigma_noise square is needed
     def __init__(self, dim, dim_y, sigma_noise):
         self.sigma_noise = sigma_noise
         super().__init__("gaussian_noise", dim, dim_y)
