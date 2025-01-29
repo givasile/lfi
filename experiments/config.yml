@@ -1,7 +1,10 @@
-seed: 21
+experiment:
+  seed: 21
+  dim: 2
+  dim_y: 2
 
 simulator:
-  name: "bimodal_gaussian"
+  name: "gaussian_noise"
   params:
     sigma_noise: 0.1
 
@@ -10,17 +13,29 @@ prior:
   params:
     low: -10.0
     high: 10.0
-    dim: 2
 
 observation:
   name: "zeros"
   params:
-    nof_obs: 1
-    dim_y: 2
+    nof_observations: 1
 
 inference:
-  name: "npe_a_single_round"
-
-  train_and_sample:
-    budget: 1000
+  name: npe_a_single_round
+  params:
+    budget: 2000
     nof_samples: 100
+    fit_kwargs:
+      max_num_epochs: 300
+      nof_components: 4
+    sample_kwargs: {}
+
+analysis:
+  pairwise_plot: True
+
+evaluation:
+  ground_truth:
+    name: gaussian
+    params:
+      mu: 0.
+      sigma: 1.0
+

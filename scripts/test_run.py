@@ -1,12 +1,5 @@
 import lfi
-import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
 import numpy as np
-import typing
-
-
-
 
 # modeling parameters
 prior_low = -5
@@ -61,3 +54,6 @@ lfi.visualization.plot_pairwise_posterior(
     limits=[prior_low, prior_high],
     samples_gt=samples_gt
 )
+
+# Evaluation
+c2st = lfi.evaluation.c2st(samples, samples_gt)

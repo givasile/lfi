@@ -52,16 +52,13 @@ class InferenceBase:
             fit_kwargs: dict = None,
             sample_kwargs: dict = None
     ):
-        tic = timeit.default_timer()
         self.fit(budget, (fit_kwargs or {}))
-        samples = self.sample(nof_samples, (sample_kwargs or {}))
-        toc = timeit.default_timer()
-        print(f"\nTraining and sampling time: {toc - tic:.2f} seconds")
-        return samples, toc - tic
+        return self.sample(nof_samples, (sample_kwargs or {}))
 
     @staticmethod
     def plot_posterior_samples(
             samples: np.ndarray, # (N, Dy)
+            samples_gt: typing.Union[None, np.ndarray] = None, # (N, Dy)
             subset_dims: typing.Union[None, list] = None,
             limits: typing.Union[None, list] = None,
             savefig: typing.Union[None, str] = None,
@@ -70,7 +67,8 @@ class InferenceBase:
             samples=samples,
             subset_dims=subset_dims,
             limits=limits,
-            savefig=savefig
+            savefig=savefig,
+            samples_gt=samples_gt
         )
         plt.show()
         return g

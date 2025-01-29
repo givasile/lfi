@@ -5,7 +5,7 @@ import jax.numpy as jnp
 import scipy.stats as ss
 
 class BaseSimulator:
-    def __init__(self, name: str, dim: int, dim_y: int):
+    def __init__(self, name: str, dim: int, dim_y: int, **kwargs):
         self.name = name
         self.dim = dim
         self.dim_y = dim_y

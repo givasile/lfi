@@ -1,44 +1,8 @@
 # Example on how to run an experiment from a configuration file.
 import lfi
+import yaml
 
-
-config = {
-    "seed": 21,
-    "prior": {
-        "name": "uniform",
-        "params": {
-            "dim": 4,
-            "low": -5.,
-            "high": 5.
-        }
-    },
-    "simulator": {
-        "name": "bimodal_gaussian",
-        "params": {
-            "sigma_noise": 1.,
-        }
-    },
-    "observation": {
-        "name": "zeros",
-        "params": {
-            "nof_obs": 1,
-            "dim_y": 4
-        }
-    },
-    "inference": {
-        "name": "mdn",
-        "train_and_sample": {
-            "budget": 2_000,
-            "nof_samples": 100,
-            "fit_kwargs": {
-                "nof_epochs": 5_000,
-                "nof_components": 4
-
-            },
-            "sample_kwargs": {}
-        }
-    }
-}
+config = yaml.safe_load(open("test_run_config.yaml", "r"))
 
 # problem definition
 prior = lfi.utils.PRIOR_TO_CLASS[config['prior']['name']](**config['prior']['params'])
@@ -65,7 +29,9 @@ samples, time = inference.fit_and_sample(
 #     budget=config['inference']['train_and_sample']['budget']
 # )
 
-# plot posterior samples
-inference.plot_posterior_samples(
-    samples=samples
-)
+# create grounf truth
+ground_truth = lfi.utils.GROUND_TRUTH_TO_CLASS[config['ground_truth']['name']](**config['ground_truth']['params'])
+ground_truth_samples= ground_truth.return_samples(nof_samples=config["inference"]["train_and_sample"]["nof_samples"])
+
+# evaluation
+metric = lfi.utils.EVALUATION_TO_CLASS[config['evaluation']['name']](samples, ground_truth_samples)

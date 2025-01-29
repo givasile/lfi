@@ -1,6 +1,8 @@
 import lfi.priors
 import lfi.simulators
 import lfi.observations
+import lfi.ground_truth
+import lfi.evaluation
 import lfi.inference
 
 PRIOR_TO_CLASS = {
@@ -8,7 +10,8 @@ PRIOR_TO_CLASS = {
 }
 
 SIMULATOR_TO_CLASS = {
-    'bimodal_gaussian': lfi.simulators.BimodalGaussian
+    'bimodal_gaussian': lfi.simulators.BimodalGaussian,
+    'gaussian_noise': lfi.simulators.GaussianNoise
 }
 
 OBSERVATION_TO_CLASS = {
@@ -19,6 +22,15 @@ INFERENCE_TO_CLASS = {
     'npe_a_single_round': lfi.inference.from_sbi.NPE_A_SingleRound,
     'npe_c_single_round': lfi.inference.from_sbi.NPE_C_SingleRound,
     'mdn': lfi.inference.custom.MixtureDensityNetwork,
+}
+
+GROUND_TRUTH_TO_CLASS = {
+    'gaussian': lfi.ground_truth.Gaussian,
+    'gaussian_mixture': lfi.ground_truth.GaussianMixture
+}
+
+EVALUATION_TO_CLASS = {
+    'c2st': lfi.evaluation.c2st
 }
 
 

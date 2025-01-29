@@ -1,24 +1,18 @@
 import numpy as np
 
 class BaseObservation:
-    def __init__(self, name: str):
+    def __init__(self, name: str, dim_y: int, nof_observations: int):
         self.name = name
+        self.dim_y = dim_y
+        self.nof_observations = nof_observations
 
-    def sample(self, *args, **kwargs):
+    def sample(self):
         raise NotImplementedError
 
 
 class Zeros(BaseObservation):
-    def __init__(self):
-        super().__init__(name="zeros")
+    def __init__(self, dim_y: int, nof_observations: int):
+        super().__init__(name="zeros", dim_y=dim_y, nof_observations=nof_observations)
 
-    def sample(self, nof_obs: int = 1, dim_y: int = 1):
-        return np.zeros((nof_obs, dim_y))
-
-
-class FromList(BaseObservation):
-    def __init__(self):
-        super().__init__(name="from_list")
-
-    def sample(self, values: list):
-        return np.array([values])
+    def sample(self):
+        return np.zeros((self.nof_observations, self.dim_y))

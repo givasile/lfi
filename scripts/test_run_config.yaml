@@ -1,0 +1,40 @@
+experiment:
+  seed: 21
+  dim: 3
+  dim_y: 3
+
+prior:
+  name: uniform
+  params:
+    low: -5.0
+    high: 5.0
+
+simulator:
+  name: gaussian_noise
+  params:
+    sigma_noise: 1.0
+
+observation:
+  name: zeros
+  params:
+    nof_observations: 1
+
+inference:
+  name: npe_a_single_round
+  params:
+    budget: 2000
+    nof_samples: 100
+    fit_kwargs:
+      max_num_epochs: 100
+      nof_components: 4
+    sample_kwargs: {}
+
+analysis:
+  pairwise_plot: True
+
+evaluation:
+  ground_truth:
+    name: gaussian
+    params:
+      mu: 0.
+      sigma: 1.0

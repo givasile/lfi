@@ -1,5 +1,5 @@
 import numpy as np
-import yaml
+import time
 import random
 import torch
 import os
@@ -14,103 +14,175 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class SingleRun:
-    def __init__(self, config, use_mlflow=True, experiment_name=None):
-        self.use_mlflow = use_mlflow
+    def __init__(
+            self,
+            config,
+            analyze=True,
+            evaluate=True,
+            store=True,
+            use_mlflow=False,
+            experiment_name=None
+    ):
         logger.info(f"Initializing experiment with config:")
         logger.info(config)
 
         self.config = config
+        self.analyze = analyze
+        self.evaluate = evaluate
+        self.store = store
+        self.use_mlflow = use_mlflow
+        self.experiment_name = experiment_name
 
-        self.prior = lfi.utils.PRIOR_TO_CLASS[self.config['prior']['name']](**self.config['prior']['params'])
-        self.simulator = lfi.utils.SIMULATOR_TO_CLASS[self.config['simulator']['name']](**self.config['simulator']['params'])
-        self.observation = lfi.utils.OBSERVATION_TO_CLASS[self.config['observation']['name']]().sample(**self.config['observation']['params'])
+        # init prior
+        init_params = self.config['prior']['params']
+        init_params['dim'] = self.config['experiment']['dim']
+        self.prior = lfi.utils.PRIOR_TO_CLASS[self.config['prior']['name']](**init_params)
 
-        self.inference = lfi.utils.INFERENCE_TO_CLASS[self.config['inference']['name']](
+        # init simulator
+        init_params = self.config['simulator']['params']
+        init_params['dim'] = self.config['experiment']['dim']
+        init_params['dim_y'] = self.config['experiment']['dim_y']
+        self.simulator = lfi.utils.SIMULATOR_TO_CLASS[self.config['simulator']['name']](**init_params)
+
+        # init observation
+        init_params = self.config['observation']['params']
+        init_params['dim_y'] = self.config['experiment']['dim_y']
+        self.observation = lfi.utils.OBSERVATION_TO_CLASS[self.config['observation']['name']](**init_params).sample()
+
+        # init inference
+        self.inference_method = lfi.utils.INFERENCE_TO_CLASS[self.config['inference']['name']](
             prior=self.prior,
             simulator=self.simulator,
             observation=self.observation,
         )
-        self.path = self._create_experiment_path()
-        # store the config as yml
-        with open(os.path.join(self.path, "config.yml"), "w") as f:
-            yaml.dump(self.config, f)
 
+        if evaluate:
+            init_params = self.config['evaluation']['ground_truth']['params']
+            init_params['dim'] = self.config['experiment']['dim']
+            self.ground_truth = lfi.utils.GROUND_TRUTH_TO_CLASS[self.config['evaluation']['ground_truth']['name']](**init_params)
+
+
+        self.store_dir = None
+
+        # inference staff
         self.samples = None
         self.time = None
 
-        # evaluation
+        # evaluation staff
         self.c2st = None
         self.metrics = {}
 
-        if self.use_mlflow:
-            if experiment_name is not None:
-                mlflow.set_experiment(experiment_name)
-            mlflow.start_run()
-        logger.info(f"Experiment initialized")
+    def start_experiment(self):
+        if self.store:
+            self.store_dir = self._create_experiment_path()
 
-    def _set_seed(self):
-        seed = self.config['seed']
+        if self.use_mlflow:
+            if self.experiment_name is not None:
+                mlflow.set_experiment(self.experiment_name)
+            mlflow.start_run()
+            mlflow.log_params(lfi.utils.flatten_config(self.config))
+
+        # set seed
+        seed = self.config['experiment']["seed"]
         np.random.seed(seed)
         torch.manual_seed(seed)
         torch.cuda.manual_seed(seed)
         random.seed(seed)
 
-    def infer(self):
+        logger.info(f"Experiment initialized")
+
+    def inference(self):
         logger.info(f"Running inference")
-        self._set_seed()
-        self.samples, self.time = self.inference.fit_and_sample(
-            budget=self.config['inference']['train_and_sample']['budget'],
-            nof_samples=self.config['inference']['train_and_sample']['nof_samples'],
+        tic = time.time()
+        self.samples = self.inference_method.fit_and_sample(
+            budget=self.config['inference']['params']['budget'],
+            nof_samples=self.config['inference']['params']['nof_samples'],
+            fit_kwargs=self.config['inference']['params']['fit_kwargs'],
+            sample_kwargs=self.config['inference']['params']['sample_kwargs']
         )
+        toc = time.time()
+        self.time = toc - tic
         logger.info(f"Inference finished")
 
-        if self.use_mlflow:
-            mlflow.log_params(lfi.utils.flatten_config(self.config))
+        if self.store:
+            # store time
+            with open(os.path.join(self.path, "time.json"), "w") as f:
+                json.dump({"time": self.time}, f)
 
-            mlflow.log_metric("time", self.time)
+            # store samples
+            samples_path = os.path.join(self.path, "inferred_samples.csv")
+            self.inference_method.store(self.samples, samples_path)
 
-            # store the samples in a file
-            samples_path = os.path.join(self.path, "samples.csv")
-            self.inference.store(self.samples, samples_path)
-            mlflow.log_artifact(samples_path)
-
-    def plot(self, limits=None):
+    def analysis(self):
         # if plot_training_summary is not implemented, skip
         if hasattr(self.inference, "plot_training_summary"):
-            self.inference.plot_training_summary(
+            savefig = os.path.join(self.path, "training_summary.png") if self.store else None
+            self.inference_method.plot_training_summary(
                 budget=self.config['inference']['train_and_sample']['budget'],
-                savefig=os.path.join(self.path, "training_summary.png")
+                savefig=savefig
             )
-            mlflow.log_artifact(os.path.join(self.path, "training_summary.png"))
+            if self.use_mlflow:
+                mlflow.log_artifact(os.path.join(self.path, "training_summary.png"))
 
         dim = self.config['prior']['params']['dim']
-        self.inference.plot_posterior_samples(
+        savefig = os.path.join(self.path, "posterior_samples.png") if self.store else None
+        self.inference_method.plot_posterior_samples(
             samples=self.samples,
+            samples_gt=None,
             subset_dims=[i for i in range(dim)] if dim < 10 else [i for i in range(10)],
-            limits=limits,
-            savefig=os.path.join(self.path, "posterior_samples.png")
+            limits=None,
+            savefig=savefig,
         )
-        mlflow.log_artifact(os.path.join(self.path, "posterior_samples.png"))
+        if self.use_mlflow:
+            mlflow.log_artifact(os.path.join(self.path, "posterior_samples.png"))
 
-    def evaluate(self, gt_samples):
+    def evaluation(self):
+        # generate ground truth samples
+        gt_samples = self.ground_truth.return_samples(nof_samples=self.config["inference"]["params"]["nof_samples"])
         self.c2st = lfi.evaluation.c2st(self.samples, gt_samples)
-        self.metrics["c2st"] = self.c2st
-        # save dict to file
-        with open(os.path.join(self.path, "metrics.json"), "w") as f:
-            json.dump(self.metrics, f)
-        logger.info(f"C2ST: {self.c2st}")
-        mlflow.log_metric("c2st", self.c2st)
-        return self.c2st
 
-    def run(self, gt_samples, limits):
-        self.infer()
-        self.plot(limits)
-        self.evaluate(gt_samples)
-        self.end_experiment()
+        # save dict to file
+        if self.store:
+            with open(os.path.join(self.path, "metrics.json"), "w") as f:
+                json.dump(self.c2st, f)
+        logger.info(f"C2ST: {self.c2st}")
+
+        if self.use_mlflow:
+            mlflow.log_metric("c2st", self.c2st)
+
+        # plot
+        dim = self.config['prior']['params']['dim']
+        savefig = os.path.join(self.path, "posterior_samples.png") if self.store else None
+        self.inference_method.plot_posterior_samples(
+            samples=self.samples,
+            samples_gt=gt_samples,
+            subset_dims=[i for i in range(dim)] if dim < 10 else [i for i in range(10)],
+            limits=None,
+            savefig=savefig,
+        )
+        if self.use_mlflow:
+            mlflow.log_artifact(os.path.join(self.path, "posterior_samples.png"))
 
     def end_experiment(self):
         if self.use_mlflow:
             mlflow.end_run()
+
+    def run(self):
+        # start experiment
+        self.start_experiment()
+
+        # infer
+        self.inference()
+
+        # analyze
+        if self.analyze:
+            self.analysis()
+
+        # evaluate
+        if self.evaluate:
+            self.evaluation()
+
+        self.end_experiment()
 
     @staticmethod
     def _generate_run_id(base_path):
@@ -126,9 +198,13 @@ class SingleRun:
         return hashlib.md5(config_str.encode()).hexdigest()
 
     def _create_experiment_path(self):
+        base_path = os.path.join("./../experiment_runs",)
+        if self.experiment_name is not None:
+            base_path = os.path.join(base_path, self.experiment_name)
         unique_id = self._generate_unique_id(self.config)
+
         base_path = os.path.join(
-            "./../experiment_runs",
+            base_path,
             self.config['simulator']['name'],
             self.config['prior']['name'],
             self.config['inference']['name'],
@@ -140,7 +216,7 @@ class SingleRun:
         run_id = self._generate_run_id(base_path)
         run_path = os.path.join(base_path, run_id)
         os.makedirs(run_path, exist_ok=True)
-
+        self.path = run_path
         return run_path
 
 

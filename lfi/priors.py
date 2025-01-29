@@ -9,7 +9,7 @@ import typing
 import elfi
 
 class BasePrior:
-    def __init__(self, name: str, dim: int):
+    def __init__(self, name: str, dim: int, **kwargs):
         self.name = name
         self.dim = dim
 
@@ -30,10 +30,10 @@ class BasePrior:
 
 
 class UniformPrior(BasePrior):
-    def __init__(self, low, high, dim):
+    def __init__(self, dim, low, high):
+        self.dim = dim
         self.low = low
         self.high = high
-        self.dim = dim
         super().__init__("uniform", dim)
 
     def sample_numpy(self, nof_samples: int) -> np.ndarray:

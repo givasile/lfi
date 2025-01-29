@@ -25,7 +25,6 @@ dependencies = [
     "pandas",
     "seaborn",
     "PyYAML",
-    "sbibm",
 ]
 
 [tool.black]
