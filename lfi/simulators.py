@@ -58,7 +58,7 @@ class BaseSimulator:
     
 
 class GaussianNoise(BaseSimulator):
-    def __init__(self, sigma_noise):
+    def __init__(self, sigma_noise, dim, dim_y):
         self.sigma_noise = sigma_noise
         super().__init__()
 
