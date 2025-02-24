@@ -6,12 +6,6 @@ import torch
 import sbi.analysis
 import sbi.neural_nets
 import numpy as np
-import jax
-import jax.numpy as jnp
-import typing
-import pandas as pd
-import seaborn as sns
-import timeit
 from .base import InferenceBase
 from lfi.priors import BasePrior
 from lfi.simulators import BaseSimulator
@@ -27,8 +21,8 @@ class NPEBase(InferenceBase):
         self.name = name
 
         # prepare prior and simulator
-        sbi_prior, num_parameters, prior_returns_numpy = process_prior(prior)
-        sim = process_simulator(simulator, sbi_prior, prior_returns_numpy)
+        sbi_prior, num_parameters, prior_returns_numpy = process_prior(prior.return_sbi_object())
+        sim = process_simulator(simulator.sample_pytorch, sbi_prior, prior_returns_numpy)
         check_sbi_inputs(sim, sbi_prior)
         # Parameters of the prior
         dim = num_parameters
@@ -38,21 +32,18 @@ class NPEBase(InferenceBase):
         self.posterior = None
         super().__init__(name, prior, simulator, observation, dim, dim_y)
 
-    def fit(self, budget: int = 1_000, *args, **kwargs):
-        raise NotImplementedError
-
-    def sample(self, nof_samples: int = 100, *args, **kwargs):
+    def sample(self, nof_samples: int = 100, sample_kwargs: dict = None):
         if self.posterior is None:
             raise ValueError("Posterior is not trained yet.")
-        return self.posterior.sample((nof_samples,), x=torch.Tensor(self.observation))
-
-    def fit_and_sample(self, budget, num_samples):
-        tic = timeit.default_timer()
-        self.fit(budget)
-        samples = self.sample(num_samples)
-        toc = timeit.default_timer()
-        print(f"\nTraining/Sampling time: {toc - tic:.2f} seconds")
-        return samples, toc - tic
+        y = self.posterior.sample((nof_samples,), x=torch.Tensor(self.observation))
+        return  y
+    # def fit_and_sample(self, budget, num_samples):
+    #     tic = timeit.default_timer()
+    #     self.fit(budget)
+    #     samples = self.sample(num_samples)
+    #     toc = timeit.default_timer()
+    #     print(f"\nTraining/Sampling time: {toc - tic:.2f} seconds")
+    #     return samples, toc - tic
 
     def plot_training_summary(self, budget, savefig=None, num_components=None):
         fig, ax = plt.subplots()
@@ -77,76 +68,124 @@ class NPEBase(InferenceBase):
 
 class NPEASingleRound(NPEBase):
     def __init__(self, prior, simulator, observation):       
-        super().__init__("NPE-A (single round)", prior, simulator, observation)
+        super().__init__("npe_a_single_round", prior, simulator, observation)
 
-    def fit(self, budget: int = 1_000, num_components=10):
+    def fit(self, budget: int = 1_000, fit_kwargs: dict = None):
+
+        # prepare arguments
+        default_kwargs = {
+            "num_components": 10,
+            "training_batch_size": 500,
+            "max_num_epochs": 1000,
+        }
+        default_kwargs.update(fit_kwargs or {})
+
         # prepare dataset
-        theta, x = simulate_for_sbi(self.simulator, self.prior, num_simulations=budget)
+        theta, x = simulate_for_sbi(self.simulator.sample_pytorch, self.prior.return_sbi_object(), num_simulations=budget)
 
-        self.inference_method = NPE_A(self.prior, num_components=num_components)
+        # fit the model
+        self.inference_method = NPE_A(self.prior.return_sbi_object(),
+                                      num_components=default_kwargs["num_components"]
+                                      )
+        
         _ = self.inference_method.append_simulations(theta, x).train(
-            training_batch_size=500,
-            max_num_epochs=1000,
+            training_batch_size=default_kwargs["training_batch_size"],
+            max_num_epochs=default_kwargs["max_num_epochs"],
             final_round=True
         )
 
         self.posterior = self.inference_method.build_posterior().set_default_x(torch.Tensor(self.observation))
         return self.posterior
     
-    def fit_and_sample(self, budget, num_samples, num_components = 10):
-        tic = timeit.default_timer()
-        self.fit(budget, num_components)
-        samples = self.sample(num_samples)
-        toc = timeit.default_timer()
-        print(f"\nTraining/Sampling time: {toc - tic:.2f} seconds")
-        return samples, toc - tic
+    # def fit_and_sample(self, budget, num_samples, num_components = 10):
+    #     tic = timeit.default_timer()
+    #     self.fit(budget, num_components)
+    #     samples = self.sample(num_samples)
+    #     toc = timeit.default_timer()
+    #     print(f"\nTraining/Sampling time: {toc - tic:.2f} seconds")
+    #     return samples, toc - tic
     
 class NPECSingleRound(NPEBase):
     def __init__(self, prior, simulator, observation):
-        super().__init__("NPE-C (single round)", prior, simulator, observation)
+        super().__init__("npe_c_single_round", prior, simulator, observation)
 
-    def fit(self, budget, density_estimator=None):
-        theta, x = simulate_for_sbi(self.simulator, self.prior, num_simulations=budget)
+    def fit(self, budget: int = 100,
+            fit_kwargs: dict=None
+            ):
+        
+        # default arguments
+        default_kwargs = {
+            "model": "nsf",
+            "hidden_features": 100,
+            "num_transforms": 8,
+            "z_score_x": "independent",
+            "z_score_theta": "independent",
+            "training_batch_size": 500,
+            "max_num_epochs": 1000,
+            "force_first_round": True,
+        }
 
-        if density_estimator is None:
-            density_estimator = sbi.neural_nets.posterior_nn(
-                model='nsf',
-                hidden_features = 100,
-                num_transforms=8,
-                z_score_x = "independent",
-                z_score_theta = "independent",
-            )
+        default_kwargs.update(fit_kwargs or {})
 
-        self.inference_method = NPE_C(self.prior, density_estimator=density_estimator)
+        # prepare dataset
+        theta, x = simulate_for_sbi(self.simulator.sample_pytorch, self.prior.return_sbi_object(), num_simulations=budget)
+
+        # define the density estimator
+        density_estimator = sbi.neural_nets.posterior_nn(
+            model=default_kwargs["model"],
+            hidden_features=default_kwargs["hidden_features"],
+            num_transforms=default_kwargs["num_transforms"],
+            z_score_x = default_kwargs["z_score_x"],
+            z_score_theta = default_kwargs["z_score_theta"],
+        )
+
+        # fit the model
+        self.inference_method = NPE_C(self.prior.return_sbi_object(),
+                                      density_estimator=density_estimator
+                                      )
+        
         _ = self.inference_method.append_simulations(theta, x).train(
-            training_batch_size=500,
-            max_num_epochs=1000,
+            training_batch_size=default_kwargs["training_batch_size"],
+            max_num_epochs=default_kwargs["max_num_epochs"],
             force_first_round_loss=True
         )
 
         self.posterior = self.inference_method.build_posterior().set_default_x(torch.Tensor(self.observation))
         return self.posterior
     
-    def fit_and_sample(self, budget, num_samples, density_estimator=None):
-        tic = timeit.default_timer()
-        self.fit(budget, density_estimator)
-        samples = self.sample(num_samples)
-        toc = timeit.default_timer()
-        print(f"\nTraining/Samling time: {toc - tic:.2f} seconds")
-        return samples, toc - tic
+    # def fit_and_sample(self, budget, num_samples, density_estimator=None):
+    #     tic = timeit.default_timer()
+    #     self.fit(budget, density_estimator)
+    #     samples = self.sample(num_samples)
+    #     toc = timeit.default_timer()
+    #     print(f"\nTraining/Samling time: {toc - tic:.2f} seconds")
+    #     return samples, toc - tic
     
 class FMPESingleRound(NPEBase):
     def __init__(self, prior, simulator, observation):
-        super().__init__("FMPE (single round)", prior, simulator, observation)
+        super().__init__("fmpe_single_round", prior, simulator, observation)
 
-    def fit(self, budget):
+    def fit(self, 
+            budget: int=1000,
+            fit_kwargs: dict = None
+            ):
+        
+        # default arguments
+        default_kwargs = {
+            "training_batch_size":500,
+            "max_num_epochs": 1000,
+        }
+        default_kwargs.update(fit_kwargs or {})
+        
         # prepare dataset
-        theta, x = simulate_for_sbi(self.simulator, self.prior, num_simulations=budget)
+        theta, x = simulate_for_sbi(self.simulator.sample_pytorch, self.prior.return_sbi_object(), num_simulations=budget)
 
-        self.inference_method = FMPE(self.prior)
+        # fit the model
+        self.inference_method = FMPE(self.prior.return_sbi_object())
+
         _ = self.inference_method.append_simulations(theta, x).train(
-            training_batch_size=500,
-            max_num_epochs=1000
+            training_batch_size=default_kwargs["training_batch_size"],
+            max_num_epochs=default_kwargs["max_num_epochs"]
         )
 
         self.posterior = self.inference_method.build_posterior().set_default_x(torch.Tensor(self.observation))
