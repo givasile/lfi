@@ -4,8 +4,9 @@ from typing import List
 import numpy as np
 
 class BaseGroundTruth:
-    def __init__(self, name: str):
+    def __init__(self, name: str, dim:int):
         self.name = name
+        self.dim = dim
 
     def sample(self, nof_samples: int):
         pass
@@ -36,7 +37,7 @@ class GaussianMixture(BaseGroundTruth):
             ValueError: if the lengths of mu and sigma or weights are inconsistent.
         """
 
-        super().__init__("gaussian_mixture")
+        super().__init__("gaussian_mixture", dim=dim)
 
         # Validate inputs
         if len(mu) != len(sigma) or len(mu) != len(weights):
@@ -62,7 +63,7 @@ class GaussianMixture(BaseGroundTruth):
             )
         
     def return_samples(self, nof_samples: int):
-        return self.distribution.sample((nof_samples,))
+        return self.distribution.sample((nof_samples,)).numpy()
     
 # class FromSample(BaseGroundTruth):
 #     def __init__(self, path: str):

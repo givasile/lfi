@@ -3,6 +3,7 @@ import torch
 import jax
 from jax import random
 import jax.numpy as jnp
+import scipy.stats as ss
 
 
 
@@ -31,9 +32,10 @@ class LinearSimulator:
     
 
 class BaseSimulator:
-    def __init__(self,):
-        pass
-    
+    def __init__(self, name:str, dim: int, dim_y: int, **kwargs):
+        self.name=name
+        self.dim=dim
+        self.dim_y = dim_y    
     def sample_numpy(self, theta):
         raise NotImplementedError
     def sample_jax(self, theta, keys):
@@ -43,9 +45,9 @@ class BaseSimulator:
     
 
 class GaussianNoise(BaseSimulator):
-    def __init__(self, sigma_noise, dim, dim_y):
+    def __init__(self, dim, dim_y, sigma_noise):
         self.sigma_noise = sigma_noise
-        super().__init__()
+        super().__init__("gaussian noise", dim, dim_y)
 
     def sample_numpy(self, theta):
         return np.random.normal(theta, self.sigma_noise)
@@ -57,6 +59,14 @@ class GaussianNoise(BaseSimulator):
 
     def sample_pytorch(self, theta):
         return theta + torch.randn_like(theta)*self.sigma_noise
+    
+    def return_elfi_callable(self):
+        def elfi_simulator(*th_params, batch_size=1, random_state=None):
+            theta = np.stack(th_params, axis=1)
+            samples_standard_normal = ss.norm.rvs(size=(batch_size, self.dim_y), random_state=random_state)
+            samples = theta + self.sigma_noise*samples_standard_normal
+            return samples
+        return elfi_simulator
 
 
 class BimodalGaussian(BaseSimulator):

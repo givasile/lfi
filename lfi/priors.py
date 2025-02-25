@@ -10,7 +10,8 @@ import elfi
 
 
 class BasePrior:
-    def __init__(self, dim):
+    def __init__(self, name: str, dim:int, **kwargs):
+        self.name = name
         self.dim = dim
 
     def sample_numpy(self, N):
@@ -35,7 +36,7 @@ class UniformPrior(BasePrior):
         self.low = low
         self.high = high
         self.dim = dim
-        super().__init__(dim)
+        super().__init__("uniform", dim)
 
     def sample_numpy(self, N):
         return np.random.uniform(self.low, self.high, size = (N, self.dim)).astype(np.float32)

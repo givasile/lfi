@@ -36,14 +36,8 @@ class NPEBase(InferenceBase):
         if self.posterior is None:
             raise ValueError("Posterior is not trained yet.")
         y = self.posterior.sample((nof_samples,), x=torch.Tensor(self.observation))
-        return  y
-    # def fit_and_sample(self, budget, num_samples):
-    #     tic = timeit.default_timer()
-    #     self.fit(budget)
-    #     samples = self.sample(num_samples)
-    #     toc = timeit.default_timer()
-    #     print(f"\nTraining/Sampling time: {toc - tic:.2f} seconds")
-    #     return samples, toc - tic
+        return  y.detach().numpy()
+   
 
     def plot_training_summary(self, budget, savefig=None, num_components=None):
         fig, ax = plt.subplots()

@@ -9,15 +9,17 @@ class RejectionSampling(InferenceBase):
         thetas = prior.return_elfi_objects()
         self.sim = elfi.Simulator(elfi_sim, *thetas, observed=observation)
         self.d = elfi.Distance('euclidean', self.sim)
-        super().__init__('elfi_rejection_sampling', self.sim)
+        dim = len(thetas)
+        dim_y = observation.shape[1]
+        super().__init__('elfi_rejection_sampling', thetas, self.sim, observation, dim, dim_y)
 
     def fit(self, budget: int=1000, fit_kwargs: dict = None):
         self.budget = budget
         default_kwargs = {
-            "batch_size:": 1_000
+            "batch_size": 1_000
         }
         default_kwargs.update((fit_kwargs or {}))
-        self.inference_method = elfi.Rejection(self.d, batch_size=default_kwargs['batch_size'])
+        self.inference_method = elfi.Rejection(self.d, batch_size=default_kwargs["batch_size"])
 
     def sample(self, nof_samples: int=100, sample_kwargs: dict = None):
         quantile = nof_samples / self.budget
