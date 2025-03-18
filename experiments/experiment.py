@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import time
 import random
 import torch
@@ -35,18 +36,18 @@ class SingleRun:
 
         # init prior
         init_params = self.config['prior']['params']
-        init_params['dim'] = self.config['experiment']['dim']
+        init_params['dim'] = self.config['experiment_run']['dim']
         self.prior = lfi.utils.PRIOR_TO_CLASS[self.config['prior']['name']](**init_params)
 
         # init simulator
         init_params = self.config['simulator']['params']
-        init_params['dim'] = self.config['experiment']['dim']
-        init_params['dim_y'] = self.config['experiment']['dim_y']
+        init_params['dim'] = self.config['experiment_run']['dim']
+        init_params['dim_y'] = self.config['experiment_run']['dim_y']
         self.simulator = lfi.utils.SIMULATOR_TO_CLASS[self.config['simulator']['name']](**init_params)
 
         # init observation
         init_params = self.config['observation']['params']
-        init_params['dim_y'] = self.config['experiment']['dim_y']
+        init_params['dim_y'] = self.config['experiment_run']['dim_y']
         self.observation = lfi.utils.OBSERVATION_TO_CLASS[self.config['observation']['name']](**init_params).sample()
 
         # init inference
@@ -58,8 +59,13 @@ class SingleRun:
 
         if evaluate:
             init_params = self.config['evaluation']['ground_truth']['params']
-            init_params['dim'] = self.config['experiment']['dim']
-            self.ground_truth = lfi.utils.GROUND_TRUTH_TO_CLASS[self.config['evaluation']['ground_truth']['name']](**init_params)
+            init_params['dim'] = self.config['experiment_run']['dim']
+            self.ground_truth = lfi.utils.GROUND_TRUTH_TO_CLASS[
+                self.config['evaluation']['ground_truth']['name']
+            ](**init_params)
+            self.gt_samples = self.ground_truth.sample(
+                nof_samples=self.config["inference"]["params"]["nof_samples"]
+            )
 
 
         self.store_dir = None
@@ -80,10 +86,11 @@ class SingleRun:
             if self.experiment_name is not None:
                 mlflow.set_experiment(self.experiment_name)
             mlflow.start_run()
+            
             mlflow.log_params(lfi.utils.flatten_config(self.config))
 
         # set seed
-        seed = self.config['experiment']["seed"]
+        seed = self.config['experiment_run']["seed"]
         np.random.seed(seed)
         torch.manual_seed(seed)
         torch.cuda.manual_seed(seed)
@@ -105,13 +112,13 @@ class SingleRun:
         logger.info(f"Inference finished")
 
         if self.store:
-            # store time
-            with open(os.path.join(self.path, "time.json"), "w") as f:
+            # store samples and time as a json file
+            with open(os.path.join(self.path, "inference_stuff.json"), "w") as f:
                 json.dump({"time": self.time}, f)
 
             # store samples
-            samples_path = os.path.join(self.path, "inferred_samples.csv")
-            self.inference_method.store(self.samples, samples_path)
+            samples_df = pd.DataFrame(self.samples)
+            samples_df.to_csv(os.path.join(self.path, "inference_samples.csv"))
 
     def analysis(self):
         # if plot_training_summary is not implemented, skip
@@ -137,14 +144,12 @@ class SingleRun:
             mlflow.log_artifact(os.path.join(self.path, "posterior_samples.png"))
 
     def evaluation(self):
-        # generate ground truth samples
-        gt_samples = self.ground_truth.return_samples(nof_samples=self.config["inference"]["params"]["nof_samples"])
-        self.c2st = lfi.evaluation.c2st(self.samples, gt_samples)
+        self.c2st = lfi.evaluation.c2st(self.samples, self.gt_samples)
 
         # save dict to file
         if self.store:
-            with open(os.path.join(self.path, "metrics.json"), "w") as f:
-                json.dump(self.c2st, f)
+            with open(os.path.join(self.path, "evaluation.json"), "w") as f:
+                json.dump({"c2st": self.c2st}, f)
         logger.info(f"C2ST: {self.c2st}")
 
         if self.use_mlflow:
@@ -155,7 +160,7 @@ class SingleRun:
         savefig = os.path.join(self.path, "posterior_samples.png") if self.store else None
         self.inference_method.plot_posterior_samples(
             samples=self.samples,
-            samples_gt=gt_samples,
+            samples_gt=self.gt_samples,
             subset_dims=[i for i in range(dim)] if dim < 10 else [i for i in range(10)],
             limits=None,
             savefig=savefig,

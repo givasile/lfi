@@ -3,6 +3,7 @@ import pandas as pd
 from typing import List
 import numpy as np
 
+
 class BaseGroundTruth:
     def __init__(self, name: str, dim: int):
         self.name = name
@@ -11,13 +12,14 @@ class BaseGroundTruth:
     def sample(self, nof_samples: int):
         pass
 
+    
 class Gaussian(BaseGroundTruth):
     def __init__(self, dim: int, mu: float, sigma: float):
         self.mu = mu
         self.sigma = sigma
         super().__init__("gaussian", dim=dim)
 
-    def return_samples(self, nof_samples: int):
+    def sample(self, nof_samples: int):
         """numpy code"""
         return np.random.normal(self.mu, self.sigma, (nof_samples, self.dim))
 
@@ -67,7 +69,7 @@ class GaussianMixture(BaseGroundTruth):
             )
         )
 
-    def return_samples(self, nof_samples: int):
+    def samples(self, nof_samples: int):
         return self.distribution.sample((nof_samples,)).numpy()
 
 
