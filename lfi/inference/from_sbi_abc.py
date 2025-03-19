@@ -50,6 +50,9 @@ class SBI_MCABC(InferenceBase):
     def sample(self, nof_samples: int = 100, sample_kwargs: dict=None):
         budget = self.budget # Retrieve the budget stored in fit()
         quantile = nof_samples / budget
+        param = self.prior.return_sbi_object().sample((1,))
+        print(param)
+        print(type(self.prior.return_sbi_object()))
         self.posterior = self.inference_method(
             self.observation,
             num_simulations = budget,

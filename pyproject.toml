@@ -5,9 +5,10 @@ build-backend = "flit_core.buildapi"
 [project]
 name = "lfi"
 version = "0.0.1"
-description = "lfi examples"
+description = "LFI examples"
 authors = [
   { name = "Theodora Chrysoula" },
+  { name = "Vasilis Gkolemis"},
 ]
 license = { file = "LICENSE" }
 readme = "README.md"
@@ -16,6 +17,15 @@ classifiers = [
     "License :: OSI Approved :: MIT License"
 ]
 requires-python = "~=3.10"
+dependencies = [
+  "numpy",
+  "sbi",
+  "jax",
+  "matplotlib",
+  "pandas",
+  "seaborn",
+  "PyYAML",
+]
 
 [tool.black]
 line-length = 99

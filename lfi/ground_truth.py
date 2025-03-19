@@ -17,7 +17,7 @@ class Gaussian(BaseGroundTruth):
         self.sigma = sigma
         super().__init__("guassian", dim=dim)
 
-    def return_samples(self, nof_samples: int):
+    def sample(self, nof_samples: int):
         '''numpy code'''
         return np.random.normal(self.mu, self.sigma, (nof_samples, self.dim))
     

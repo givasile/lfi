@@ -11,7 +11,7 @@ exp = experiment.SingleRun(
     evaluate=True,
     store=True,
     use_mlflow=False,
-    experiment_name='elfi_experiment'
+    experiment_name='test_experiment'
 )
 
 exp.run()

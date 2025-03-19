@@ -70,33 +70,66 @@ class GaussianNoise(BaseSimulator):
 
 
 class BimodalGaussian(BaseSimulator):
-    def __init__(self, sigma_noise):
+    def __init__(self, dim, dim_y, sigma_noise):
         self.sigma_noise = sigma_noise
-        super().__init__()
+        super().__init__("bimodal_gaussian", dim, dim_y)
 
     def sample_numpy(self, theta):
         # for each theta in the batch select either the first or the second mode
-        mode = np.random.choice([0,1], size = theta.shape[0])
+        mode = np.random.choice([0, 1], size=theta.shape[0])
 
         mean = theta + 3
-        mean[mode==1] = theta[mode == 1] - 3
+        mean[mode == 1] = theta[mode == 1] - 3
         return np.random.normal(mean, self.sigma_noise)
-    
+
     def sample_jax(self, theta, keys):
         def simulate_one(theta, key):
-            mode = jax.random.choice(key, shape=(theta.shape[0],), a=jnp.array([0.1]))
+            mode = jax.random.choice(key, shape=(theta.shape[0],), a=jnp.array([0, 1]))
             mean = theta + 3
-            mean = jax.ops.index_update(mean, jax.ops.index[mode==1], theta[mode==1]-3)
+            mean = jax.ops.index_update(mean, jax.ops.index[mode == 1], theta[mode == 1] - 3)
             return mean + jax.random.normal(key)*self.sigma_noise
-        return jax.vmap(simulate_one, in_axes=(0,0))(theta, keys)
-                                         
+        return jax.vmap(simulate_one, in_axes=(0, 0))(theta, keys)
+
     def sample_pytorch(self, theta):
         mode = torch.randint(0, 2, (theta.shape[0],))
 
         mean = theta + 3
-        mean[mode==1] = theta[mode == 1] - 3
-        return mean + torch.randn_like(theta) * self.sigma_noise
+        mean[mode == 1] = theta[mode == 1] - 3
+        return mean + torch.randn_like(theta)*self.sigma_noise
 
+class MultivariateGaussian(BaseSimulator):
+    def __init__(self, dim, dim_y, sigma_noise, shift_value):
+        '''
+        dim: dimensionality of theta
+        dim_y: dimensionality of observation,
+        sigma_noise: standard deviation of noise,
+        shift_value: shift value for the Gaussian distribution
+        '''
+        self.sigma_noise = sigma_noise
+        self.shift_value = shift_value # shift for the mean
+        super().__init__("multivariateGaussian", dim, dim_y)
+
+    def sample_numpy(self, theta):
+        # Introduce the shift to the mean
+        mean = theta + self.sift_value # Shift the mean by the shift_value
+        cov = np.diag([self.sigma_noise**2], theta.shape[0]) # Diagonal covariance matrix
+        return np.random.multivariate_normal(mean, cov)
+    
+    def sample_jax(self, theta, keys):
+        def simulate_one(theta, key):
+            mean = theta + self.shift_value
+            cov = jnp.diag([self.sigma_noise**2]*theta.shape[0])
+            return mean + jax.random.multivariate_normal(key, cov)
+        return jax.vmap(simulate_one, in_axes=(0,0))(theta, keys)
+
+    def sample_pytorch(self, theta):
+        mean = theta + self.shift_value
+        #print(f"Mean shape: {mean.shape}")
+        cov = torch.diag(torch.full((theta.shape[-1],), self.sigma_noise**2, dtype=torch.float32))
+        #print(f"cov shape: {cov.shape}")
+        mvn = torch.distributions.MultivariateNormal(mean, covariance_matrix=cov)
+        return mvn.sample() 
+    
 
 class TwoMoon(BaseSimulator):
     def __init__(self):
@@ -178,4 +211,7 @@ class TwoMoon(BaseSimulator):
     
 
     
+
+
+
 

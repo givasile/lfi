@@ -1,7 +1,7 @@
-experiment:
+experiment_run:
   seed: 21
-  dim: 2
-  dim_y: 2
+  dim: 10
+  dim_y: 10
 
 simulator:
   name: "gaussian_noise"
@@ -20,14 +20,14 @@ observation:
     nof_observations: 1
 
 inference:
-  name: 'sbi_mcabc' #elfi_rejection_sampling #npe_a_single_round
+  name: fmpe_single_round #npe_c_single_round #npe_a_single_round   #'sbi_mcabc' #elfi_rejection_sampling #npe_a_single_round
   params:
-    budget: 2000
+    budget: 100000
     nof_samples: 100
     fit_kwargs: {}
-    # fit_kwargs:
-    #   max_num_epochs: 300
-    #   nof_components: 4
+    fit_kwargs:
+      max_num_epochs: 300
+      #nof_components: 10
     sample_kwargs: {}
 
 analysis:
@@ -38,4 +38,7 @@ evaluation:
     name: gaussian
     params:
       mu: 0
-      sigma: 1.0
+      sigma: 0.1
+
+  metrics:
+    - name: "c2st"

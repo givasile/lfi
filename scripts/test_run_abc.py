@@ -26,7 +26,7 @@ nof_samples=100
 prior = lfi.priors.UniformPrior(prior_low, prior_high, dim=prior_dim)
 simulator = lfi.simulators.GaussianNoise(sigma_noise=simulator_sigma_noise, dim=prior_dim, dim_y = simulator_dim_y)
 obs=lfi.observations.Zeros(dim_y = simulator_dim_y, nof_observations=observation_nof_obs)
-observation = obs.sample(nof_obs=observation_nof_obs, dim_y=simulator_dim_y)
+observation = obs.sample()
 
 # define inference
 inference = lfi.inference.from_sbi_abc.SBI_MCABC(
