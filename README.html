@@ -1,0 +1,384 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<title>README.html</title>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+
+</head>
+
+<body>
+
+<h1 id="lfi">LFI</h1>
+<p><em>A Python package for likelihood-free inference (LFI)
+methods.</em></p>
+<h2 id="how-it-works">How It Works</h2>
+<p><code>lfi</code> follows a structured pipeline consisting of four
+main stages:</p>
+<pre class="mermaid"><code>graph LR;
+  A[&quot;`🚀 **Modeling:**&lt;br&gt;&lt;br&gt; - Simulator &lt;br&gt; - Prior &lt;br&gt; - Observation`&quot;] --&gt; B[&quot;🚀 **Inference**&quot; &lt;br&gt;&lt;br&gt; - Inference Method]
+  B --&gt; C[&quot;`🚀 **Analysis** &lt;br&gt;&lt;br&gt; - Plot posterior samples`&quot;]
+  B --&gt; D[&quot;`🚀 **Evaluation** &lt;br&gt;&lt;br&gt; - Ground truth &lt;br&gt; - Metrics`&quot;]</code></pre>
+<p>Simple example:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> lfi</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># set seed</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>np.random.seed(<span class="dv">42</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>torch.manual_seed(<span class="dv">42</span>)</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co"># modeling</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>prior <span class="op">=</span> lfi.priors.UniformPrior(dim<span class="op">=</span><span class="dv">2</span>, low<span class="op">=-</span><span class="dv">1</span>, high<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>simulator <span class="op">=</span> lfi.simulators.GaussianNoise(dim<span class="op">=</span><span class="dv">2</span>, dim_y<span class="op">=</span> <span class="dv">2</span>, sigma_noise<span class="op">=</span><span class="fl">0.1</span>)</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>observation <span class="op">=</span> np.array([[<span class="fl">0.5</span>, <span class="fl">0.5</span>]])</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="co"># inference</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>method <span class="op">=</span> lfi.inference.from_sbi.NPE_C_SingleRound(</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    prior<span class="op">=</span>prior,</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    simulator<span class="op">=</span>simulator,</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    observation<span class="op">=</span>observation</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>samples_inferred <span class="op">=</span> method.fit_and_sample(budget<span class="op">=</span><span class="dv">1000</span>, nof_samples<span class="op">=</span><span class="dv">100</span>)</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="co"># analysis</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>method.plot_posterior_samples(samples_inferred)</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a><span class="co"># evaluation</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>samples_gt <span class="op">=</span> lfi.ground_truth.Gaussian(</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>    dim<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>    mu<span class="op">=</span>np.array([<span class="fl">0.5</span>, <span class="fl">0.5</span>]),</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>    sigma<span class="op">=</span>np.array([[<span class="fl">0.1</span>, <span class="fl">0.1</span>]])</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>).sample(<span class="dv">100</span>)</span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>lfi.evaluation.c2st(samples_inferred, samples_gt)</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a><span class="co"># 0.54</span></span></code></pre></div>
+<h3 id="simulator">Simulator</h3>
+<p>Example usage:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>simulator <span class="op">=</span> lfi.simulators.GaussianNoise(sigma_noise<span class="op">=</span><span class="fl">0.1</span>)</span></code></pre></div>
+<p>Ready-to-use simulators are available in
+<code>lfi/simulators.py</code>:</p>
+<table>
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 82%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>gaussian_noise</code></td>
+<td><span
+class="math inline"><em>y</em> ∼ <em>θ</em> + <em>ϵ</em></span></td>
+</tr>
+<tr class="even">
+<td><code>bimodal_gaussian</code></td>
+<td><span
+class="math inline"><em>y</em> ∼ 0.5𝒩(<em>y</em>;<em>θ</em>−3,<em>σ</em><em>I</em>) + 0.5𝒩(<em>y</em>;<em>θ</em>+3,<em>σ</em><em>I</em>)</span></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>To implement a simulator from scratch, inherit the
+<code>BaseSimulator</code> class and implement the required methods</li>
+<li>There are four methods that you can implement:
+<code>sample_numpy</code>, <code>sample_pytorch</code>,
+<code>sample_jax</code>, and <code>return_elfi_callable</code>.</li>
+<li>There is no need to implement all of them. If you want to use a
+simulator with a specific inference method, you need to implement the
+corresponding method. Check the compatibility table below.</li>
+</ul>
+<p>Compatibility table:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Inference Class</th>
+<th>Path</th>
+<th>Simulator requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>SBI</td>
+<td><code>inference/from_sbi</code></td>
+<td><code>sample_pytorch</code></td>
+</tr>
+<tr class="even">
+<td>ELFI</td>
+<td><code>inference/from_elfi</code></td>
+<td><code>return_elfi_callable</code></td>
+</tr>
+<tr class="odd">
+<td>custom</td>
+<td><code>inference/custom</code></td>
+<td>depends on the method</td>
+</tr>
+</tbody>
+</table>
+<h3 id="step-1-define-the-inference-method">Step 1: Define the Inference
+Method</h3>
+<p>To define an inference method, specify the prior, simulator, and
+observation:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>method <span class="op">=</span> <span class="op">&lt;</span>LFI method<span class="op">&gt;</span>(prior, simulator, observation)</span></code></pre></div>
+<h3 id="step-2-perform-inference">Step 2: Perform Inference</h3>
+<p>To perform inference, Use the <code>fit</code> method. The only
+required parameter is the <code>budget</code>, which specifies the
+number of simulations the method can run. Additional parameters can also
+be passed, depending on the method.</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>method.fit(budget, <span class="op">**</span>kwargs)</span></code></pre></div>
+<h3 id="step-3-sample-from-the-posterior">Step 3: Sample from the
+Posterior</h3>
+<p>To generate samples from the estimated posterior, use the
+<code>sample</code> method. The only required parameter is
+<code>nof_samples</code>, with the desired number of samples to draw.
+Like <code>fit</code>, the <code>sample</code> method accepts additional
+parameters specific to the method.</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>samples <span class="op">=</span> method.sample(nof_samples, <span class="op">**</span>kwargs)</span></code></pre></div>
+<h3 id="shortcut-fit-and-sample-together">Shortcut: Fit and Sample
+Together</h3>
+<p>The <code>fit_sample</code> method combines the <code>fit</code> and
+<code>sample</code> steps, returning both the samples and the
+runtime.</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>samples, time <span class="op">=</span> method.fit_sample(budget, nof_samples, fit_kwargs<span class="op">=</span>{}, sample_kwargs<span class="op">=</span>{})</span></code></pre></div>
+<p>This simple interface makes it easy to use different LFI methods
+under a unified framework. All implemented methods should follow this
+interface, allowing for easy comparison and evaluation.</p>
+<h2 id="modeling">Modeling</h2>
+<h3 id="priors">Priors</h3>
+<p>Should inherit the <code>BasePrior</code> class (./lfi/priors.py) and
+implement:</p>
+<ul>
+<li><code>sample_numpy</code>:
+<code>def sample_numpy(self, nof_samples: int) -&gt; np.ndarray:</code></li>
+<li><code>sample_pytorch</code>:
+<code>def sample_pytorch(self, nof_samples: int) -&gt; torch.Tensor:</code></li>
+<li><code>sample_jax</code>:
+<code>def sample_jax(self, nof_samples: int, keys: List[PRNGKey]) -&gt; jnp.ndarray:</code></li>
+<li><code>return_sbi_object</code>: returns a <a
+href="https://github.com/sbi-dev/sbi/blob/6d527f7d951939605b34e649676262700062d027/sbi/utils/torchutils.py#L274"><code>sbi.Prior</code></a>
+object</li>
+<li><code>return_elfi_priors</code>: returns a list of <a
+href="https://github.com/elfi-dev/elfi/blob/dev/elfi/model/elfi_model.py#L857objects"><code>elfi.Prior</code></a>
+nodes</li>
+</ul>
+<p>Implemented Priors:</p>
+<table style="width:100%;">
+<colgroup>
+<col style="width: 9%" />
+<col style="width: 43%" />
+<col style="width: 15%" />
+<col style="width: 31%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Prior</th>
+<th>Description</th>
+<th>Name</th>
+<th>Parameters</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Uniform</td>
+<td>Multidimensional uniform prior</td>
+<td><code>uniform</code></td>
+<td><code>low</code>, <code>high</code>, <code>dim</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="simulators">Simulators</h3>
+<p>Should inherit the <code>BaseSimulator</code> class
+(./lfi/simulators.py) and implement:</p>
+<ul>
+<li><code>simulate_numpy</code>:
+<code>def simulate_numpy(self, theta: np.ndarray) -&gt; np.ndarray:</code></li>
+<li><code>simulate_pytorch</code>:
+<code>def simulate_pytorch(self, theta: torch.Tensor) -&gt; torch.Tensor:</code></li>
+<li><code>simulate_jax</code>:
+<code>def simulate_jax(self, theta: jnp.ndarray, keys: List[PRNGKey]) -&gt; jnp.ndarray:</code></li>
+<li><code>return_elfi_callable</code>: returns a callable with the
+signature
+<code>elfi_simulator(*th_params, batch_size=1, random_state=None): -&gt; np.ndarray</code>,
+i.e., it takes <span class="math inline"><em>D</em></span>
+<code>elfi.Prior</code> nodes as first arguments, then
+<code>batch_size</code> and <code>random_state</code> as keyword
+arguments, and returns a numpy array of shape <code>batch_size</code>
+and <code>random_state</code> as keyword arguments, and returns a numpy
+array of shape <code>(batch_size, D_y)</code>.</li>
+</ul>
+<p>Implemented simulators:</p>
+<table style="width:100%;">
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 65%" />
+<col style="width: 13%" />
+<col style="width: 9%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Simulator</th>
+<th>Description</th>
+<th>Name</th>
+<th>Parameters</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Gaussian Noise</td>
+<td><span
+class="math inline"><em>y</em> ∼ <em>θ</em> + <em>ϵ</em></span></td>
+<td><code>gaussian_noise</code></td>
+<td><code>sigma_noise</code></td>
+</tr>
+<tr class="even">
+<td>BimodalGaussian</td>
+<td><span
+class="math inline"><em>y</em> ∼ 0.5𝒩(<em>y</em>;<em>θ</em>−3,<em>σ</em><em>I</em>) + 0.5𝒩(<em>y</em>;<em>θ</em>+3,<em>σ</em><em>I</em>)</span></td>
+<td><code>bimodal_gaussian</code></td>
+<td><code>sigma_noise</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="observations">Observations</h3>
+<p>A <code>numpy.ndarray</code> of shape <code>(N, D_y)</code> where
+<code>N</code> is the number of observations and <code>D_y</code> is the
+dimensionality of the observations. Currently, most methods support a
+single observation.</p>
+<p>A list of implemented observations can be found in
+<code>./lfi/observations.py</code>.</p>
+<table>
+<thead>
+<tr class="header">
+<th>Observation</th>
+<th>Description</th>
+<th>Name</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Zeros</td>
+<td>Zero vector</td>
+<td><code>zeros</code></td>
+</tr>
+<tr class="even">
+<td>FromList</td>
+<td>List of observations</td>
+<td><code>from_list</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="example">Example</h3>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> lfi</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Define the prior</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>prior <span class="op">=</span> lfi.priors.Uniform(low<span class="op">=-</span><span class="dv">5</span>, high<span class="op">=</span><span class="dv">5</span>, dim<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Define the simulator</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>simulator <span class="op">=</span> lfi.simulators.GaussianNoise(sigma_noise<span class="op">=</span><span class="fl">0.1</span>)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Define the observation</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>observation <span class="op">=</span> lfi.observations.Zeros()</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>observation.sample(nof_obs<span class="op">=</span><span class="dv">1</span>, dim_y<span class="op">=</span><span class="dv">2</span>)</span></code></pre></div>
+<h2 id="inference">Inference</h2>
+<p><code>method.fit_and_sample(budget, nof_samples, fit_kwargs={}, sample_kwargs={})</code></p>
+<h3 id="implemented-methods">Implemented Methods</h3>
+<table>
+<colgroup>
+<col style="width: 4%" />
+<col style="width: 54%" />
+<col style="width: 4%" />
+<col style="width: 29%" />
+<col style="width: 7%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Method</th>
+<th>Description</th>
+<th>Name</th>
+<th>fit_kwargs</th>
+<th>sample_kwargs</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>NPE_A_SingleRound</code></td>
+<td><a
+href="https://sbi-dev.github.io/sbi/latest/reference/inference/#sbi.inference.trainers.npe.npe_a.NPE_A">NPE_A</a></td>
+<td><code>npe_a</code></td>
+<td><code>num_components</code>, <code>training_batch_size</code>,
+<code>max_num_epochs</code></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="install">Install</h2>
+<pre class="shell"><code>make conda-init ENV=dev REQUIREMENTS=requirements-dev.txt
+conda activate lfi-dev
+pip install --upgrade sbi
+pip install future</code></pre>
+<h2 id="project-organization">Project Organization</h2>
+<p>The project follows the cookiecutter data science project
+template.</p>
+<pre><code>├── LICENSE            &lt;- Open-source license if one is chosen
+├── Makefile           &lt;- Makefile with convenience commands like `make data` or `make train`
+├── README.md          &lt;- The top-level README for developers using this project.
+├── data
+│   ├── external       &lt;- Data from third party sources.
+│   ├── interim        &lt;- Intermediate data that has been transformed.
+│   ├── processed      &lt;- The final, canonical data sets for modeling.
+│   └── raw            &lt;- The original, immutable data dump.
+│
+├── docs               &lt;- A default mkdocs project; see www.mkdocs.org for details
+│
+├── models             &lt;- Trained and serialized models, model predictions, or model summaries
+│
+├── notebooks          &lt;- Jupyter notebooks. Naming convention is a number (for ordering),
+│                         the creator&#39;s initials, and a short `-` delimited description, e.g.
+│                         `1.0-jqp-initial-data-exploration`.
+│
+├── pyproject.toml     &lt;- Project configuration file with package metadata for 
+│                         sbi and configuration for tools like black
+│
+├── references         &lt;- Data dictionaries, manuals, and all other explanatory materials.
+│
+├── reports            &lt;- Generated analysis as HTML, PDF, LaTeX, etc.
+│   └── figures        &lt;- Generated graphics and figures to be used in reporting
+│
+├── requirements.txt   &lt;- The requirements file for reproducing the analysis environment, e.g.
+│                         generated with `pip freeze &gt; requirements.txt`
+│
+├── setup.cfg          &lt;- Configuration file for flake8
+│
+└── sbi   &lt;- Source code for use in this project.
+    │
+    ├── __init__.py             &lt;- Makes sbi a Python module
+    │
+    ├── config.py               &lt;- Store useful variables and configuration
+    │
+    ├── dataset.py              &lt;- Scripts to download or generate data
+    │
+    ├── features.py             &lt;- Code to create features for modeling
+    │
+    ├── modeling                
+    │   ├── __init__.py 
+    │   ├── predict.py          &lt;- Code to run model inference with trained models          
+    │   └── train.py            &lt;- Code to train models
+    │
+    └── plots.py                &lt;- Code to create visualizations</code></pre>
+<hr />
+
+</body>
+</html>

@@ -1,15 +1,86 @@
 # LFI 
 
-<a target="_blank" href="https://cookiecutter-data-science.drivendata.org/">
-    <img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" />
-</a>
-
 *A Python package for likelihood-free inference (LFI) methods.* 
 
-The `LFI` package is a collection of likelihood-free inference (LFI) methods 
-and providing a unified interface, despite the unique parameters and inner workings of each method.
-
 ## How It Works
+
+`lfi` follows a structured pipeline consisting of four main stages:
+
+```mermaid
+graph LR;
+  A["`🚀 **Modeling:**<br><br> - Simulator <br> - Prior <br> - Observation`"] --> B["🚀 **Inference**" <br><br> - Inference Method]
+  B --> C["`🚀 **Analysis** <br><br> - Plot posterior samples`"]
+  B --> D["`🚀 **Evaluation** <br><br> - Ground truth <br> - Metrics`"]
+```
+
+Simple example: 
+    
+```python
+import lfi
+import torch
+import numpy as np
+
+# set seed
+np.random.seed(42)
+torch.manual_seed(42)
+
+# modeling
+prior = lfi.priors.UniformPrior(dim=2, low=-1, high=1)
+simulator = lfi.simulators.GaussianNoise(dim=2, dim_y= 2, sigma_noise=0.1)
+observation = np.array([[0.5, 0.5]])
+
+# inference
+method = lfi.inference.from_sbi.NPE_C_SingleRound(
+    prior=prior,
+    simulator=simulator,
+    observation=observation
+)
+samples_inferred = method.fit_and_sample(budget=1000, nof_samples=100)
+
+# analysis
+method.plot_posterior_samples(samples_inferred)
+
+# evaluation
+samples_gt = lfi.ground_truth.Gaussian(
+    dim=2,
+    mu=np.array([0.5, 0.5]),
+    sigma=np.array([[0.1, 0.1]])
+).sample(100)
+lfi.evaluation.c2st(samples_inferred, samples_gt)
+# 0.54
+```
+
+### Simulator
+
+Example usage:
+
+``` python
+simulator = lfi.simulators.GaussianNoise(sigma_noise=0.1)
+```
+
+Ready-to-use simulators are available in `lfi/simulators.py`:
+
+| Name               | Description                                                                                  |
+|--------------------|----------------------------------------------------------------------------------------------|
+| `gaussian_noise`   | $y \sim \theta + \epsilon$                                                                   |
+| `bimodal_gaussian` | $y \sim 0.5 \mathcal{N}(y; \theta - 3, \sigma I) + 0.5 \mathcal{N}(y; \theta + 3, \sigma I)$ |
+
+
+- To implement a simulator from scratch, inherit the `BaseSimulator` class and implement the required methods
+- There are four methods that you can implement: `sample_numpy`, `sample_pytorch`, `sample_jax`, and `return_elfi_callable`.
+- There is no need to implement all of them. If you want to use a simulator with a specific inference method, you need to implement the corresponding method. Check the compatibility table below.
+
+Compatibility table:
+
+| Inference Class | Path                 | Simulator requirement  |
+|-----------------|----------------------|------------------------|
+| SBI             | `inference/from_sbi` | `sample_pytorch`       |
+| ELFI            | `inference/from_elfi`| `return_elfi_callable` |
+| custom          | `inference/custom`   | depends on the method  |
+
+
+
+
 
 ### Step 1: Define the Inference Method
 
@@ -77,7 +148,7 @@ Should inherit the `BaseSimulator` class (./lfi/simulators.py) and implement:
 - `simulate_jax`: `def simulate_jax(self, theta: jnp.ndarray, keys: List[PRNGKey]) -> jnp.ndarray:`
 - `return_elfi_callable`: returns a callable with the signature `elfi_simulator(*th_params, batch_size=1, random_state=None): -> np.ndarray`, i.e., it takes $D$ `elfi.Prior` nodes as first arguments, then `batch_size` and `random_state` as keyword arguments, and returns a numpy array of shape `batch_size` and `random_state` as keyword arguments, and returns a numpy array of shape `(batch_size, D_y)`.
 
-Implemented posteriors:
+Implemented simulators:
 
 | Simulator      | Description                                                                                  | Name               | Parameters   |
 |----------------|----------------------------------------------------------------------------------------------|--------------------|--------------|
