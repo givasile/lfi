@@ -132,8 +132,8 @@ class MultivariateGaussian(BaseSimulator):
     
 
 class TwoMoon(BaseSimulator):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, dim, dim_y):
+        super().__init__("TwoMoon", dim, dim_y)
 
     '''
     Two-moons simulator

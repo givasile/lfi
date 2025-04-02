@@ -16,3 +16,11 @@ class Zeros(BaseObservation):
     def sample(self, nof_obs: int = 1, dim_y: int = 1):
         return np.zeros((self.nof_observations, self.dim_y))
     
+
+class Ones(BaseObservation):
+    def __init__(self, dim_y: int, nof_observations: int):
+        super().__init__(name="ones", dim_y=dim_y, nof_observations=nof_observations)
+
+    def sample(self, nof_obs: int = 1, dim_y: int = 1):
+        return np.ones((self.nof_observations, self.dim_y))
+    

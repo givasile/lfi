@@ -55,13 +55,23 @@ def plot_pairwise_posterior(
     g = sns.pairplot(
         data = samples_df,
         hue="Type",
-        markers = ["o", "D"], 
         vars = selected_vars,
         kind='scatter',
         diag_kind='kde',
-        plot_kws={'alpha':0.5}, # Additional keyword argumnets for scatter plots
+        palette={"Inferred": "royalblue", "Ground truth": "crimson"},
+        plot_kws={"alpha":0.7, "s": 30},
     )
 
+    # --- KEY STEP: Adjust alpha per group ---
+    for ax in g.axes.flat:
+        if ax is not None:
+            for collection in ax.collections:
+                if collection.get_label() == "Inferred":
+                    collection.set_alpha(0.7)  # More opaque
+                elif collection.get_label() == "Ground truth":
+                    collection.set_alpha(0.2)  # More transparent
+                    collection.set_sizes([10])  # Optional: Smaller points
+        
     # Add the title if provided
     if title:
         g.fig.suptitle(title)
