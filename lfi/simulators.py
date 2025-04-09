@@ -4,32 +4,10 @@ import jax
 from jax import random
 import jax.numpy as jnp
 import scipy.stats as ss
+from scipy.integrate import solve_ivp
+from torchdiffeq import odeint
 
 
-
-class LinearSimulator:
-    def __init__(self, sigma_noise):
-        self.sigma_noise = sigma_noise
-
-    def simulate_numpy(self, theta, x):
-        return np.dot(theta, x) + np.random.normal(0, self.sigma_noise)
-
-    def simulate_jax(self, theta, x, keys):
-        """
-        Simulate data for multiple thetas and keys
-
-        Parameters:
-        - theta: ndarray, the parameters, shape (N, 2)
-        - x: ndarray, the input data, shape (2,)
-        - keys: ndarray, the random keys, shape (N, 2)
-        """
-        def simulate_one(theta, x, key):
-            return jnp.dot(theta, x) + jax.random.normal(key)*self.sigma_noise
-        return jax.vmap(simulate_one, in_axes=(0, None, 0))(theta, x, keys)
-    
-    def sample_pytorch(self, theta):
-        return torch.matmul(theta, self.x) + torch.randn_like(theta)*self.sigma_noise
-    
 
 class BaseSimulator:
     def __init__(self, name:str, dim: int, dim_y: int, **kwargs):
@@ -215,3 +193,86 @@ class TwoMoon(BaseSimulator):
 
 
 
+class LotkaVolterraSimulator(BaseSimulator):
+    def __init__(self, dim, dim_y, t_span=(0,30), n_steps=100, initial_conditions = (30.0, 5.0)):
+        '''
+        Parameters:
+        - t_span: simulation time range (start, end)
+        - n_steps: number of time points
+        - initial_conditions: fixed initial [x0, y0] (default: [30, 5])
+        '''
+        super().__init__("lotka_volterra", dim, dim_y) # dim = 4 (alpha, beta delta, gamma), dim_y = 2
+
+        self.t_span = t_span
+        self.n_steps = n_steps
+        self.initial_conditions = np.array(initial_conditions, dtype=np.float32)
+        self.time_points = np.linspace(t_span[0], t_span[1], n_steps)
+
+    def lotka_volterra_numpy(self, t, z, alpha, beta, delta, gamma):
+        ''' Numpy implementation of LV equaitons'''
+        x, y = z
+        dxdt = x * (alpha-beta*y)
+        dydt = delta*x*y - gamma*y
+        return [dxdt, dydt]
+
+    def lotka_volterra_torch(self, t, z, theta):
+        '''Pytorch implementation of LV equations'''
+        x, y = z[..., 0], z[..., 1]
+        alpha, beta, delta, gamma = theta[..., 0], theta[..., 1], theta[..., 2], theta[..., 3]
+        dxdt = alpha*x - beta*x*y
+        dydt = delta*x*y - gamma*y
+        return torch.stack([dxdt, dydt], dim=-1)
+
+    def sample_numpy(self, theta):
+        theta = np.asarray(theta)
+        single_sample = theta.ndim == 1
+        if single_sample:
+            theta = theta[np.newaxis, :]
+        
+        trajectories = np.zeros((theta.shape[0], self.n_steps, 2))
+
+        for i, (alpha, beta, delta, gamma) in enumerate(theta):
+            sol = solve_ivp(
+                fun = self.lotka_volterra_numpy,
+                t_span = self.t_span,
+                y0 = self.initial_conditions,
+                t_eval = self.time_points,
+                args = (alpha, beta, delta, gamma),
+                method = 'RK45'
+            )
+
+            trajectories [i] = sol.y.T
+
+        return trajectories[0] if single_sample else trajectories
+
+    def sample_pytorch(self, theta):
+        if not isinstance(theta, torch.Tensor):
+            theta = torch.tensor(theta, dtype=torch.float32)
+
+        single_sample = theta.ndim == 1
+        if single_sample:
+            theta = theta.unsqueeze(0)
+
+        # Create a modified LV function that captures theta
+        def lv_wrapper(t, z):
+            return self.lotka_volterra_torch(t, z, theta)
+
+
+        # Initial conditions (batch_size, 2)
+        y0 = torch.tensor(self.initial_conditions,
+                            dtype=torch.float32,
+                            device=theta.device).expand(theta.size(0), -1)
+        
+        # Solve ODE
+        trajectories = odeint(
+            func=lv_wrapper,
+            y0 = y0,
+            t = torch.linspace(*self.t_span, self.n_steps, device=theta.device),
+            method = 'dopri5'      
+        ).permute(1,0,2) # -> (batch, time, 2)
+
+        #return trajectories.squeeze(0) if single_sample else trajectories
+
+        # Flatten in 1D
+        flattened = trajectories.reshape(trajectories.shape[0], -1) # batch_size, n_steps*2)
+        return flattened.squeeze(0) if theta.ndim == 1 else flattened

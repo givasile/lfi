@@ -3,12 +3,13 @@ from sbi.utils.user_input_checks import check_sbi_inputs, process_prior, process
 from sbi.inference import simulate_for_sbi, NPE_C, FMPE, NPE_A
 import matplotlib.pyplot as plt
 import torch
-import sbi.analysis
 import sbi.neural_nets
 import numpy as np
 from .base import InferenceBase
 from lfi.priors import BasePrior
 from lfi.simulators import BaseSimulator
+from typing import Optional
+import torch.nn as nn
 
 class NPEBase(InferenceBase):
     def __init__(
@@ -17,8 +18,10 @@ class NPEBase(InferenceBase):
             prior: BasePrior,
             simulator: BaseSimulator, 
             observation: np.ndarray, # (1, Dy).
+            embedding_net: Optional[nn.Module] = None
     ):
         self.name = name
+        self.embedding_net = embedding_net
 
         # prepare prior and simulator
         sbi_prior, num_parameters, prior_returns_numpy = process_prior(prior.return_sbi_object())
@@ -61,8 +64,8 @@ class NPEBase(InferenceBase):
     
 
 class NPEASingleRound(NPEBase):
-    def __init__(self, prior, simulator, observation):       
-        super().__init__("npe_a_single_round", prior, simulator, observation)
+    def __init__(self, prior, simulator, observation, embedding_net=None):       
+        super().__init__("npe_a_single_round", prior, simulator, observation, embedding_net)
 
     def fit(self, budget: int = 1_000, fit_kwargs: dict = None):
 
@@ -70,16 +73,19 @@ class NPEASingleRound(NPEBase):
         default_kwargs = {
             "num_components": 10,
             "training_batch_size": 500,
-            "max_num_epochs": 1000,
+            "max_num_epochs": 1000,            
         }
         default_kwargs.update(fit_kwargs or {})
 
         # prepare dataset
         theta, x = simulate_for_sbi(self.simulator.sample_pytorch, self.prior.return_sbi_object(), num_simulations=budget)
 
+        if self.embedding_net is not None:
+            x = self.embedding_net(x) 
+        
         # fit the model
         self.inference_method = NPE_A(self.prior.return_sbi_object(),
-                                      num_components=default_kwargs["num_components"]
+                                      num_components=default_kwargs["num_components"],
                                       )
         
         _ = self.inference_method.append_simulations(theta, x).train(
@@ -100,8 +106,8 @@ class NPEASingleRound(NPEBase):
     #     return samples, toc - tic
     
 class NPECSingleRound(NPEBase):
-    def __init__(self, prior, simulator, observation):
-        super().__init__("npe_c_single_round", prior, simulator, observation)
+    def __init__(self, prior, simulator, observation, embedding_net: Optional[nn.Module] = None):
+        super().__init__("npe_c_single_round", prior, simulator, observation, embedding_net)
 
     def fit(self, budget: int = 100,
             fit_kwargs: dict=None
@@ -123,6 +129,9 @@ class NPECSingleRound(NPEBase):
 
         # prepare dataset
         theta, x = simulate_for_sbi(self.simulator.sample_pytorch, self.prior.return_sbi_object(), num_simulations=budget)
+
+        if self.embedding_net is not None:
+            x = self.embedding_net(x)
 
         # define the density estimator
         density_estimator = sbi.neural_nets.posterior_nn(

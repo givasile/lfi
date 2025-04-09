@@ -56,4 +56,25 @@ class UniformPrior(BasePrior):
     def return_elfi_objects(self):
         return [elfi.Prior("uniform", self.low, self.high) for _ in range(self.dim)]
     
+
+
+class NormalPrior(BasePrior):
+    def __init__(self, mean, std, dim):
+        self.mean = mean
+        self.std = std
+        self.dim = dim
+        super().__init__("normal", dim)
+
+    def sample_numpy(self, N):
+        return np.random.normal(self.mean, self.std, size = (N, self.dim)).astype(np.float32)
     
+    def sample_jax(self, N, keys):
+        def sample_one(key):
+            return random.normal(key, shape=(self.dim,), dtype=jnp.float32)*self.std + self.mean
+        return jax.vmap(sample_one)(keys)
+    
+    def sample_pytorch(self, N):
+        return torch.normal(self.mean*torch.ones(N, self.dim), self.std*torch.ones(N, self.dim))
+    
+    def return_elfi_objects(self):
+        return [elfi.Prior("normal", self.mean, self.std) for _ in range(self.dim)]
