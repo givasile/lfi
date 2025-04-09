@@ -42,23 +42,19 @@ class SBI_MCABC(InferenceBase):
         }
         default_kwargs.update(fit_kwargs or {})
 
-        self.inference_method = MCABC(self.prior.return_sbi_object(), 
-                                      self.simulator.sample_pytorch,
+        self.inference_method = MCABC(self.simulator.sample_pytorch,
+                                      self.prior.return_sbi_object(),
                                       distance = default_kwargs["distance"]
                                       )
 
     def sample(self, nof_samples: int = 100, sample_kwargs: dict=None):
-        budget = self.budget # Retrieve the budget stored in fit()
-        quantile = nof_samples / budget
-        param = self.prior.return_sbi_object().sample((1,))
-        print(param)
-        print(type(self.prior.return_sbi_object()))
+        quantile = nof_samples / self.budget
         self.posterior = self.inference_method(
-            self.observation,
-            num_simulations = budget,
-            quantile = quantile
+            x_o = torch.as_tensor(self.observation),
+            num_simulations = self.budget,
+            quantile=quantile
         )
-        return self.posterior.numpy()
+        return self.posterior
 
     
 

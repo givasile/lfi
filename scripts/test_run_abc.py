@@ -1,10 +1,3 @@
-import sys
-import os
-
-
-# Add the parent directory (lfi) to sys.path
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-
 import lfi
 import numpy as np
 import matplotlib.pyplot as plt
@@ -36,9 +29,9 @@ observation=observation
 )
 
 # run inference
-inference.fit()
+inference.fit(budget=budget)
 
-samples = inference.sample(budget = budget, nof_samples=nof_samples)
+samples = inference.sample(nof_samples=nof_samples)
 
 
 # analysis
