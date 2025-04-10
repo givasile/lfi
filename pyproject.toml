@@ -25,6 +25,7 @@ dependencies = [
   "pandas",
   "seaborn",
   "PyYAML",
+  "torchdiffeq",
 ]
 
 [tool.black]
