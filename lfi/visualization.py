@@ -11,6 +11,7 @@ def plot_pairwise_posterior(
         title: typing.Optional[str]=None,
         savefig: typing.Optional[str]=None,
         samples_gt: typing.Optional[np.ndarray]=None,
+        max_dims_to_plot: int = 10 
 ):
     """
     Plots pairwise relationships and marginal distributions of posterior samples.
@@ -23,7 +24,7 @@ def plot_pairwise_posterior(
                                     If None, limits are inferred automatically.
         title (str or None): Title of the plot. If None, no title is set.
         savefig (str or None): Path to save the plot. If None, the figure is not saved.
-    
+        max_dims_to_plot(int): Maximum number of dimensions to plot (default:10)
     Returns:
         sns.PairGrid: The Seaborn PairGrid object for further customization.
     """
@@ -31,6 +32,12 @@ def plot_pairwise_posterior(
     # Use all dimensions if subset_dim is None
     if subset_dims is None:
         subset_dims = list(range(samples.shape[1]))
+
+    # Limit the number of dimensions to plot if it exceeds max_dims_to_plot
+
+    if len(subset_dims) > max_dims_to_plot:
+        print(f"Warning: Only plotting first {max_dims_to_plot} dimensions, (requested {len(subset_dims)}). ")
+        subset_dims = subset_dims[:max_dims_to_plot]
 
     # Convert samples to DataFrame for easier handling with Seaborn
     samples_df = pd.DataFrame(samples, 
