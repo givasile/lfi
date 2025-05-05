@@ -54,28 +54,60 @@ class SBI_MCABC(InferenceBase):
             num_simulations = self.budget,
             quantile=quantile
         )
-        return self.posterior
+        return self.posterior.numpy()
 
     
 
-# class SBI_SMCABC(ABCBase):
-#     def __init__(self, prior, simulator, observation):
-#         super.__init__("SMCABC", prior, simulator, observation)
+class SBI_SMCABC(InferenceBase):
+    def __init__(
+            self,
+            prior:BasePrior,
+            simulator:BaseSimulator,
+            observation: np.ndarray, # (1, Dy)
+    ):
+        # prepare prior and simulator
+        sbi_prior, num_parameters, prior_returns_numpy = process_prior(prior.return_sbi_object())
+        sim = process_simulator(simulator.sample_pytorch, sbi_prior, prior_returns_numpy)
+        check_sbi_inputs(sim, sbi_prior)
 
-#     def fit(self, budget: int = 1000):
-#         pass
+        # Parameters dimension
+        dim = num_parameters
+        dim_y = observation.shape[1]
 
-#     def sample(self, nof_samples: int = 100, budget: int = 1000, epsilon_decay: float = 0.1):
-#         self.inference = SMCABC(self.prior, self.simulator)
-#         num_initial_pop = budget / 2
-#         self.posterior = self.inference(
-#             self.observation,
-#             num_particles = nof_samples,
-#             num_initial_pop = num_initial_pop,
-#             num_simulations = budget,
-#             epsilon_decay = epsilon_decay,
-#             )
+        self.inference_method = None
+        self.posterior = None
+        super().__init__("sbi_smcabc", prior, simulator, observation, dim, dim_y)
+
+    def fit(self, budget: int = 1000, fit_kwargs: dict=None):
+
+        self.budget = budget
+
+        # prepare arguments
+        default_kwargs = {
+            "distance": 'l2'
+            }
+        default_kwargs.update(fit_kwargs or {})
+
+        self.inference_method = SMCABC(self.simulator.sample_pytorch,
+                                       self.prior.return_sbi_object(),
+                                       distance = default_kwargs["distance"]
+                                       )
         
-#         return self.posterior
+    def sample(self, nof_samples: int = 100, sample_kwargs: dict=None):
         
+        default_kwargs = {
+            "num_initial_pop": int(0.1 * self.budget),
+            "epsilon_decay": 0.7,
+            "distance_based_decay": True
+           }
+        default_kwargs.update(sample_kwargs or {})
 
+        self.posterior = self.inference_method(
+            x_o = torch.as_tensor(self.observation),
+            num_particles = nof_samples,
+            num_initial_pop = default_kwargs["num_initial_pop"],
+            num_simulations = self.budget,
+            epsilon_decay = default_kwargs["epsilon_decay"],
+            distance_based_decay = default_kwargs["distance_based_decay"]
+        )
+        return self.posterior.numpy()
