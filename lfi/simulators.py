@@ -46,6 +46,57 @@ class GaussianNoise(BaseSimulator):
             return samples
         return elfi_simulator
 
+class GaussianNoiseDistractor(BaseSimulator):
+    def __init__(self, dim, dim_y, sigma_noise, distractor_dim, distractor_scale):
+        self.sigma_noise = sigma_noise
+        self.distractor_dim = distractor_dim
+        self.distractor_scale = distractor_scale
+        total_output_dim = dim_y + distractor_dim
+        super().__init__("gaussian noise with distractors", dim, total_output_dim)
+
+    def sample_numpy(self, theta, mu=None):
+        # Infromative part
+        y_info = np.random.normal(theta, self.sigma_noise)
+
+        # Distractor part
+        if mu is None:
+            mu = np.random.uniform(-10, 10, size=self.distractor_dim)
+        y_distractors = np.random.normal(mu, np.sqrt(self.distractor_scale))
+
+        return np.concatenate([np.atleast_1d(y_info), y_distractors])
+    
+    def sample_jax(self, theta, keys, mu=None):
+        # keys: one key per sample
+        def simulate_one(theta_val, key):
+            key_i, key_m, key_n = jax.random.split(key, 3)
+
+            # Informative part
+            y_info = theta_val + jax.random.normal(key_i)*self.sigma_noise
+
+            # Distractor part
+            if mu is None:
+                mu_val = jax.random.unifrom(key_m, (self.distractor_dim,), minval=-10.0, maxval=10.0)
+            else:
+                mu_val = mu # static value passed in (must be jnp.array)
+
+            noise = jax.random.normal(key_n, (self.distractor_dim,))
+            y_distractor = mu_val + noise * jnp.sqrt(self.distractor_scale)
+
+            return np.concatenate([np.atleast_1d(y_info), y_distractor])
+        
+        return jax.vmap(simulate_one)(theta, keys)
+
+    def sample_pytorch(self, theta, mu=None):
+        # Informative part
+        y_info = theta + torch.randn_like(theta)*self.sigma_noise
+
+        batch_size = theta.shape[0]
+        if mu == None:
+            mu = (torch.rand((batch_size, self.distractor_dim)) * 20.0) - 10.0
+        y_distractors = mu + torch.randn_like(mu) * np.sqrt(self.distractor_scale)
+
+        return torch.cat([y_info, y_distractors], dim=-1)
+         
 
 class BimodalGaussian(BaseSimulator):
     def __init__(self, dim, dim_y, sigma_noise):
@@ -136,7 +187,7 @@ class TwoMoon(BaseSimulator):
         # Step 3: Apply shift and rotation based on 0
         shift_x = -np.abs(theta[:, 0] + theta[:, 1]) / np.sqrt(2)
         shift_y = (-theta[:, 0] + theta[:, 1]) / np.sqrt(2)
-        shift = np.stack([px, py], axis=1)
+        shift = np.stack([shift_x, shift_y], axis=1)
 
         x = p + shift
 
