@@ -333,3 +333,8 @@ cython_debug/
 .idea/
 
 .venv-dev
+
+experiments/sbi-logs
+experiment_runs
+experiments/mlruns
+scripts/sbi-logs

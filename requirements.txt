@@ -6,4 +6,5 @@ loguru
 mkdocs
 python-dotenv
 mlflow
+torchdiffeq
 -e .

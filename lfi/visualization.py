@@ -57,7 +57,6 @@ def plot_pairwise_posterior(
     selected_vars = [f"x_{i+1}" for i in subset_dims]
 
 
-    plt.figure()
     # Create the pairplot
     g = sns.pairplot(
         data = samples_df,
@@ -96,3 +95,5 @@ def plot_pairwise_posterior(
     # Save the figure if a file path is specified
     if savefig is not None:
         g.savefig(savefig)
+
+    return g
