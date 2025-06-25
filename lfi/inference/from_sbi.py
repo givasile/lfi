@@ -11,6 +11,14 @@ from lfi.simulators import BaseSimulator
 from typing import Optional
 import torch.nn as nn
 
+# Comment: Not implemented yet
+# BayesFlow: Learning complex stochastic models with invertible neural networks
+# Truncated proposals for scalable and hassle-free simulation-based inference
+# Sequential version of NPE-C 
+# All in one simultion-based inference: https://arxiv.org/abs/2404.09636
+# Compositional Score Modeling for Simulation-Based Inference
+# Sequential Neural Score Estimation: Likelihood-Free Inference with Conditional Score Based Diffusion Models
+
 class NPEBase(InferenceBase):
     def __init__(
             self, 
@@ -40,7 +48,6 @@ class NPEBase(InferenceBase):
             raise ValueError("Posterior is not trained yet.")
         y = self.posterior.sample((nof_samples,), x=torch.Tensor(self.observation))
         return  y.detach().numpy()
-   
 
     def plot_training_summary(self, budget, savefig=None, num_components=None):
         fig, ax = plt.subplots()
@@ -61,10 +68,16 @@ class NPEBase(InferenceBase):
             plt.savefig(savefig)
         plt.show()
         return fig, ax
-    
 
 class NPEASingleRound(NPEBase):
-    def __init__(self, prior, simulator, observation, embedding_net=None):       
+    """
+    From the paper:
+    Fast \epsilon-free Inference of Simulation Models with Bayesian Conditional Density Estimation
+    Papamakarios, Murray
+
+    Uses the NPE-A implementation from the SBI library.
+    """
+    def __init__(self, prior, simulator, observation, embedding_net=None):
         super().__init__("npe_a_single_round", prior, simulator, observation, embedding_net)
 
     def fit(self, budget: int = 1_000, fit_kwargs: dict = None):
@@ -82,12 +95,12 @@ class NPEASingleRound(NPEBase):
 
         if self.embedding_net is not None:
             x = self.embedding_net(x) 
-        
+
         # fit the model
         self.inference_method = NPE_A(self.prior.return_sbi_object(),
                                       num_components=default_kwargs["num_components"],
                                       )
-        
+
         _ = self.inference_method.append_simulations(theta, x).train(
             training_batch_size=default_kwargs["training_batch_size"],
             max_num_epochs=default_kwargs["max_num_epochs"],
@@ -96,23 +109,19 @@ class NPEASingleRound(NPEBase):
 
         self.posterior = self.inference_method.build_posterior().set_default_x(torch.Tensor(self.observation))
         return self.posterior
-    
-    # def fit_and_sample(self, budget, num_samples, num_components = 10):
-    #     tic = timeit.default_timer()
-    #     self.fit(budget, num_components)
-    #     samples = self.sample(num_samples)
-    #     toc = timeit.default_timer()
-    #     print(f"\nTraining/Sampling time: {toc - tic:.2f} seconds")
-    #     return samples, toc - tic
-    
+
 class NPECSingleRound(NPEBase):
+    """
+    The Automatic posterior transformation for likelihood-free inference (NPE-C) inference method:
+    https://proceedings.mlr.press/v97/greenberg19a/greenberg19a.pdf
+    Uses the NPE-C implementation from the SBI library.
+    """
     def __init__(self, prior, simulator, observation, embedding_net: Optional[nn.Module] = None):
         super().__init__("npe_c_single_round", prior, simulator, observation, embedding_net)
 
     def fit(self, budget: int = 100,
             fit_kwargs: dict=None
             ):
-        
         # default arguments
         default_kwargs = {
             "model": "nsf",
@@ -146,7 +155,7 @@ class NPECSingleRound(NPEBase):
         self.inference_method = NPE_C(self.prior.return_sbi_object(),
                                       density_estimator=density_estimator
                                       )
-        
+
         _ = self.inference_method.append_simulations(theta, x).train(
             training_batch_size=default_kwargs["training_batch_size"],
             max_num_epochs=default_kwargs["max_num_epochs"],
@@ -155,36 +164,41 @@ class NPECSingleRound(NPEBase):
 
         self.posterior = self.inference_method.build_posterior().set_default_x(torch.Tensor(self.observation))
         return self.posterior
-    
-    # def fit_and_sample(self, budget, num_samples, density_estimator=None):
-    #     tic = timeit.default_timer()
-    #     self.fit(budget, density_estimator)
-    #     samples = self.sample(num_samples)
-    #     toc = timeit.default_timer()
-    #     print(f"\nTraining/Samling time: {toc - tic:.2f} seconds")
-    #     return samples, toc - tic
-    
+
 class FMPESingleRound(NPEBase):
+    """
+    The Flow Matching Posterior Estimation (FMPE) inference method:
+    https://proceedings.neurips.cc/paper_files/paper/2023/file/3663ae53ec078860bb0b9c6606e092a0-Paper-Conference.pdf
+    Uses the FMPE implementation from the SBI library.
+    """
     def __init__(self, prior, simulator, observation):
         super().__init__("fmpe_single_round", prior, simulator, observation)
 
-    def fit(self, 
+    def fit(self,
             budget: int=1000,
             fit_kwargs: dict = None
             ):
-        
+
         # default arguments
         default_kwargs = {
-            "training_batch_size":500,
+            "density_estimator": "mlp",
+            "training_batch_size": 500,
             "max_num_epochs": 1000,
         }
         default_kwargs.update(fit_kwargs or {})
-        
+
         # prepare dataset
-        theta, x = simulate_for_sbi(self.simulator.sample_pytorch, self.prior.return_sbi_object(), num_simulations=budget)
+        theta, x = simulate_for_sbi(
+            self.simulator.sample_pytorch,
+            self.prior.return_sbi_object(),
+            num_simulations=budget
+        )
 
         # fit the model
-        self.inference_method = FMPE(self.prior.return_sbi_object())
+        self.inference_method = FMPE(
+            self.prior.return_sbi_object(),
+            density_estimator=default_kwargs["density_estimator"],
+        )
 
         _ = self.inference_method.append_simulations(theta, x).train(
             training_batch_size=default_kwargs["training_batch_size"],
@@ -193,8 +207,3 @@ class FMPESingleRound(NPEBase):
 
         self.posterior = self.inference_method.build_posterior().set_default_x(torch.Tensor(self.observation))
         return self.posterior
-    
-                
-    
-
-
