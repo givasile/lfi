@@ -10,11 +10,14 @@ from lfi.priors import BasePrior
 from lfi.simulators import BaseSimulator
 from typing import Optional
 import torch.nn as nn
+from sbi.inference import NPE
+from sbi.utils import RestrictedPrior, get_density_thresholder
+
 
 # Comment: Not implemented yet
-# BayesFlow: Learning complex stochastic models with invertible neural networks
-# Truncated proposals for scalable and hassle-free simulation-based inference
-# Sequential version of NPE-C 
+# BayesFlow: Learning complex stochastic models with invertible neural networks (Priority to implement)
+# Truncated proposals for scalable and hassle-free simulation-based inference -> does not seem to be working
+# Sequential version of NPE-C -> should be treated with care for being stable enough
 # All in one simultion-based inference: https://arxiv.org/abs/2404.09636
 # Compositional Score Modeling for Simulation-Based Inference
 # Sequential Neural Score Estimation: Likelihood-Free Inference with Conditional Score Based Diffusion Models
@@ -42,6 +45,21 @@ class NPEBase(InferenceBase):
         self.inference_method = None
         self.posterior = None
         super().__init__(name, prior, simulator, observation, dim, dim_y)
+
+    def fit(self, budget: int = 1000, fit_kwargs: dict = None):
+        """Fit the posterior distribution to data.
+        This step may do nothing if the inference method does not require fitting, e.g. ABC methods.
+        Otherwise, it sets the self.posterior attribute with the fitted posterior distribution.
+
+        Args:
+            budget: Number of training samples to generate for fitting.
+            fit_kwargs: Method-specific arguments for modeling and fitting the posterior distribution.
+                Here can go arguments that will be used in one of:
+                    - <neural method>.__init__() for defining the inference method
+                    - <neural method>.train() for training the inference method
+                    - <neural method>.build_posterior() for building the posterior distribution
+        """
+        raise NotImplementedError("This method should be implemented in subclasses.")
 
     def sample(self, nof_samples: int = 100, sample_kwargs: dict = None):
         if self.posterior is None:
@@ -181,9 +199,9 @@ class FMPESingleRound(NPEBase):
 
         # default arguments
         default_kwargs = {
-            "density_estimator": "mlp",
-            "training_batch_size": 500,
-            "max_num_epochs": 1000,
+            "density_estimator": "mlp", # "mlp", "resnet" or a Callable that builds a density estimator
+            "training_batch_size": 500, # batch size for training the density estimator
+            "max_num_epochs": 1000, # maximum number of epochs for training the density estimator
         }
         default_kwargs.update(fit_kwargs or {})
 
@@ -206,4 +224,39 @@ class FMPESingleRound(NPEBase):
         )
 
         self.posterior = self.inference_method.build_posterior().set_default_x(torch.Tensor(self.observation))
+        return self.posterior
+
+
+class TSNPE(NPEBase):
+    """
+    The Truncated Sequential Neural Posterior Estimation (TSNPE) inference method:
+    https://arxiv.org/abs/2404.09636
+    Uses the TSNPE implementation from the SBI library.
+    """
+    def __init__(self, prior, simulator, observation):
+        super().__init__("tsnpe", prior, simulator, observation)
+
+    def fit(self,
+            budget: int = 1000,
+            fit_kwargs: dict = None
+            ):
+        # default arguments
+        default_kwargs = {
+            "num_rounds": 10,  # Number of rounds for sequential inference
+        }
+        default_kwargs.update(fit_kwargs or {})
+
+        inference = NPE(self.prior.return_sbi_object())
+        proposal = self.prior.return_sbi_object()
+        nof_new_samples = budget // default_kwargs["num_rounds"]
+        for _ in range(default_kwargs["num_rounds"]):
+            theta = proposal.sample((nof_new_samples,))
+            x = self.simulator.sample_pytorch(theta)
+            _ = inference.append_simulations(theta, x).train(force_first_round_loss=True)
+            posterior = inference.build_posterior().set_default_x(torch.Tensor(self.observation))
+
+            accept_reject_fn = get_density_thresholder(posterior, quantile=1e-3)
+            proposal = RestrictedPrior(self.prior.return_sbi_object(), accept_reject_fn, sample_with="rejection")
+
+        self.posterior = inference.build_posterior().set_default_x(torch.Tensor(self.observation))
         return self.posterior

@@ -6,5 +6,10 @@ loguru
 mkdocs
 python-dotenv
 mlflow
+numpy
+pandas
+sbi
+torch
+matplotlib
 torchdiffeq
 -e .

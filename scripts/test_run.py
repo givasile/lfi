@@ -1,13 +1,18 @@
+"""
+Tests lfi method using a simple Gaussian noise simulator, of D=5.
+All methods must succeed with this test.
+"""
+
 import lfi
 import numpy as np
 import matplotlib.pyplot as plt
 
-# modeling parameters 
+# modeling parameters
 low = -5
 high = 5
-dim = 10
+dim = 5
 sigma_noise = 0.1
-dim_y = 10
+dim_y = 5
 observation_nof_obs = 1
 shift_value = 2
 
@@ -15,6 +20,7 @@ shift_value = 2
 budget_runs = 10_000
 batch_size = 5_000
 budget = 10_000 # batch_size * budget_runs
+training_batch_size = 1000
 
 nof_samples = 100
 
@@ -50,18 +56,24 @@ observation = obs.sample() - 3.
 #     observation=observation
 # )
 
-inference = lfi.inference.from_sbi.FMPESingleRound(
+# inference = lfi.inference.from_sbi.FMPESingleRound(
+#     prior=prior,
+#     simulator=simulator,
+#     observation=observation
+# )
+
+inference = lfi.inference.from_sbi.TSNPE(
     prior=prior,
     simulator=simulator,
-    observation=observation
+    observation=observation,
 )
+
 
 # fit
 inference.fit(
     budget=budget,
     fit_kwargs = {
-        "density_estimator": "mlp",
-        "batch_size": batch_size,
+        "num_rounds": 3
     }
 )
 
