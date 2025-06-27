@@ -1,5 +1,5 @@
 """
-Tests lfi method using a simple Gaussian noise simulator, of D=5.
+Tests lfi method using a simple Gaussian noise simulator, of D=5 with distractors.
 All methods must succeed with this test.
 """
 
@@ -13,6 +13,10 @@ high = 5
 dim = 5
 sigma_noise = 1
 dim_y = 5
+distractor_dim = 50
+distractor_scale = 1.0
+distractor_mu_min = -10.0
+distractor_mu_max = 10.0
 observation_nof_obs = 1
 
 # inference parameters
@@ -30,14 +34,18 @@ prior = lfi.priors.UniformPrior(
     dim=dim
 )
 
-simulator = lfi.simulators.GaussianNoise(
+simulator = lfi.simulators.GaussianNoiseDistractor(
     dim=dim,
     dim_y=dim_y,
-    sigma_noise=sigma_noise
+    sigma_noise=sigma_noise,
+    distractor_dim=distractor_dim,
+    distractor_scale=distractor_scale,
+    distractor_mu_min=distractor_mu_min,
+    distractor_mu_max=distractor_mu_max
 )
 
 obs = lfi.observations.Zeros(
-    dim_y = dim_y,
+    dim_y = dim_y + distractor_dim,
     nof_observations=observation_nof_obs
 )
 observation = obs.sample() - 1.
@@ -83,7 +91,9 @@ inference = lfi.inference.from_sbi.BayesFlow(
 inference.fit(
     budget=budget,
     fit_kwargs = {
-        "embedding_net_output_dim": 3
+        "embedding_net_output_dim": 15,
+        "embedding_net_num_hiddens": 50,
+        "embedding_net_num_layers": 4,
     }
 )
 
@@ -93,8 +103,8 @@ samples = inference.sample(nof_samples=nof_samples)
 # Analysis
 
 # Generate 100 samples
-mean = observation[0]
-cov = np.eye(dim_y)*sigma_noise**2
+mean = observation[0][:dim]
+cov = np.eye(dim)*sigma_noise**2
 samples_gt = np.random.multivariate_normal(mean, cov, 100)
 
 g = lfi.visualization.plot_pairwise_posterior(

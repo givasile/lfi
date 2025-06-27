@@ -1,6 +1,6 @@
 """
 Tests lfi method using a simple Gaussian noise simulator, of D=5.
-All methods must succeed with this test.
+Tests using multiround training.
 """
 
 import lfi
@@ -10,16 +10,17 @@ import matplotlib.pyplot as plt
 # modeling parameters
 low = -5
 high = 5
-dim = 5
+dim = 30
 sigma_noise = 1
-dim_y = 5
+dim_y = 30
 observation_nof_obs = 1
 
 # inference parameters
 budget_runs = 10_000
 batch_size = 5_000
-budget = 5_000 # batch_size * budget_runs
+budget = 10_000 # batch_size * budget_runs
 training_batch_size = 1000
+num_rounds = 3
 
 nof_samples = 100
 
@@ -43,37 +44,7 @@ obs = lfi.observations.Zeros(
 observation = obs.sample() - 1.
 
 # SBI Inference
-# inference = lfi.inference.from_elfi.RejectionSampling(
-#     prior=prior,
-#     simulator=simulator,
-#     observation=observation
-# )
-
-# inference = lfi.inference.from_elfi.SMCRejection(
-#     prior=prior,
-#     simulator=simulator,
-#     observation=observation
-# )
-
-# inference = lfi.inference.from_sbi.FMPESingleRound(
-#     prior=prior,
-#     simulator=simulator,
-#     observation=observation
-# )
-
-# inference = lfi.inference.from_sbi.NPECSingleRound(
-#     prior=prior,
-#     simulator=simulator,
-#     observation=observation,
-# )
-
-# inference = lfi.inference.from_sbi.TSNPE(
-#     prior=prior,
-#     simulator=simulator,
-#     observation=observation,
-# )
-
-inference = lfi.inference.from_sbi.BayesFlow(
+inference = lfi.inference.from_sbi.NPECMultiRound(
     prior=prior,
     simulator=simulator,
     observation=observation,
@@ -83,7 +54,9 @@ inference = lfi.inference.from_sbi.BayesFlow(
 inference.fit(
     budget=budget,
     fit_kwargs = {
-        "embedding_net_output_dim": 3
+        'batch_size': batch_size,
+        'training_batch_size': training_batch_size,
+        'num_rounds': num_rounds,
     }
 )
 

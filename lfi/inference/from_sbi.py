@@ -4,6 +4,7 @@ from sbi.inference import simulate_for_sbi, NPE_C, FMPE, NPE_A
 import matplotlib.pyplot as plt
 import torch
 import sbi.neural_nets
+import sbi.neural_nets.embedding_nets
 import numpy as np
 from .base import InferenceBase
 from lfi.priors import BasePrior
@@ -15,9 +16,9 @@ from sbi.utils import RestrictedPrior, get_density_thresholder
 
 
 # Comment: Not implemented yet
-# BayesFlow: Learning complex stochastic models with invertible neural networks (Priority to implement)
-# Truncated proposals for scalable and hassle-free simulation-based inference -> does not seem to be working
+# BayesFlow: Learning complex stochastic models with invertible neural networks (done)
 # Sequential version of NPE-C -> should be treated with care for being stable enough
+# Truncated proposals for scalable and hassle-free simulation-based inference -> does not seem to be working
 # All in one simultion-based inference: https://arxiv.org/abs/2404.09636
 # Compositional Score Modeling for Simulation-Based Inference
 # Sequential Neural Score Estimation: Likelihood-Free Inference with Conditional Score Based Diffusion Models
@@ -130,7 +131,7 @@ class NPEASingleRound(NPEBase):
 
 class NPECSingleRound(NPEBase):
     """
-    The Automatic posterior transformation for likelihood-free inference (NPE-C) inference method:
+    The Automatic posterior transformation (APT) for likelihood-free inference (NPE-C) inference method:
     https://proceedings.mlr.press/v97/greenberg19a/greenberg19a.pdf
     Uses the NPE-C implementation from the SBI library.
     """
@@ -220,7 +221,72 @@ class FMPESingleRound(NPEBase):
 
         _ = self.inference_method.append_simulations(theta, x).train(
             training_batch_size=default_kwargs["training_batch_size"],
-            max_num_epochs=default_kwargs["max_num_epochs"]
+            max_num_epochs=default_kwargs["max_num_epochs"],
+            force_first_round_loss=True
+        )
+
+        self.posterior = self.inference_method.build_posterior().set_default_x(torch.Tensor(self.observation))
+        return self.posterior
+
+
+class BayesFlow(NPEBase):
+    """
+    The BayesFlow inference method:
+    https://arxiv.org/pdf/2003.06281
+    Uses the BayesFlow implementation from the SBI library.
+    """
+    def __init__(self, prior, simulator, observation):
+        super().__init__("bayes_flow", prior, simulator, observation)
+
+    def fit(self,
+            budget: int = 1000,
+            fit_kwargs: dict = None
+            ):
+        # default arguments
+        default_kwargs = {
+            "embedding_net_output_dim": 20,  # Output dimension of the embedding network
+            "embedding_net_num_layers": 2,  # Number of layers in the embedding network
+            "embedding_net_num_hiddens": 50,  # Number of hidden layers in the embedding network
+            "model": "nsf",
+            "hidden_features": 100,
+            "num_transforms": 8,
+            "z_score_x": "independent",
+            "z_score_theta": "independent",
+            "training_batch_size": 500,
+            "max_num_epochs": 1000,
+            "force_first_round": True,
+        }
+        default_kwargs.update(fit_kwargs or {})
+
+        # prepare dataset
+        theta, x = simulate_for_sbi(self.simulator.sample_pytorch, self.prior.return_sbi_object(), num_simulations=budget)
+
+        # fit the model
+        embedding_net = sbi.neural_nets.embedding_nets.FCEmbedding(
+            input_dim=self.dim_y,
+            output_dim=default_kwargs["embedding_net_output_dim"],
+            num_layers=default_kwargs["embedding_net_num_layers"],
+            num_hiddens=default_kwargs["embedding_net_num_hiddens"]
+        )
+
+        density_estimator = sbi.neural_nets.posterior_nn(
+            model=default_kwargs["model"],
+            hidden_features=default_kwargs["hidden_features"],
+            num_transforms=default_kwargs["num_transforms"],
+            z_score_x=default_kwargs["z_score_x"],
+            z_score_theta=default_kwargs["z_score_theta"],
+            embedding_net=embedding_net,
+        )
+
+        self.inference_method = sbi.inference.NPE(
+            self.prior.return_sbi_object(),
+            density_estimator=density_estimator,
+        )
+
+        _ = self.inference_method.append_simulations(theta, x).train(
+            training_batch_size=default_kwargs["training_batch_size"],
+            max_num_epochs=default_kwargs["max_num_epochs"],
+            force_first_round_loss=True
         )
 
         self.posterior = self.inference_method.build_posterior().set_default_x(torch.Tensor(self.observation))
@@ -260,3 +326,61 @@ class TSNPE(NPEBase):
 
         self.posterior = inference.build_posterior().set_default_x(torch.Tensor(self.observation))
         return self.posterior
+
+
+class NPECMultiRound(NPEBase):
+    """
+    The NPE-C multi-round inference method:
+    https://proceedings.mlr.press/v97/greenberg19a/greenberg19a.pdf
+    Uses the NPE-C implementation from the SBI library.
+    This is a multi-round version of the NPE-C method.
+    """
+    def __init__(self, prior, simulator, observation, embedding_net: Optional[nn.Module] = None):
+        super().__init__("npe_c_multi_round", prior, simulator, observation, embedding_net)
+
+    def fit(self, budget: int = 1000,
+            fit_kwargs: dict=None
+            ):
+        # default arguments
+        default_kwargs = {
+            "model": "nsf",
+            "hidden_features": 100,
+            "num_transforms": 8,
+            "z_score_x": "independent",
+            "z_score_theta": "independent",
+            "training_batch_size": 500,
+            "max_num_epochs": 1000,
+            "num_rounds": 10,  # Number of rounds for sequential inference
+        }
+
+        default_kwargs.update(fit_kwargs or {})
+
+        # define the density estimator
+        density_estimator = sbi.neural_nets.posterior_nn(
+            model=default_kwargs["model"],
+            hidden_features=default_kwargs["hidden_features"],
+            num_transforms=default_kwargs["num_transforms"],
+            z_score_x = default_kwargs["z_score_x"],
+            z_score_theta = default_kwargs["z_score_theta"]
+        )
+
+        inference = NPE_C(self.prior.return_sbi_object(),
+                          density_estimator=density_estimator
+                          )
+        proposal = self.prior.return_sbi_object()
+        nof_new_samples = budget // default_kwargs["num_rounds"]
+        for _ in range(default_kwargs["num_rounds"]):
+            theta = proposal.sample((nof_new_samples,))
+            x = self.simulator.sample_pytorch(theta)
+
+            _ = inference.append_simulations(theta, x, proposal).train(
+                training_batch_size=default_kwargs["training_batch_size"],
+                max_num_epochs=default_kwargs["max_num_epochs"],
+                force_first_round_loss=True
+            )
+
+            posterior = inference.build_posterior().set_default_x(torch.Tensor(self.observation))
+            proposal = posterior
+        self.posterior = posterior
+        return self.posterior
+

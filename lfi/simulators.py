@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import jax
+from dask.array import shape
 from jax import random
 import jax.numpy as jnp
 import scipy.stats as ss
@@ -13,11 +14,14 @@ class BaseSimulator:
     def __init__(self, name:str, dim: int, dim_y: int, **kwargs):
         self.name=name
         self.dim=dim
-        self.dim_y = dim_y    
+        self.dim_y = dim_y
+
     def sample_numpy(self, theta):
         raise NotImplementedError
+
     def sample_jax(self, theta, keys):
         raise NotImplementedError
+
     def sample_pytorch(self, theta):
         raise NotImplementedError
     
@@ -25,7 +29,7 @@ class BaseSimulator:
 class GaussianNoise(BaseSimulator):
     def __init__(self, dim, dim_y, sigma_noise):
         self.sigma_noise = sigma_noise
-        super().__init__("gaussian noise", dim, dim_y)
+        super().__init__("gaussian_noise", dim, dim_y)
 
     def sample_numpy(self, theta):
         return np.random.normal(theta, self.sigma_noise)
@@ -47,52 +51,65 @@ class GaussianNoise(BaseSimulator):
         return elfi_simulator
 
 class GaussianNoiseDistractor(BaseSimulator):
-    def __init__(self, dim, dim_y, sigma_noise, distractor_dim, distractor_scale):
+    def __init__(self,
+                 dim,
+                 dim_y,
+                 sigma_noise,
+                 distractor_dim,
+                 distractor_scale=None,
+                 distractor_mu_min=None,
+                 distractor_mu_max=None
+                 ):
         self.sigma_noise = sigma_noise
         self.distractor_dim = distractor_dim
-        self.distractor_scale = distractor_scale
+        self.distractor_scale = distractor_scale if distractor_scale is not None else 1.0
+        self.distractor_mu_min = distractor_mu_min if distractor_mu_min is not None else -5.
+        self.distractor_mu_max = distractor_mu_max if distractor_mu_max is not None else 5.
         total_output_dim = dim_y + distractor_dim
-        super().__init__("gaussian noise with distractors", dim, total_output_dim)
+        super().__init__("gaussian_noise_with_distractors", dim, total_output_dim)
 
-    def sample_numpy(self, theta, mu=None):
+    def sample_numpy(self, theta):
         # Infromative part
         y_info = np.random.normal(theta, self.sigma_noise)
 
         # Distractor part
-        if mu is None:
-            mu = np.random.uniform(-10, 10, size=self.distractor_dim)
+        mu = np.random.uniform(self.distractor_mu_min, self.distractor_mu_max, size=(theta.shape[0], self.distractor_dim))
         y_distractors = np.random.normal(mu, np.sqrt(self.distractor_scale))
 
-        return np.concatenate([np.atleast_1d(y_info), y_distractors])
-    
-    def sample_jax(self, theta, keys, mu=None):
-        # keys: one key per sample
-        def simulate_one(theta_val, key):
-            key_i, key_m, key_n = jax.random.split(key, 3)
+        # Concatenate informative and distractor parts
+        y = np.concatenate([np.atleast_1d(y_info), y_distractors], axis=-1)
+        return y
 
-            # Informative part
-            y_info = theta_val + jax.random.normal(key_i)*self.sigma_noise
+    # def sample_jax(self, theta, keys):
+    #     # keys: one key per sample
+    #     def simulate_one(theta_val, key):
+    #         key_i, key_m, key_n = jax.random.split(key, 3)
+    #
+    #         # Informative part
+    #         y_info = theta_val + jax.random.normal(key_i)*self.sigma_noise
+    #
+    #         # Distractor part
+    #         mu_val = jax.random.uniform(
+    #             key_m,
+    #             shape=(self.distractor_dim,),
+    #             minval=self.distractor_mu_min,
+    #             maxval=self.distractor_mu_max
+    #             )
+    #
+    #         noise = jax.random.normal(key_n, (self.distractor_dim,))
+    #         y_distractor = mu_val + noise * jnp.sqrt(self.distractor_scale)
+    #
+    #         return np.concatenate([np.atleast_1d(y_info), y_distractor])
+    #
+    #     return jax.vmap(simulate_one)(theta, keys)
 
-            # Distractor part
-            if mu is None:
-                mu_val = jax.random.unifrom(key_m, (self.distractor_dim,), minval=-10.0, maxval=10.0)
-            else:
-                mu_val = mu # static value passed in (must be jnp.array)
-
-            noise = jax.random.normal(key_n, (self.distractor_dim,))
-            y_distractor = mu_val + noise * jnp.sqrt(self.distractor_scale)
-
-            return np.concatenate([np.atleast_1d(y_info), y_distractor])
-        
-        return jax.vmap(simulate_one)(theta, keys)
-
-    def sample_pytorch(self, theta, mu=None):
+    def sample_pytorch(self, theta):
         # Informative part
         y_info = theta + torch.randn_like(theta)*self.sigma_noise
 
-        batch_size = theta.shape[0]
-        if mu == None:
-            mu = (torch.rand((batch_size, self.distractor_dim)) * 20.0) - 10.0
+        # Distractor part
+        mu = (torch.rand((theta.shape[0], self.distractor_dim)) * (self.distractor_mu_max - self.distractor_mu_min) +
+                  self.distractor_mu_min)
         y_distractors = mu + torch.randn_like(mu) * np.sqrt(self.distractor_scale)
 
         return torch.cat([y_info, y_distractors], dim=-1)
