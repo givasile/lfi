@@ -29,6 +29,14 @@ class BasePrior:
     def return_elfi_objects(self):
         raise NotImplementedError
     
+    def logpdf(self, x):
+        raise NotImplementedError
+
+    def pdf(self, x):
+        raise NotImplementedError
+
+    def has_mass(self, x):
+        return self.logpdf(x) > -jnp.inf
 
 
 class UniformPrior(BasePrior):
@@ -36,16 +44,17 @@ class UniformPrior(BasePrior):
         self.low = low
         self.high = high
         self.dim = dim
+
+        self.volume = np.prod(self.high - self.low)
+        self.log_volume = np.sum(np.log(self.high - self.low))
         super().__init__("uniform", dim)
 
     def sample_numpy(self, N):
         return np.random.uniform(self.low, self.high, size = (N, self.dim)).astype(np.float32)
     
-    def sample_jax(self, N, keys):
-        def sample_one(key):
-            return random.uniform(key, shape=(self.dim,), minval=self.low, maxval=self.high, dtype=jnp.float32)
-        return jax.vmap(sample_one)(keys)
-    
+    def sample_jax(self, key, shape):
+        return jax.random.uniform(key, (*shape, self.dim), minval=self.low, maxval=self.high)
+
     def sample_pytorch(self, N):
         return torch.rand(N, self.dim)*(self.high-self.low) + self.low
     
@@ -54,7 +63,17 @@ class UniformPrior(BasePrior):
     
     def return_elfi_objects(self):
         return [elfi.Prior("uniform", self.low, self.high - self.low) for _ in range(self.dim)]
-    
+
+    def logpdf(self, x):
+        marginal_inside = np.logical_and(x >= self.low, x <= self.high)
+        inside = np.all(marginal_inside, axis=-1)
+        return np.where(inside, -self.log_volume, -jnp.inf)
+
+    def pdf(self, x):
+        marginal_inside = np.logical_and(x >= self.low, x <= self.high)
+        inside = np.all(marginal_inside, axis=-1)
+        return np.where(inside, 1/self.volume, 0)
+
 
 
 class NormalPrior(BasePrior):

@@ -10,6 +10,7 @@ numpy
 pandas
 sbi
 torch
+optax
 matplotlib
 torchdiffeq
 -e .

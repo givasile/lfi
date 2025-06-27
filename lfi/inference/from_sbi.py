@@ -15,9 +15,15 @@ from sbi.inference import NPE
 from sbi.utils import RestrictedPrior, get_density_thresholder
 
 
-# Comment: Not implemented yet
+# Implemented methods:
+# NPE-A: Fast epsilon-free inference of simulation models with Bayesian conditional density estimation (done)
+# NPE-C: Automatic posterior transformation for likelihood-free inference (done)
+# Sequential version of NPE-C -> should be treated with care for being stable enough (done)
 # BayesFlow: Learning complex stochastic models with invertible neural networks (done)
-# Sequential version of NPE-C -> should be treated with care for being stable enough
+# FMPESingleRound: Flow Matching Posterior Estimation (done)
+
+
+# Comment: Not implemented yet
 # Truncated proposals for scalable and hassle-free simulation-based inference -> does not seem to be working
 # All in one simultion-based inference: https://arxiv.org/abs/2404.09636
 # Compositional Score Modeling for Simulation-Based Inference
