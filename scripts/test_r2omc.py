@@ -88,7 +88,7 @@ g = lfi.visualization.plot_pairwise_posterior(
 )
 plt.show()
 
-# Evaluation
-c2st = lfi.evaluation.c2st(samples, samples_gt)
-print(f"C2ST: {c2st}")
-#
+# # Evaluation
+# c2st = lfi.evaluation.c2st(samples, samples_gt)
+# print(f"C2ST: {c2st}")
+# #
