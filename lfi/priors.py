@@ -17,7 +17,7 @@ class BasePrior:
     def sample_numpy(self, N):
         raise NotImplementedError
     
-    def sample_jax(self, N, keys):
+    def sample_jax(self, key, shape):
         raise NotImplementedError
     
     def sample_pytorch(self, N):
@@ -45,8 +45,7 @@ class UniformPrior(BasePrior):
         self.high = high
         self.dim = dim
 
-        self.volume = np.prod(self.high - self.low)
-        self.log_volume = np.sum(np.log(self.high - self.low))
+        self.log_volume = np.log(high - low) * dim
         super().__init__("uniform", dim)
 
     def sample_numpy(self, N):

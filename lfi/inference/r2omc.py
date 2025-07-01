@@ -1,40 +1,36 @@
-from timeit import default_number
-
 import numpy as np
 import jax
-import timeit
-from typing import Callable, Optional, Tuple, Union
+from typing import Optional, Tuple
 import jax.numpy as jnp
 import optax
 import matplotlib.pyplot as plt
-from tqdm import tqdm
+from pyabc.distance.util import log_weights
+
 from .base import InferenceBase
 
 import lfi.simulators
 
+
 Dy: int  # dimension of simulator's output
 D: int  # dimension of simulator's input
-N: int  # number of samples
-S1: int  # number of seeds to generate
-S: int  # number of seeds to accept
-TH0: int  # number of theta_0 per seed to generate
-L: int # number of line search steps
 
+S_gen: int  # number of seeds to generate
+N_TH0: int  # number of theta_0 per seed to generate
+
+S_accept: int  # number of seeds to accept
+N_th0: int  # number of theta_0 per seed to generate
+
+N_per_region: int  # number of samples per region
+N: int  # number of samples
 
 class R2OMC(InferenceBase):
     def __init__(
             self,
             prior: lfi.priors.BasePrior,
             simulator: lfi.simulators.BaseSimulator,
-            observation: np.ndarray[Tuple[int]],
+            observation: np.ndarray, # (N, Dy)
     ):
-        """
-
-        Args:
-            simulator:
-            observation:
-            prior:
-            dim:
+        """ R2OMC Inference class for the R2OMC algorithm.
         """
         dim = prior.dim
         dim_y = observation.shape[-1]
@@ -58,51 +54,59 @@ class R2OMC(InferenceBase):
         self.prior = prior
 
         # Step: find_informative_dims
-        self.inf_dims_nof_th: Optional[int] = None
-        self.inf_dims_nof_seeds: Optional[int] = None
-        self.informative_dims: np.ndarray[bool] = np.ones(self.Dy)
+        self.informative_dims: np.ndarray = np.ones(self.Dy) # (Dy,)
 
         # Step: create_objective_functions
-        self.nof_seeds_total: Optional[int] = None
-        self.nof_th0: Optional[int] = None
-        self.seeds_init: Optional[np.ndarray[S1]] = None  # (S1,)
-        self.th0_init: Optional[np.ndarray[Tuple[S1, TH0, D]]] = None  # (S1, TH0, D)
-        self.d0_init: Optional[np.ndarray[Tuple[S1, TH0]]] = None  # (S1, TH0)
+        self.seeds_init: Optional[np.ndarray] = None  # (S1,)
+        self.th0_init: Optional[np.ndarray] = None  # (S1, TH0, D)
+        self.d0_init: Optional[np.ndarray] = None  # (S1, TH0)
 
         # Step: optimize
         self.nof_gd_steps: Optional[int] = None
         self.alpha: Optional[float] = None
-        self.th_star_init: Optional[np.ndarray[Tuple[S1, TH0, D]]] = None
-        self.d_star_init: Optional[np.ndarray[Tuple[S1, TH0]]] = None
+        self.th_star_init: Optional[np.ndarray] = None
+        self.d_star_init: Optional[np.ndarray] = None
+
+        # Step: filter_solutions_inside_prior
+        self.nof_seeds_total: Optional[int] = None
+        self.nof_seeds_inside_prior: Optional[int] = None
+        self.seeds_inside_prior: Optional[np.ndarray] = None
+        self.th_star_inside_prior: Optional[np.ndarray] = None
+        self.d_star_inside_prior: Optional[np.ndarray] = None
 
         # Step: filter_solutions
         self.nof_seeds_accept: Optional[int] = None
         self.eps_1: Optional[float] = None
-        self.seeds: Optional[np.ndarray[S]] = None
-        self.th0: Optional[np.ndarray[S, TH0, D]] = None
-        self.th_star: Optional[np.ndarray[S, TH0, D]] = None
-        self.d_star: Optional[np.ndarray[S, TH0]] = None
+        self.seeds: Optional[np.ndarray] = None
+        self.th0: Optional[np.ndarray] = None
+        self.th_star: Optional[np.ndarray] = None
+        self.d_star: Optional[np.ndarray] = None
 
         # Step: get_directions
-        self.hessians: Optional[np.ndarray[S, TH0, D, D]] = None
-        self.eig_val: Optional[np.ndarray[S, TH0, D]] = None
-        self.eig_vec: Optional[np.ndarray[S, TH0, D, D]] = None
+        self.hessians: Optional[np.ndarray] = None
+        self.eig_val: Optional[np.ndarray] = None
+        self.eig_vec: Optional[np.ndarray] = None
 
         # Step: get_boxes
         self.eps_2: Optional[float] = None
         self.nof_ls_steps = None
         self.step_size = None
-        self.limits: Optional[np.ndarray[S, TH0, D, 2]] = None
-        self.volumes: Optional[np.ndarray[S, TH0]] = None
-        self.weights: Optional[np.ndarray[S, TH0]] = None
+        self.limits: Optional[np.ndarray] = None
+        self.log_volumes: Optional[np.ndarray] = None
+        # self.weights: Optional[np.ndarray] = None
 
         # Step: weight_sample
-        self.eps_3: Optional[float] = None
-        self.samples_per_region: Optional[int] = None
-        self.samples: Optional[np.ndarray[S, TH0, N, D]] = None
-        self.samples_weights: Optional[np.ndarray[S, TH0, N]] = None
-        self.samples_flat: Optional[np.ndarray[S * TH0 * N, D]] = None
-        self.samples_weights_flat: Optional[np.ndarray[S * TH0 * N]] = None
+        self.samples: Optional[np.ndarray] = None # (S, N_th0, N_per_region, D) samples
+        self.samples_weights: Optional[np.ndarray] = None # (S, N_th0, N_per_region) weights
+        self.samples_flat: Optional[np.ndarray] = None # (S*N_th0*N_per_region, D) # samples flattened
+        self.samples_weights_flat: Optional[np.ndarray] = None # (S*N_th0*N_per_region,) # weights flattened
+
+        # Step: importance_resampling
+        self.samples_final: Optional[np.ndarray] = None  # (N, D), # final samples after importance resampling
+
+        # inputs
+        self.fit_kwargs: Optional[dict] = None
+        self.sample_kwargs: Optional[dict] = None
 
         super().__init__("R2OMC", prior, simulator, observation, dim, dim_y)
 
@@ -110,33 +114,29 @@ class R2OMC(InferenceBase):
             self,
             key: jnp.ndarray = jax.random.PRNGKey(21),
             inf_dims_nof_th: int = 100,
-            inf_dims_nof_seeds: int = 5
+            inf_dims_nof_seeds: int = 5,
+            inf_dims_threshold: float = 1e-5
     ):
-        # input
-        self.inf_dims_nof_th = inf_dims_nof_th
-        self.inf_dims_nof_seeds = inf_dims_nof_seeds
-
-        # function
         key, subkey = jax.random.split(key)
         thetas = self.prior.sample_jax(subkey, shape=[inf_dims_nof_th]) # (inf_dims_nof_th, D)
         key, subkey = jax.random.split(key)
         seeds = jax.random.randint(subkey, (inf_dims_nof_seeds,), 0, 2**31-1) # (inf_dims_nof_seeds,)
         dy_dth = jnp.abs(self.sim_jac_2(thetas, seeds)) # (inf_dims_nof_seeds, inf_dims_nof_th, Dy, D)
-        inf_dims = dy_dth.sum(axis=[0, 1, 3]) > 1e-3
+        inf_dims = dy_dth.mean(axis=[0, 1, 3])
+        inf_dims = inf_dims > inf_dims_threshold  # (Dy,)
         assert inf_dims.shape == (self.Dy,)
 
-        # output
+        # set informative dimensions
         self.informative_dims = inf_dims
-        self.sim.set_informative_dims(self.informative_dims)
+        self.sim.informative_dims = inf_dims # very important; set that to the simulator object
         return key
 
-    def create_objective_functions(
+    def sample_objective_functions(
             self,
             key,
             nof_seeds_total: int = 500,
             nof_th0: int = 10
     ):
-        # input
         self.nof_seeds_total = nof_seeds_total
         self.nof_th0 = nof_th0
 
@@ -166,14 +166,9 @@ class R2OMC(InferenceBase):
         return th0, d
 
     def optimize(self, nof_gd_steps=100, alpha=0.01):
-        # input
-        self.nof_gd_steps = nof_gd_steps
-        self.alpha = alpha
-
-        # function
         th_star_init = self.th_star_init
         d_star_init = self.d_star_init
-        for i, ss in enumerate(tqdm(self.seeds_init)):
+        for i, ss in enumerate(self.seeds_init):
             th_c, d_c = self.get_traj(jnp.array(th_star_init[i]), ss, self.y_0, nof_gd_steps, alpha)
             th_star_init[i] = np.array(th_c)
             d_star_init[i] = np.array(d_c)
@@ -182,29 +177,42 @@ class R2OMC(InferenceBase):
         self.th_star_init = th_star_init
         self.d_star_init = d_star_init
 
-    def filter_solutions(self, nof_seeds_accept: int = 500):
-        # input
-        assert nof_seeds_accept <= self.nof_seeds_total
-        self.nof_seeds_accept = nof_seeds_accept
-
+    def filter_solutions_inside_prior(self):
         # step 1: keep seeds with at least one theta_star inside prior
         th_star_flat = self.th_star_init.reshape((self.nof_seeds_total * self.nof_th0, self.D))
         th_star_inside_prior = self.prior.has_mass(th_star_flat).reshape((self.nof_seeds_total, self.nof_th0))
         seed_inside_prior = np.sum(th_star_inside_prior, axis=1) > 0
-        assert np.sum(seed_inside_prior) >= nof_seeds_accept, "Not enough seeds with at least one theta_star inside prior mass"
-        seeds = self.seeds_init[seed_inside_prior]
-        th_star = self.th_star_init[seed_inside_prior]
-        d_star = self.d_star_init[seed_inside_prior]
-
-        # step 2: sort by the best d_star and select the best nof_seeds_accept
-        best_dist_per_seed = d_star.min(axis=1) # best solution for each seed
-        accepted_indices = np.argsort(best_dist_per_seed)[:nof_seeds_accept] # indices of the best solutions
+        nof_seed_inside_prior = np.sum(seed_inside_prior)
 
         # output
-        self.eps_1 = best_dist_per_seed[accepted_indices][-1]
-        self.seeds = seeds[accepted_indices]
-        self.th_star = th_star[accepted_indices]
-        self.d_star = d_star[accepted_indices]
+        self.nof_seeds_inside_prior = nof_seed_inside_prior
+        self.seeds_inside_prior = self.seeds_init[seed_inside_prior]
+        self.th_star_inside_prior = self.th_star_init[seed_inside_prior]
+        self.d_star_inside_prior = self.d_star_init[seed_inside_prior]
+
+    def filter_solutions(self, pcg_to_keep: Optional[float] = 0.9, eps_1: Optional[float] = None):
+        assert pcg_to_keep is not None or eps_1 is not None, "pcg_to_keep or eps_1 must be provided"
+
+        # step 2: sort by the best d_star
+        best_dist_per_seed = self.d_star_inside_prior.min(axis=1)  # best solution for each seed
+
+        if pcg_to_keep is not None:
+            nof_seeds_accept = int(np.ceil(self.nof_seeds_total * pcg_to_keep))
+            assert nof_seeds_accept <= self.nof_seeds_inside_prior, "Not enough seeds inside prior for pcg_to_keep."
+            sorted_indices = np.argsort(best_dist_per_seed)  # indices of the best solutions
+            accepted_indices = sorted_indices[:nof_seeds_accept]  # indices of the best solutions
+            eps_1 = best_dist_per_seed[accepted_indices][-1]  # eps_1 is the distance of the worst accepted solution
+        else:
+            # accepted_indices only the ones with best_dist_per_seed <= eps_1
+            accepted_indices = np.where(best_dist_per_seed <= eps_1)[0] #
+            nof_seeds_accept = len(accepted_indices)
+
+        # step 3: filter solutions
+        self.nof_seeds_accept = nof_seeds_accept
+        self.eps_1 = eps_1
+        self.seeds = self.seeds_inside_prior[accepted_indices]
+        self.th_star = self.th_star_inside_prior[accepted_indices]
+        self.d_star = self.d_star_inside_prior[accepted_indices]
 
     def get_directions(self):
         self.hessians = np.zeros((self.nof_seeds_accept, self.nof_th0, self.D, self.D))
@@ -213,13 +221,6 @@ class R2OMC(InferenceBase):
         for i, ss in enumerate(self.seeds):
             self.hessians[i] = np.array(self.dist_hessian_1(self.th_star[i], ss, self.y_0))
             self.eig_val[i], self.eig_vec[i] = np.linalg.eig(self.hessians[i])
-
-    def check_eps_2(self, dx: float = 0.1):
-        eps_2 = 0.1
-        L = 1
-        step_size = dx
-        dd = self.get_boxes(eps_2, L, step_size, return_all=True)
-        return dd[:, :, :, [0, 2]]
 
     def _process_limit(self, is_inside_eps, step_size):
         L = is_inside_eps.shape[-1] - 1
@@ -232,20 +233,20 @@ class R2OMC(InferenceBase):
         last_inside[last_inside == -1] = 0.5  # if th_0 is false, then the max is 0.5
         return last_inside * step_size
 
-    def get_boxes(
-            self,
-            eps_2: float,
-            nof_ls_steps: int = 10,
-            step_size: float = 0.1,
-            return_all: bool = False
-    ):
-        self.step_size = step_size
-        self.nof_ls_steps = nof_ls_steps
-        self.eps_2 = eps_2
-        self.limits = np.zeros((self.nof_seeds_accept, self.nof_th0, self.D, 2))
+    def _get_distances(self, nof_ls_steps: int = 1, step_size: float = 0.1):
+        """Get distances for each seed and theta_0, for nof_ls_steps steps in each direction
+        with step_size each
+
+        Args:
+            nof_ls_steps: how many steps for each direction
+            step_size: how much to step in each direction
+
+        Returns:
+            distances: np.ndarray of shape (N_seed, N_th0, D, 2 * nof_ls_steps + 1)
+        """
         distances = np.zeros((self.nof_seeds_accept, self.nof_th0, self.D, 2 * nof_ls_steps + 1))
-        for i in tqdm(range(self.nof_seeds_accept)):
-            # find distances
+        for i in range(self.nof_seeds_accept):
+            # find query points
             query_points = np.zeros((self.nof_th0, self.D, 2 * nof_ls_steps + 1, self.D))
             th_star = self.th_star[i]
             for dim in range(self.D):
@@ -259,103 +260,103 @@ class R2OMC(InferenceBase):
                     steps_vec.append(affine)
                 query_points[:, dim, :, :] = np.array(steps_vec)
             query_points_flat = query_points.reshape(self.nof_th0 * self.D * (2 * nof_ls_steps + 1), self.D)
+
+            # find distances
             distances_seed = self.dist_1(query_points_flat, self.seeds[i], self.y_0)
             distances_seed = distances_seed.reshape(self.nof_th0, self.D, 2 * nof_ls_steps + 1)
             distances[i] = distances_seed
+        return distances
 
+    def get_boxes(self, eps_2: float, nof_ls_steps: int = 10, step_size: float = 0.1):
+        self.step_size = step_size
+        self.nof_ls_steps = nof_ls_steps
+        self.eps_2 = eps_2
+        self.limits = np.zeros((self.nof_seeds_accept, self.nof_th0, self.D, 2))
+
+        distances = self._get_distances(nof_ls_steps, step_size)
+
+        for i in range(self.nof_seeds_accept):
             # find min and max translation
-            is_inside_seed = np.array(distances_seed <= self.eps_2)
+            is_inside_seed = np.array(distances[i] <= self.eps_2)
             sliced_is_inside_seed = is_inside_seed[..., :nof_ls_steps + 1]
             reversed_sliced_dd_ind = np.flip(sliced_is_inside_seed, axis=-1)
             self.limits[i, :, :, 0] = -1 * self._process_limit(reversed_sliced_dd_ind, step_size)
             sliced_is_inside_seed = is_inside_seed[..., nof_ls_steps:]
             self.limits[i, :, :, 1] = self._process_limit(sliced_is_inside_seed, step_size)
+        self.log_volumes = np.sum(np.log(self.limits[:, :, :, 1] - self.limits[:, :, :, 0]), axis=2)
 
-        self.volumes = np.prod(self.limits[:, :, :, 1] - self.limits[:, :, :, 0], axis=(2))
-        self.weights = self.volumes / np.sum(self.volumes)
+    def get_boxes_blind(self, dx):
+        # just set limits to be dx away from the th_star
+        self.limits = np.zeros((self.nof_seeds_accept, self.nof_th0, self.D, 2))
+        self.limits[:, :, :, 0] = - dx
+        self.limits[:, :, :, 1] = dx
+        self.log_volumes = np.sum(np.log(2 * dx * np.ones((self.nof_seeds_accept, self.nof_th0, self.D))), axis=2)
 
-        if return_all:
-            return distances
+    def _get_samples_per_region(self, key, nof_samples, i_seed, i_th0, eps_3) -> Tuple[np.ndarray, np.ndarray]:
+        """Generates nof_samples from the i_seed and i_th0 region.
+        Returns the samples and their log weights.
+        """
+        limits = self.limits[i_seed, i_th0]     # shape (D, 2)
+        rotation = self.eig_vec[i_seed, i_th0]  # shape (D, D)
+        center = self.th_star[i_seed, i_th0]    # shape (D,)
 
-    def is_inside_region(self, samples, i_seed, i_th, eps_3):
-        # # input
-        # limits = self.limits[i_seed, i_th]
-        # rotation = self.eig_vec[i_seed, i_th]
-        # center = self.th_star[i_seed, i_th]
-        # volume = self.volumes[i_seed, i_th]
-        #
-        # # function
-        # samples_rot = np.dot(samples, rotation.T) - center
-        # term1 = samples_rot >= limits[:, 0]
-        # term2 = samples_rot <= limits[:, 1]
-        # is_inside_1 = np.all(term1, axis=-1) * np.all(term2, axis=-1)
+        # sample uniformly in the limits + rotate + translate
+        samples_init = jax.random.uniform(
+            key, shape=(nof_samples, self.D), minval=limits[:, 0], maxval=limits[:, 1]) # (N_per_region, D)
+        samples_rot = jnp.dot(samples_init, rotation) + center                          # (N_per_region, D)
 
-        is_inside_2 = self.dist_1(samples, self.seeds[i_seed], self.y_0) < eps_3
-        weights = self.prior.pdf(samples) * is_inside_2 # * is_inside_1 * volume
-        return weights
+        # compute weights
+        distances = self.dist_1(samples_rot, self.seeds[i_seed], self.y_0) # (N_per_region,)
+        log_prior = self.prior.logpdf(samples_rot) # (N_per_region,)
+        log_volume = self.log_volumes[i_seed, i_th0] # (N_per_region,)
+        is_inside =  distances < eps_3
+        log_mask = jnp.where(is_inside, 0.0, -jnp.inf) # (N_per_region,)
+        log_weights = log_prior + log_volume + log_mask # (N_per_region,)
+        return samples_rot, log_weights
 
-    def _get_samples_per_region(self, key, nof_samples, i_seed, i_th, eps_3):
-        limits = self.limits[i_seed, i_th]
-        rotation = self.eig_vec[i_seed, i_th]
-        center = self.th_star[i_seed, i_th]
-        volume = self.volumes[i_seed, i_th]
+    def weighted_sampling(self, sampling_seed, samples_per_region, eps_3=1.):
+        key = jax.random.PRNGKey(sampling_seed)
 
-        samples_init = jax.random.uniform(key, shape=(nof_samples, self.D), minval=limits[:, 0], maxval=limits[:, 1])
-        samples_rot = jax.numpy.dot(samples_init, rotation)
-        samples_rot = samples_rot + center
-
-        is_inside = self.dist_1(samples_rot, self.seeds[i_seed], self.y_0) < eps_3
-        w_1 = self.prior.pdf(samples_rot) > 0
-        # w_1 = self.prior.pdf(samples_rot)
-        weights = w_1 * is_inside * volume # * (limits[:,1] - limits[:,0]).mean() # volume
-        return samples_rot, weights
-
-    def weight_sample(self, seed, nof_samples, eps_3=10.):
-        self.eps_3 = eps_3
-        samples_per_region = int(np.ceil(nof_samples / (self.nof_seeds_accept * self.nof_th0)))
-
-        self.samples_per_region = samples_per_region
-        key = jax.random.PRNGKey(seed)
+        # iteration over seeds and theta_0 to draw samples
         samples = []
-        weights = []
+        log_weights = []
         for i_seed in range(self.seeds.shape[0]):
-            samples.append([])
-            weights.append([])
+            seed_samples = []
+            seed_log_weights = []
             for i_th in range(self.nof_th0):
                 key, subkey = jax.random.split(key)
-                reg_samples, reg_weights = self._get_samples_per_region(
-                    subkey,
-                    samples_per_region,
-                    i_seed,
-                    i_th,
-                    eps_3
-                )
-                samples[-1].append(reg_samples)
-                weights[-1].append(reg_weights)
+                reg_samples, reg_log_weights = self._get_samples_per_region(
+                    subkey, samples_per_region, i_seed, i_th, eps_3)
+                seed_samples.append(reg_samples)
+                seed_log_weights.append(reg_log_weights)
+            samples.append(seed_samples)
+            log_weights.append(seed_log_weights)
 
-        samples = np.array(samples)
+        # convert to numpy arrays
+        samples = np.array(samples) # (S_accept, N_th0, N_per_region, D)
+        log_weights = np.array(log_weights) # (S_accept, N_th0, N_per_region)
+
+        # Normalize weights in log-space for numerical stability
+        log_weights -= np.max(log_weights, axis=-1, keepdims=True)  # for numerical stability
+        weights = np.exp(log_weights)
+        weights /= np.sum(weights)
+
+        # store the samples and weights
         self.samples = samples
-        self.samples_flat = samples.reshape((self.nof_seeds_accept * self.nof_th0 * samples_per_region, self.D))
-
-        weights = np.array(weights)
-        weights = weights / np.sum(weights)
         self.samples_weights = weights
-        self.samples_weights_flat = weights.reshape((self.nof_seeds_accept * self.nof_th0 * samples_per_region,))
 
+        # flatten the samples and weights
+        self.samples_flat = samples.reshape((-1, self.D)) # (S_accept * N_th0 * N_per_region, D)
+        self.samples_weights_flat = weights.reshape((-1,)) # (S_accept * N_th0 * N_per_region,)
         return self.samples_flat, self.samples_weights_flat
 
-    @staticmethod
-    def importance_resampling(samples, weights, nof_samples, replace=True):
+    def importance_resampling(self, samples: np.ndarray, weights: np.ndarray, nof_samples: int, replace=False):
         if np.sum(weights > 0) < nof_samples:
             print("Not enough samples with positive weight")
             return samples[np.argsort(weights)[::-1]][:nof_samples]
-        indices = np.random.choice(
-            np.arange(samples.shape[0]),
-            size=nof_samples,
-            replace=replace,
-            p=weights
-        )
-        return samples[indices]
+        indices = np.random.choice(np.arange(samples.shape[0]), size=nof_samples, replace=replace, p=weights)
+        self.samples_final = samples[indices]
+        return self.samples_final
 
     def get_proposal_1d(self, th: np.ndarray, x_dim: int, return_indices=False):
         """Return the proposal distribution for a given dimension
@@ -416,88 +417,158 @@ class R2OMC(InferenceBase):
     def fit(self, budget: int = 1000, fit_kwargs: Optional[dict] = None):
         default_kwargs = {
             "fit_seed": 21,
+            # informative dimensions
             "find_informative_dims": True,
             "inf_dims_nof_th": 100,
             "inf_dims_nof_seeds": 50,
-            "nof_th0": 1,
+            "inf_dims_threshold": 1e-5,
+            # sample objective functions
             "nof_seeds_total": 1000,
-            "nof_seeds_accept": 1000,
+            "nof_th0": 1,
+            # optimize
+            "epochs": 4,
+            "alpha": 0.1,
             "nof_gd_steps": 50,
-            "alpha": 1.0,
-            "epochs": 8,
-            "dx": 1.0,
-            "eps_2": None,  # will be checked
+            # filter_solutions
+            "pcg_to_keep": .8,
+            "eps_1": None,  # will be checked
+            # get_boxes
+            "box_algorithm": "standard", # "standard" or "blind"
+            "dx": 0.1,
+            "eps_2": None,
             "nof_ls_steps": 100,
-            "step_size": .2,
-            # "sample_seed": 71,
-            # "nof_samples": 5000,
-            # "apply_importance_resampling": True,
-            # "nof_samples_final": 1000
+            "step_size": .01,
         }
 
-        default_kwargs.update(fit_kwargs or {})
-        fit_kwargs = default_kwargs
+        fit_kwargs = {**default_kwargs, **(fit_kwargs or {})}
+        self.fit_kwargs = fit_kwargs
 
-        # assert_fit_kwargs(fit_kwargs)
+        # inititalize the random key
         key = jax.random.PRNGKey(fit_kwargs["fit_seed"])
 
-        # Step: find informative dimensions
+        # Step 1: find informative dimensions
+        print("Step 1: find informative dimensions")
+        print("-----------------------------------")
         if fit_kwargs["find_informative_dims"]:
             key, subkey = jax.random.split(key)
             key = self.find_informative_dims(
                 key,
                 fit_kwargs["inf_dims_nof_th"],
-                fit_kwargs["inf_dims_nof_seeds"]
+                fit_kwargs["inf_dims_nof_seeds"],
+                fit_kwargs["inf_dims_threshold"]
             )
+        print(f"Informative dimensions: {np.sum(self.informative_dims)} out of {self.Dy}")
 
-        # Step: create objective functions
-        key = self.create_objective_functions(
-            key,
-            fit_kwargs["nof_seeds_total"],
-            fit_kwargs["nof_th0"]
+        # Step 2: optimize objective functions
+        print(f"\nStep 2: Optimization ({fit_kwargs['nof_seeds_total']}x{fit_kwargs['nof_th0']})")
+        print("---------------------------------")
+        key = self.sample_objective_functions(key, fit_kwargs["nof_seeds_total"], fit_kwargs["nof_th0"])
+
+        for epoch in range(fit_kwargs["epochs"]):
+            print(
+                f"Epoch {epoch + 1}/{fit_kwargs['epochs']}: "
+                f"Applying {fit_kwargs['nof_gd_steps']} gradient descent steps with alpha={fit_kwargs['alpha']}"
+            )
+            self.optimize(fit_kwargs["nof_gd_steps"], fit_kwargs["alpha"])
+
+        print("Statistics:")
+        print(
+            f"min: {self.d_star_init.min():.5f}, "
+            f"max: {self.d_star_init.max():.5f}, "
+            f"mean: {self.d_star_init.mean():.5f}, "
+            f"std: {self.d_star_init.std():.5f}"
         )
 
-        # Step: optimize
-        for i in range(fit_kwargs["epochs"]):
-            self.optimize(
-                fit_kwargs["nof_gd_steps"],
-                fit_kwargs["alpha"]
-            )
+        # Step 3: filter_solutions_inside_prior
+        print("\nStep 3: filter solutions inside prior")
+        print("---------------------------------")
+        self.filter_solutions_inside_prior()
+        print(f"Inside prior: {self.seeds_inside_prior.shape[0]}/{self.nof_seeds_total} seeds")
 
-        # Step: filter_solutions
-        self.filter_solutions(
-            fit_kwargs["nof_seeds_accept"]
-        )
-
-        # Step: get_directions
-        self.get_directions()
-
-        # Step: get_boxes
-        if "dx" in fit_kwargs.keys():
-            eps_2 = self.check_eps_2(fit_kwargs["dx"]).mean()
-        elif "eps_2" in fit_kwargs.keys():
-            eps_2 = fit_kwargs["eps_2"]
+        # Step 4: filter_solutions based on eps_1 or pcg_to_keep
+        if fit_kwargs["pcg_to_keep"] is not None:
+            print(f"\nStep 4: filter solutions ({fit_kwargs['pcg_to_keep'] * 100}% of seeds)")
         else:
-            raise ValueError("dx or eps_2 must be in fit_kwargs")
-        self.get_boxes(eps_2, fit_kwargs["nof_ls_steps"], fit_kwargs["step_size"])
+            print(f"\nStep 4: filter solutions (eps_1={fit_kwargs['eps_1']})")
+        print("---------------------------------")
+        self.filter_solutions(fit_kwargs["pcg_to_keep"], fit_kwargs["eps_1"])
+        print(f"Keep ({self.nof_seeds_accept}/{self.seeds_inside_prior.shape[0]} seeds), eps_1={self.eps_1:.5f}")
+        print("Statistics:")
+        print(
+            f"min: {self.d_star.min():.5f}, "
+            f"max: {self.d_star.max():.5f}, "
+            f"mean: {self.d_star.mean():.5f}, "
+            f"std: {self.d_star.std():.5f}"
+        )
+
+        # Step 5: find the directions for building the boxes
+        print("\nStep 5: get directions")
+        print("---------------------------------")
+        self.get_directions()
+        print("Done!")
+
+        # Step 6: build the bounding boxes
+        print(f"\nStep 6: Build bounding boxes - Algorithm: {fit_kwargs['box_algorithm']}")
+        print("---------------------------------")
+
+        if fit_kwargs["box_algorithm"] == "standard":
+            print(
+                f"Input: \n"
+                f"- eps_2={fit_kwargs['eps_2']} \n"
+                f"- dx={fit_kwargs['dx']} \n"
+                f"- nof_ls_steps={fit_kwargs['nof_ls_steps']} \n"
+                f"- step_size={fit_kwargs['step_size']}"
+            )
+            if fit_kwargs.get("dx") is not None:
+                eps_2 = self._get_distances(1, fit_kwargs["dx"]).mean()
+            elif fit_kwargs.get("eps_2") is not None:
+                eps_2 = fit_kwargs["eps_2"]
+            else:
+                raise ValueError("Either 'dx' or 'eps_2' must be provided in fit_kwargs.")
+
+            self.get_boxes(eps_2, fit_kwargs["nof_ls_steps"], fit_kwargs["step_size"])
+
+            print("Output:")
+            print(
+                f"Built {self.seeds.shape[0]} x {self.nof_th0} boxes: \n"
+                f"- eps_2={self.eps_2:.5f} (criterion)\n"
+                f"- dx={fit_kwargs['dx']:.5f}"
+            )
+        elif fit_kwargs["box_algorithm"] == "blind":
+            print(f"Input: \n- dx={fit_kwargs['dx']}")
+            self.get_boxes_blind(fit_kwargs["dx"])
+            print("Output:")
+            print(
+                f"Built {self.seeds.shape[0]} x {self.nof_th0} boxes: \n"
+                f"- dx={fit_kwargs['dx']:.5f} (criterion)"
+            )
 
     def sample(self, nof_samples: int = 100, sample_kwargs: Optional[dict] = None):
         default_kwargs = {
             "sample_seed": 71,
-            "eps_3": 10.0,
-            "nof_initial_samples": 1000,
-            "apply_importance_resampling": True
+            "eps_3": 1.0,
+            "samples_per_region": 10,
         }
         default_kwargs.update((sample_kwargs or {}))
         sample_kwargs = default_kwargs
+        self.sample_kwargs = sample_kwargs
 
-        # Step: weight_sample
-        self.samples, self.weights = self.weight_sample(
+        print("\nStep 7: Sample from the boxes")
+        print("-----------------------------")
+        print(
+            f"Input:\n"
+            f"- sample_seed={sample_kwargs['sample_seed']}\n"
+            f"- samples_per_region={sample_kwargs['samples_per_region']}\n"
+            f"- eps_3={sample_kwargs['eps_3']:.5f}"
+        )
+
+        samples, weights = self.weighted_sampling(
             sample_kwargs["sample_seed"],
-            sample_kwargs["nof_initial_samples"],
+            sample_kwargs["samples_per_region"],
             sample_kwargs["eps_3"]
         )
 
-        samples_r2omc = self.importance_resampling(
-            self.samples, self.weights, nof_samples, False)
+        samples_r2omc = self.importance_resampling(samples, weights, nof_samples, False)
+
+        print(f"Output:\n- Returned {samples_r2omc.shape[0]} weighted samples (after resampling)")
         return samples_r2omc

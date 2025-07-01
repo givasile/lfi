@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 # modeling parameters
 low = -5
 high = 5
-dim = 50
+dim = 1000
 sigma_noise = .1
-dim_y = 50
+dim_y = 1000
 observation_nof_obs = 1
 
 # inference parameters
@@ -47,11 +47,31 @@ inference = lfi.inference.r2omc.R2OMC(
 
 inference.fit(
     budget=budget,
-    fit_kwargs={"dx": 0.01}
+    fit_kwargs={
+        # informative dimensions
+        "find_informative_dims": True,
+        "inf_dims_nof_th": 1,
+        "inf_dims_nof_seeds": 5,
+        "inf_dims_threshold": 1e-5,
+        # training
+        "alpha": 0.1,
+        "eps_1": 0.5,
+        "pcg_to_keep": 1.,
+        "box_algorithm": "blind",
+        "dx": 0.01,
+        # "eps_2": None,
+        # "nof_ls_steps": 20,
+        # "step_size": 0.02
+        }
 )
 
 # # sample
-samples = inference.sample(nof_samples=nof_samples)
+samples = inference.sample(
+    nof_samples=nof_samples,
+    sample_kwargs={
+        "samples_per_region": 10
+    }
+)
 #
 # Analysis
 
