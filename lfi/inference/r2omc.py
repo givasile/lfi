@@ -118,7 +118,7 @@ class R2OMC(InferenceBase):
             inf_dims_threshold: float = 1e-5
     ):
         key, subkey = jax.random.split(key)
-        thetas = self.prior.sample_jax(subkey, shape=[inf_dims_nof_th]) # (inf_dims_nof_th, D)
+        thetas = self.prior.sample_jax(subkey, inf_dims_nof_th) # (inf_dims_nof_th, D)
         key, subkey = jax.random.split(key)
         seeds = jax.random.randint(subkey, (inf_dims_nof_seeds,), 0, 2**31-1) # (inf_dims_nof_seeds,)
         dy_dth = jnp.abs(self.sim_jac_2(thetas, seeds)) # (inf_dims_nof_seeds, inf_dims_nof_th, Dy, D)
@@ -144,7 +144,9 @@ class R2OMC(InferenceBase):
         key, subkey = jax.random.split(key)
         seeds_init = np.array(jax.random.randint(subkey, (nof_seeds_total,), 0, 2**31-1)) # (nof_seeds_total,)
         key, subkey = jax.random.split(key)
-        th0_init = self.prior.sample_jax(subkey, [nof_seeds_total, nof_th0]) # (nof_seeds_total, nof_th0, D)
+        NN = nof_seeds_total * nof_th0
+        th0_init = self.prior.sample_jax(subkey, NN) # (N, D)
+        th0_init = th0_init.reshape((nof_seeds_total, nof_th0, self.D))  # (nof_seeds_total, nof_th0, D)
         d0_init = np.array([self.dist_1(th0_init[i], seeds_init[i], self.y_0) for i in range(nof_seeds_total)]) # (nof_seeds_total, nof_th0)
 
         # output
@@ -423,7 +425,7 @@ class R2OMC(InferenceBase):
             "inf_dims_nof_seeds": 50,
             "inf_dims_threshold": 1e-5,
             # sample objective functions
-            "nof_seeds_total": 1000,
+            "nof_seeds_total": budget,
             "nof_th0": 1,
             # optimize
             "epochs": 4,

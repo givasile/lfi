@@ -1,4 +1,5 @@
 import torch
+import sbibm
 import pandas as pd
 from typing import List
 import numpy as np
@@ -20,6 +21,22 @@ class Gaussian(BaseGroundTruth):
     def sample(self, nof_samples: int):
         '''numpy code'''
         return np.random.normal(self.mu, self.sigma, (nof_samples, self.dim))
+
+
+class FromSBIBM(BaseGroundTruth):
+    def __init__(self, task_name, exp_num):
+        assert task_name in sbibm.get_available_tasks(), f"Task {task_name} is not available in SBIBM."
+        assert exp_num >= 1, "Experiment number must be greater than or equal to 1."
+        self.task = sbibm.get_task(task_name)
+        self.exp_num = exp_num
+        super().__init__(name="from_sbi", dim=self.task.dim_data)
+
+    def sample(self, nof_samples):
+        samples = self.task.get_reference_posterior_samples(self.exp_num).numpy()
+        samples = samples[np.random.permutation(samples.shape[0]), :]
+        if nof_samples < samples.shape[0]:
+            samples = samples[:nof_samples]
+        return samples
     
 
 class GaussianMixture(BaseGroundTruth):

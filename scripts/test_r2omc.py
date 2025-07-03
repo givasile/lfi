@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 # modeling parameters
 low = -5
 high = 5
-dim = 1000
+dim = 300
 sigma_noise = .1
-dim_y = 1000
+dim_y = 300
 observation_nof_obs = 1
 
 # inference parameters
@@ -89,6 +89,6 @@ g = lfi.visualization.plot_pairwise_posterior(
 plt.show()
 
 # # Evaluation
-# c2st = lfi.evaluation.c2st(samples, samples_gt)
-# print(f"C2ST: {c2st}")
-# #
+c2st = lfi.evaluation.c2st(samples, samples_gt)
+print(f"C2ST: {c2st}")
+#
