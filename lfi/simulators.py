@@ -5,8 +5,9 @@ from typing import Callable
 import jax.numpy as jnp
 import scipy.stats as ss
 from scipy.integrate import solve_ivp
-from torchdiffeq import odeint
 from scipy.ndimage import gaussian_filter
+from jax.experimental.ode import odeint
+
 
 class BaseSimulator:
     def __init__(self, name:str, dim: int, dim_y: int, **kwargs):
@@ -395,93 +396,6 @@ class TwoMoons(BaseSimulator):
         return x
         
     
-class LotkaVolterraSimulator(BaseSimulator):
-    def __init__(self, dim, dim_y, t_span=(0,30), n_steps=100, initial_conditions = (30.0, 5.0)):
-        '''
-        Parameters:
-        - t_span: simulation time range (start, end)
-        - n_steps: number of time points
-        - initial_conditions: fixed initial [x0, y0] (default: [30, 5])
-        '''
-        super().__init__("lotka_volterra", dim, dim_y) # dim = 4 (alpha, beta delta, gamma), dim_y = 2
-
-        self.t_span = t_span
-        self.n_steps = n_steps
-        self.initial_conditions = np.array(initial_conditions, dtype=np.float32)
-        self.time_points = np.linspace(t_span[0], t_span[1], n_steps)
-
-    def lotka_volterra_numpy(self, t, z, alpha, beta, delta, gamma):
-        ''' Numpy implementation of LV equaitons'''
-        x, y = z
-        dxdt = x * (alpha-beta*y)
-        dydt = delta*x*y - gamma*y
-        return [dxdt, dydt]
-
-    def lotka_volterra_torch(self, t, z, theta):
-        '''Pytorch implementation of LV equations'''
-        x, y = z[..., 0], z[..., 1]
-        alpha, beta, delta, gamma = theta[..., 0], theta[..., 1], theta[..., 2], theta[..., 3]
-        dxdt = alpha*x - beta*x*y
-        dydt = delta*x*y - gamma*y
-        return torch.stack([dxdt, dydt], dim=-1)
-
-    def sample_numpy(self, theta):
-        theta = np.asarray(theta)
-        single_sample = theta.ndim == 1
-        if single_sample:
-            theta = theta[np.newaxis, :]
-        
-        trajectories = np.zeros((theta.shape[0], self.n_steps, 2))
-
-        for i, (alpha, beta, delta, gamma) in enumerate(theta):
-            sol = solve_ivp(
-                fun = self.lotka_volterra_numpy,
-                t_span = self.t_span,
-                y0 = self.initial_conditions,
-                t_eval = self.time_points,
-                args = (alpha, beta, delta, gamma),
-                method = 'RK45'
-            )
-
-            trajectories [i] = sol.y.T
-
-        return trajectories[0] if single_sample else trajectories
-
-    def sample_pytorch(self, theta):
-        if not isinstance(theta, torch.Tensor):
-            theta = torch.tensor(theta, dtype=torch.float32)
-
-        single_sample = theta.ndim == 1
-        if single_sample:
-            theta = theta.unsqueeze(0)
-
-        # Create a modified LV function that captures theta
-        def lv_wrapper(t, z):
-            return self.lotka_volterra_torch(t, z, theta)
-
-
-        # Initial conditions (batch_size, 2)
-        y0 = torch.tensor(self.initial_conditions,
-                            dtype=torch.float32,
-                            device=theta.device).expand(theta.size(0), -1)
-        
-        # Solve ODE
-        trajectories = odeint(
-            func=lv_wrapper,
-            y0 = y0,
-            t = torch.linspace(*self.t_span, self.n_steps, device=theta.device),
-            method = 'dopri5'      
-        ).permute(1,0,2) # -> (batch, time, 2)
-
-        #return trajectories.squeeze(0) if single_sample else trajectories
-
-        # Flatten in 1D
-        flattened = trajectories.reshape(trajectories.shape[0], -1) # batch_size, n_steps*2)
-        return flattened.squeeze(0) if theta.ndim == 1 else flattened
-
-
-
-
 class ImageNoise(BaseSimulator):
     def __init__(self, dim, dim_y, H, W, sigma_blur=1.0, sigma_noise=0.5):
         self.H = H
@@ -563,8 +477,8 @@ class ImageNoise(BaseSimulator):
 
         # 3. Sigmoid contrast enhancement: y = 1/(1+exp(-k*(x-0.5)))
         # Approximately invertible: x = 0.5 + (1/k)*log(y/(1-y))
-        k = 5.0  # steepness parameter
-        blurred = 1.0 / (1.0 + jnp.exp(-k * (blurred - 0.5)))
+        # k = 5.0  # steepness parameter
+        # blurred = 1.0 / (1.0 + jnp.exp(-k * (blurred - 0.5)))
 
         # 4. Linear contrast and brightness: y = a*x + b
         # Invertible: y = a*x + b, inverse: x = (y-b)/a
@@ -608,3 +522,274 @@ class ImageNoise(BaseSimulator):
         noisy_images = blurred + noise
 
         return noisy_images.reshape(N, D)
+
+
+class ImagePixelWiseTransform(BaseSimulator):
+    def __init__(self, dim, dim_y, H, W, sigma_noise=0.5):
+        self.H = H
+        self.W = W
+        self.sigma_noise = sigma_noise
+        super().__init__("image_noise", dim, dim_y)
+
+    def sample_jax(self, theta: jax.Array, seed: int) -> jax.Array:
+        """
+        Simulates sensor output from a clean image by applying blur and noise.
+        Args:
+            theta: (D,) - Flat clean image.
+            seed: Random seed for noise generation.
+        Returns:
+            (D,) - Flat noisy, blurred image.
+        """
+        # seed to key
+        key = jax.random.PRNGKey(seed)
+        theta = jnp.asarray(theta)
+
+        # Reshape to image dimensions
+        image = theta.reshape((self.H, self.W))
+
+        # Invertible transformations (uncomment to use):
+
+        # 1. Pixel scale compression: [0,1] -> [0.45,0.55]
+        # Invertible: y = x/10 + 0.5, inverse: x = 10*(y - 0.5)
+        image = image / 10.0 + 0.5
+
+        # 2. Gamma correction (power law): y = x^gamma
+        # Invertible: y = x^gamma, inverse: x = y^(1/gamma)
+        # gamma = 0.8  # < 1 brightens, > 1 darkens
+        # image = jnp.power(jnp.clip(image, 0, 1), gamma)
+
+        # 3. Sigmoid contrast enhancement: y = 1/(1+exp(-k*(x-0.5)))
+        # Approximately invertible: x = 0.5 + (1/k)*log(y/(1-y))
+        # k = 5.0  # steepness parameter
+        # image = 1.0 / (1.0 + jnp.exp(-k * (image - 0.5)))
+
+        # 4. Linear contrast and brightness: y = a*x + b
+        # Invertible: y = a*x + b, inverse: x = (y-b)/a
+        # a, b = 0.2, 0.5  # contrast and brightness
+        # image = a * image + b
+        # image = image.at[0, 0].set(0.0)
+
+        # 5. Histogram equalization approximation (piecewise linear)
+        # Approximately invertible through lookup table
+        # breakpoints = jnp.array([0.0, 0.3, 0.7, 1.0])
+        # values = jnp.array([0.0, 0.6, 0.8, 1.0])
+        # image = jnp.interp(image, breakpoints, values)
+
+        # Add Gaussian noise
+        key, subkey = jax.random.split(key)
+        noise = self.sigma_noise * jax.random.normal(subkey, shape=(self.H, self.W))
+        noisy_image = image + noise
+
+        return noisy_image.flatten()
+
+    def sample_pytorch(self, theta: torch.Tensor):
+        """
+        Simulates sensor output from a clean image by applying blur and noise.
+        Args:
+            theta: (N, D) - Flat clean images, where N is the batch size and D is the flattened image size.
+        Returns:
+            (N, D) - Flat noisy, blurred images.
+        """
+        N, D = theta.shape
+        H = W = int(np.sqrt(D))
+
+        # Reshape all images at once
+        images = theta.reshape(N, H, W)
+
+        # Change the pixel values
+        images = images / 10.0 + 0.5
+
+        # Add Gaussian noise to all images
+        noise = torch.randn((N, H, W)) * self.sigma_noise
+        noisy_images = images + noise
+
+        return noisy_images.reshape(N, D)
+
+    def sample_numpy(self, theta: np.ndarray):
+        """
+        Simulates sensor output from a clean image by applying blur and noise.
+        Args:
+            theta: (N, D) - Flat clean images, where N is the batch size and D is the flattened image size.
+        Returns:
+            (N, D) - Flat noisy, blurred images.
+        """
+        N, D = theta.shape
+        H = W = int(np.sqrt(D))
+
+        # Reshape all images at once
+        images = theta.reshape(N, H, W)
+
+        # Change the pixel values
+        images = images / 10.0 + 0.5
+
+        # Add Gaussian noise to all images
+        noise = np.random.normal(loc=0.0, scale=self.sigma_noise, size=(N, H, W))
+        noisy_images = images + noise
+
+        return noisy_images.reshape(N, D)
+
+
+class LotkaVolterra(BaseSimulator):
+    def __init__(self,
+                 dim,
+                 dim_y,
+                 t_span=(0, 30),
+                 n_steps=100,
+                 initial_conditions=(30.0, 5.0)
+                 ):
+        '''
+        Lotka-Volterra simulator.
+        Parameters:
+        - t_span: simulation time range (start, end)
+        - n_steps: number of time points
+        - initial_conditions: fixed initial [x0, y0] (default: [30, 5])
+        '''
+        super().__init__("lotka_volterra", dim, dim_y) # dim = 4 (alpha, beta delta, gamma), dim_y = 2
+
+        self.t_span = t_span
+        self.n_steps = n_steps
+        self.initial_conditions = np.array(initial_conditions, dtype=np.float32)
+        self.time_points = np.linspace(t_span[0], t_span[1], n_steps)
+
+    def sample_jax(self, theta, seed):
+        """
+        Pure JAX Lotka-Volterra simulator for *one* parameter set.
+
+        Args:
+            theta: jnp.array of shape (4,) -> [alpha, beta, gamma, delta]
+
+        Returns:
+            jnp.array of shape (20,) -> subsampled log-normal observations
+        """
+
+        def lotka_volterra_ode_jax(u, t, params):
+            """
+            Lotka-Volterra differential equations.
+            u: [prey, predator]
+            t: time (not used because system is autonomous)
+            params: [alpha, beta, gamma, delta]
+            """
+            x, y = u
+            alpha, beta, gamma, delta = params
+            dxdt = alpha * x - beta * x * y
+            dydt = -gamma * y + delta * x * y
+            return jnp.array([dxdt, dydt])
+
+        # seed to key_i
+        key, subkey = jax.random.split(jax.random.PRNGKey(seed))
+
+        days = 20.0
+        saveat = 0.1
+        u0 = jnp.array([30.0, 1.0])  # initial [prey, predator]
+
+        # Full time grid: [0, 0.1, ..., 20.0]
+        t_eval = jnp.arange(0.0, days + saveat, saveat)  # shape (201,)
+
+        # Solve ODE
+        u_solution = odeint(lotka_volterra_ode_jax, u0, t_eval, theta)  # shape: (201, 2)
+
+        # Transpose to match your shape: (2, timepoints)
+        u_solution = u_solution.T  # shape: (2, 201)
+
+        # Subsample every 21st point, take first 10
+        subsample_indices = jnp.arange(0, u_solution.shape[1], 21)[:10]
+        u_subsampled = u_solution[:, subsample_indices]  # shape: (2, 10)
+
+        # Flatten interleaved [x0,y0,x1,y1,...]
+        u_flat = u_subsampled.flatten()  # shape: (20,)
+
+        # Clamp, log, sample from log-normal
+        u_clamped = jnp.clip(u_flat, 1e-10, 1e4)
+        log_loc = jnp.log(u_clamped)
+
+        # Use PRNG for reproducible noise — pass key externally in practice
+        # Here we generate a dummy key for illustration
+        key, subkey = jax.random.split(key)
+        normal_noise = jax.random.normal(subkey, shape=log_loc.shape) * 0.1
+        log_normal_samples = log_loc + normal_noise
+
+        return jnp.exp(log_normal_samples)
+
+    def sample_numpy(self, theta):
+        """
+        Pure NumPy implementation of Lotka-Volterra simulator
+
+        Args:
+            theta: numpy array of shape (num_samples, 4) containing parameters
+                    [alpha, beta, gamma, delta] for each sample
+
+        Returns:
+            numpy array of shape (num_samples, 20) containing subsampled log-normal observations
+        """
+        # Constants from original implementation
+        days = 20.0 # total time span in days
+        saveat = 0.1 # time resolution: save every 0.1 days
+        u0 = np.array([30.0, 1.0])  # Initial conditions [prey, predator]
+        tspan = (0.0, days) # Time span for integration
+        dim_data = 20  # For subsample summary
+
+        # Time points where we want the solution
+        t_eval = np.arange(0.0, days + saveat, saveat) # [0.0, 0.1, ..., 20.0]
+
+        num_samples = theta.shape[0]
+        results = np.full((num_samples, dim_data), np.nan) # prefils results with NaN
+
+        def lotka_volterra_ode_np(t, u, alpha, beta, gamma, delta):
+            """
+            Lotka-Volterra differential equation system
+            du/dt = [alpha*x - beta*x*y, -gamma*y + delta*x*y]
+            where u = [x, y] = [prey, predator]
+            """
+            x, y = u
+            dxdt = alpha * x - beta * x * y
+            dydt = -gamma * y + delta * x * y
+            return np.array([dxdt, dydt])
+
+        for i in range(num_samples):
+            alpha, beta, gamma, delta = theta[i]
+
+            try:
+                # Solve the ODE system
+                sol = solve_ivp(
+                    fun=lambda t, u: lotka_volterra_ode_np(t, u, alpha, beta, gamma, delta),
+                    t_span=tspan,
+                    y0=u0,
+                    t_eval=t_eval,
+                    method='RK45',
+                    rtol=1e-8,
+                    atol=1e-10
+                )
+
+                if sol.success and sol.y.shape[1] == len(t_eval):
+                    # Reshape solution: sol.y is (2, n_timepoints) = (2, 201) for 20 days with 0.1 step
+                    # We want to subsample every 21st point (::21) like in original
+                    u_solution = sol.y  # shape: (2, n_timepoints) = (2, 201)
+
+                    # Subsample every 21st point (equivalent to ::21 in original)
+                    # Original had int(dim_data_raw/2) = int(2*(20/0.1+1)/2) = int(202) = 201 timepoints
+                    # Subsampling ::21 gives us 10 points per species = 20 total points
+                    n_timepoints = u_solution.shape[1]
+                    subsample_indices = np.arange(0, n_timepoints, 21)[:10]  # Take first 10 subsampled points
+
+                    if len(subsample_indices) >= 10:
+                        u_subsampled = u_solution[:, subsample_indices[:10]]  # shape: (2, 10)
+
+                        u_flat = u_subsampled.flatten()  # shape: (20,) - interleaved [x0,y0,x1,y1,...]
+
+                        # Apply log-normal noise like in original
+                        # Original: LogNormal(loc=log(clamp(u, 1e-10, 10000)), scale=0.1)
+                        u_clamped = np.clip(u_flat, 1e-10, 10000.0)
+                        log_loc = np.log(u_clamped)
+
+                        # Sample from log-normal distribution
+                        # LogNormal(loc, scale) in PyTorch corresponds to
+                        # exp(Normal(loc, scale)) which is lognormal with log-scale parameterization
+                        normal_samples = np.random.normal(loc=log_loc, scale=0.1)
+                        results[i] = np.exp(normal_samples)
+
+            except Exception:
+                # If integration fails, leave as NaN (already initialized)
+                continue
+
+        return results
+

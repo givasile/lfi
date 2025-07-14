@@ -1,12 +1,13 @@
+import typing
+from typing import Union
+
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import sbi
 import sbi.utils
 import jax
-from jax import random
 import jax.numpy as jnp
-import typing
 import elfi
 import tensorflow_datasets as tfds
 from sklearn.neighbors import KernelDensity
@@ -77,6 +78,45 @@ class UniformPrior(BasePrior):
         return np.where(inside, 1/self.volume, 0)
 
 
+class LogNormal(BasePrior):
+    def __init__(self, dim, mean, std):
+        self.loc = mean
+        self.scale = std
+        super().__init__("lognormal", dim)
+
+    def sample_numpy(self, N):
+        z = np.random.normal(loc=self.loc, scale=self.scale, size=(N, self.dim))
+        return np.exp(z)
+
+    def sample_jax(self, key, N):
+        keys = jax.random.split(key, self.dim)
+        z = jnp.stack([
+            jax.random.normal(keys[i], shape=(N,)) * self.scale[i] + self.loc[i]
+            for i in range(self.dim)
+        ], axis=-1)
+        return jnp.exp(z)
+
+    def sample_pytorch(self, N):
+        dist = torch.distributions.LogNormal(
+            loc=torch.tensor(self.loc), scale=torch.tensor(self.scale)
+        )
+        return dist.sample((N,))
+
+    def logpdf(self, x):
+        # x: [..., 4]
+        # PDF of LogNormal: log(f(x)) = -log(x) + log Normal PDF of log(x)
+        logx = np.log(x)
+        norm_logpdf = -0.5 * (((logx - self.loc) / self.scale) ** 2) - np.log(self.scale) - 0.5 * np.log(2 * np.pi)
+        logpdf = np.sum(norm_logpdf - np.log(x), axis=-1)
+        return logpdf
+
+    def pdf(self, x):
+        return np.exp(self.logpdf(x))
+
+
+
+
+
 # class NormalPrior(BasePrior):
 #     def __init__(self, mean, std, dim):
 #         self.mean = mean
@@ -104,15 +144,13 @@ class ImageDatasetPrior(BasePrior):
                  dataset_name: str = "mnist",
                  split: str = "train",
                  nof_samples: int = 100,
-                 logpdf_method: str = "kde",
-                 bandwidth: float = 0.1
+                 bandwidth: float = 0.5
                  ):
         """
         Loads and prepares the dataset.
         """
         self.dataset_name = dataset_name
         self.split = split
-        self.logpdf_method = logpdf_method
         self.bandwidth = bandwidth
 
         self.kde = None
@@ -129,83 +167,59 @@ class ImageDatasetPrior(BasePrior):
         super().__init__(f"image_dataset_{dataset_name}_{split}", self.images.shape[1])
 
     def sample_jax(self, key: jax.Array, N: int) -> jax.Array:
-        """
-        Samples N images from the dataset.
-
-        Args:
-            N: Number of samples.
-            key: JAX PRNG key.
-
-        Returns:
-            Array of shape (N, D) with clean image samples.
-        """
         total = self.images.shape[0]
         key, subkey = jax.random.split(key)
-        indices = jax.random.choice(key, total, shape=(N,), replace=False)
+        replace = False if N <= total else True
+        indices = jax.random.choice(subkey, total, shape=(N,), replace=replace)
         return self.images[indices]
 
     def sample_numpy(self, N: int) -> np.ndarray:
         total = self.images.shape[0]
-        indices = np.random.choice(total, size=N, replace=False)
+        replace = False if N <= total else True
+        indices = np.random.choice(total, size=N, replace=replace)
         return np.array(self.images[indices])
 
-    def logpdf(self, theta: jax.Array) -> float:
-        """
-        Compute log-density at a single point θ of shape (D,).
-        Returns: float
-        """
-        if self.logpdf_method == "kde":
-            if self.kde is None:
-                self._fit_kde()
-            return self.kde.score_samples(np.array(theta))
-        elif self.logpdf_method == "gaussian":
-            diff = theta - self.mean
-            mahalanobis = diff @ self.precision @ diff
-            norm_const = -0.5 * (self.D * jnp.log(2 * jnp.pi) + self.log_det_cov)
-            return norm_const - 0.5 * mahalanobis
-        elif self.logpdf_method == "uniform":
-            if jnp.all((theta >= self.lower) & (theta <= self.upper)):
-                return -self.D * jnp.log(1.0)  # uniform over [0,1]^D
-            else:
-                return -jnp.inf
+    def sample_pytorch(self, N):
+        im = self.sample_numpy(N)
+        return torch.tensor(im, dtype=torch.float32)
 
-    def _fit_kde(self):
-        self.kde = KernelDensity(kernel='gaussian', bandwidth=self.bandwidth)
-        self.kde.fit(np.array(self.images))  # scikit-learn expects numpy
+    def return_sbi_object(self):
+        logpdf = self.logpdf
+        sample_pytorch = self.sample_pytorch
+        dim = self.dim
 
-    def _fit_gaussian(self):
-        data_np = np.array(self.images)
-        self.mean = jnp.array(data_np.mean(axis=0))
-        self.cov = jnp.array(np.cov(data_np.T))
-        self.precision = jnp.linalg.inv(self.cov)
-        self.log_det_cov = jnp.linalg.slogdet(self.cov)[1]
+        class SBIImageDatasetPrior:
+            def log_prob(self, theta: torch.Tensor) -> torch.Tensor:
+                theta = theta.numpy()
+                logprob = logpdf(theta)
+                return torch.tensor(logprob, dtype=torch.float32)
 
-    def _set_uniform_bounds(self):
-        self.lower = jnp.zeros(self.D)
-        self.upper = jnp.ones(self.D)
+            def sample(self, sample_shape: typing.Optional[torch.Size]):
+                if sample_shape is None:
+                    N = 1
+                    y = sample_pytorch(N)
+                    return y.squeeze()
+                else:
+                    N = int(np.prod(sample_shape))
+                    y = sample_pytorch(N)
+                    new_shape = list(sample_shape) + [dim]
+                    return y.reshape(new_shape)
+        return SBIImageDatasetPrior()
+
+    def logpdf(self, theta) -> float:
+        if self.kde is None:
+            self.kde = KernelDensity(kernel='gaussian', bandwidth=self.bandwidth)
+            self.kde.fit(np.array(self.images))  # scikit-learn expects numpy
+        return self.kde.score_samples(np.array(theta))
 
     def visualize_i(self, i: int):
-        """
-        Visualizes N samples from the dataset.
-
-        Args:
-            key: JAX PRNG key.
-            N: Number of samples to visualize.
-        """
         samples = self.images[i]
-        import matplotlib.pyplot as plt
         plt.figure(figsize=(5, 5))
         plt.imshow(samples.reshape(28, 28), cmap='gray')
         plt.axis('off')
         plt.show()
 
     def visualize_samples(self, sample: jax.Array):
-        """
-        Visualizes a grid of samples.
-
-        Args:
-            samples: Array of shape (D, )
-        """
         plt.figure(figsize=(5, 5))
         plt.imshow(sample.reshape(28, 28), cmap='gray')
         plt.axis('off')

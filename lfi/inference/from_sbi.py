@@ -45,6 +45,8 @@ class NPEBase(InferenceBase):
         sbi_prior, num_parameters, prior_returns_numpy = process_prior(prior.return_sbi_object())
         sim = process_simulator(simulator.sample_pytorch, sbi_prior, prior_returns_numpy)
         check_sbi_inputs(sim, sbi_prior)
+        self.sbi_prior = sbi_prior
+
         # Parameters of the prior
         dim = num_parameters
         dim_y = observation.shape[1]
@@ -122,7 +124,7 @@ class NPEASingleRound(NPEBase):
             x = self.embedding_net(x) 
 
         # fit the model
-        self.inference_method = NPE_A(self.prior.return_sbi_object(),
+        self.inference_method = NPE_A(self.sbi_prior,
                                       num_components=default_kwargs["num_components"],
                                       )
 
@@ -177,7 +179,7 @@ class NPECSingleRound(NPEBase):
         )
 
         # fit the model
-        self.inference_method = NPE_C(self.prior.return_sbi_object(),
+        self.inference_method = NPE_C(self.sbi_prior,
                                       density_estimator=density_estimator
                                       )
 
@@ -221,7 +223,7 @@ class FMPESingleRound(NPEBase):
 
         # fit the model
         self.inference_method = FMPE(
-            self.prior.return_sbi_object(),
+            self.sbi_prior,
             density_estimator=default_kwargs["density_estimator"],
         )
 
@@ -285,7 +287,7 @@ class BayesFlow(NPEBase):
         )
 
         self.inference_method = sbi.inference.NPE(
-            self.prior.return_sbi_object(),
+            self.sbi_prior,
             density_estimator=density_estimator,
         )
 
@@ -318,7 +320,7 @@ class TSNPE(NPEBase):
         }
         default_kwargs.update(fit_kwargs or {})
 
-        inference = NPE(self.prior.return_sbi_object())
+        inference = NPE(self.sbi_prior)
         proposal = self.prior.return_sbi_object()
         nof_new_samples = budget // default_kwargs["num_rounds"]
         for _ in range(default_kwargs["num_rounds"]):
@@ -370,7 +372,7 @@ class NPECMultiRound(NPEBase):
             z_score_theta = default_kwargs["z_score_theta"]
         )
 
-        inference = NPE_C(self.prior.return_sbi_object(),
+        inference = NPE_C(self.sbi_prior,
                           density_estimator=density_estimator
                           )
         proposal = self.prior.return_sbi_object()

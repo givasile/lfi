@@ -216,13 +216,19 @@ class R2OMC(InferenceBase):
         self.th_star = self.th_star_inside_prior[accepted_indices]
         self.d_star = self.d_star_inside_prior[accepted_indices]
 
-    def get_directions(self):
+    def get_directions(self, from_hessian: bool = True):
         self.hessians = np.zeros((self.nof_seeds_accept, self.nof_th0, self.D, self.D))
         self.eig_val = np.zeros((self.nof_seeds_accept, self.nof_th0, self.D))
         self.eig_vec = np.zeros((self.nof_seeds_accept, self.nof_th0, self.D, self.D))
-        for i, ss in enumerate(self.seeds):
-            self.hessians[i] = np.array(self.dist_hessian_1(self.th_star[i], ss, self.y_0))
-            self.eig_val[i], self.eig_vec[i] = np.linalg.eig(self.hessians[i])
+        if from_hessian:
+            for i, ss in enumerate(self.seeds):
+                self.hessians[i] = np.array(self.dist_hessian_1(self.th_star[i], ss, self.y_0))
+                self.eig_val[i], self.eig_vec[i] = np.linalg.eig(self.hessians[i])
+        else:
+            for i in range(self.nof_seeds_accept):
+                for j in range(self.nof_th0):
+                    self.eig_vec[i, j] = np.eye(self.D)
+                    self.eig_val[i, j] = np.ones(self.D)
 
     def _process_limit(self, is_inside_eps, step_size):
         L = is_inside_eps.shape[-1] - 1
@@ -506,7 +512,10 @@ class R2OMC(InferenceBase):
         # Step 5: find the directions for building the boxes
         print("\nStep 5: get directions")
         print("---------------------------------")
-        self.get_directions()
+        if fit_kwargs.get("box_algorithm") == "blind":
+            self.get_directions(False)
+        else:
+            self.get_directions(True)
         print("Done!")
 
         # Step 6: build the bounding boxes
