@@ -1,4 +1,5 @@
 experiment_run:
+  name: "concept_figure"
   seed: 21
   dim: 10
   dim_y: 10

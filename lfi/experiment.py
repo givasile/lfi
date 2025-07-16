@@ -202,7 +202,7 @@ class SingleRun:
         return hashlib.md5(config_str.encode()).hexdigest()
 
     def _create_experiment_path(self):
-        base_path = os.path.join("./../experiment_runs",)
+        base_path = os.path.join("../experiment_runs", )
         if self.experiment_name is not None:
             base_path = os.path.join(base_path, self.experiment_name)
         unique_id = self._generate_unique_id(self.config)

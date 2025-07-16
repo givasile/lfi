@@ -44,7 +44,7 @@ obs = lfi.observations.Zeros(
 observation = obs.sample() - 1.
 
 # SBI Inference
-inference = lfi.inference.from_sbi.NPECMultiRound(
+inference = lfi.inference.from_sbi.NPECSingleRound(
     prior=prior,
     simulator=simulator,
     observation=observation,
@@ -54,9 +54,8 @@ inference = lfi.inference.from_sbi.NPECMultiRound(
 inference.fit(
     budget=budget,
     fit_kwargs = {
-        'batch_size': batch_size,
-        'training_batch_size': training_batch_size,
-        'num_rounds': num_rounds,
+        'batch_size': 100,
+        'training_batch_size': 100
     }
 )
 

@@ -1,5 +1,4 @@
-import lfi
-import experiment
+from lfi import experiment
 import yaml
 
 with open('config.yml', 'r') as file:

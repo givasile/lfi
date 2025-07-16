@@ -71,13 +71,14 @@ inference.fit(
 )
 
 samples = inference.sample(
-    nof_samples=nof_samples,
+    nof_samples=20,
     sample_kwargs={
-        "samples_per_region": 1
+        "samples_per_region": 1,
+        "eps_3": 10.
     }
 )
 
-# samples = inference.th_star[:20, 0]
+samples = inference.th_star[:20, 0]
 
 # Generate 100 samples
 samples_gt = lfi.ground_truth.FromSBIBM(

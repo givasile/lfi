@@ -68,7 +68,7 @@ class GaussianMixture(BaseGroundTruth):
 
         # Repeat mu and sigma values along the dimension
         means = torch.tensor([[m] * dim for m in mu], dtype=torch.float32) # Repeat each mean dim times
-        covs = torch.stack([torch.diag(torch.tensor([s] * dim, dtype=torch.float32)) for s in sigma]) # Repeat each sigma dim times
+        covs = torch.stack([torch.diag(torch.tensor([s**2] * dim, dtype=torch.float32)) for s in sigma]) # Repeat each sigma dim times
 
         # Intialize the mixture model
         self.distribution = torch.distributions.MixtureSameFamily(
@@ -79,7 +79,7 @@ class GaussianMixture(BaseGroundTruth):
                 )
             )
         
-    def return_samples(self, nof_samples: int):
+    def sample(self, nof_samples: int):
         return self.distribution.sample((nof_samples,)).numpy()
     
 # class FromSample(BaseGroundTruth):
