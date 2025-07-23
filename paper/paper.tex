@@ -117,6 +117,11 @@
   \end{tikzpicture}%
 }
 
+\newcommand{\emptyfig}{%
+  \fbox{\parbox[c][5cm][c]{\textwidth}{\centering Placeholder for your-figure.png}}%
+}
+
+
 \begin{document}
 
 % If your paper is accepted and the title of your paper is very long,
@@ -169,14 +174,76 @@ A range of methods have been developed to infer parameters of simulators. They a
 % Challenge
 Parameter inference becomes more challenging when the parameter and data space are high-dimensional. SBI methods tend to be particularly affected because they rely on populating the parameter and data space with samples \citep{lintusaari2017fundamentals, sisson2018handbook, cranmer2020frontier}, so that the curse of dimensionality becomes notable. For complex simulators, where many parameters and variables interact in intricate ways, some variables may only depend weakly, or not at all, on a subset of parameters \citep{Saltelli2008, MonsalveBravo2022}. This can lead to situations where some observable variables are not informative of the parameters of interest and become ``distractors'' during parameter inference \citep{lueckmann2021benchmarking}. Multiple iid observations can exacerbate issues in SBI since the methods need to find parameter configurations that not only explain one observation, which is already difficult, but multiple ones at the same time. Figure \ref{fig:concept_example} illustrates the difficulty of existing SBI methods with high-dimensional parameter spaces, the presence of distractors, multiple iid observations, or all of them combined.
 
-\begin{figure*}[ht]
-    % Row 1: 5 images
-    \centering
-    \includegraphics[width=1.\linewidth]{./figures/concept_example.png}
-  %\caption{Top to bottom: Simple, high-dimensional, distractors, multiple observations, combined. Left to right: ground truth, NPE, NLE, Naive-ROMC, R2OMC (proposed). Details in Section~\ref{app-sec:intro-example} of the Appendix.}
-  \caption{The simple setup (1) shows two-dimensional marginals for a five-dimensional inference problem, the high-dimensional setup (2) the same for a 20-dimensional problem. Distractors (3) add 10 uninformative dimensions to (1). (4) extends (1) to four iid observations. (5) combines (2-4). Details in Appendices \ref{app-sec:methods} and \ref{app-sec:intro-example}.}
-  \label{fig:concept_example}
+
+% \begin{figure*}
+%   \centering
+%   \setlength{\tabcolsep}{1pt}
+%   \renewcommand{\arraystretch}{2}
+%   \begin{tabular}{*{8}{c} >{\centering\arraybackslash}m{0.1\textwidth}}
+%     \raisebox{-.5\height}{\includegraphics[width=.125\textwidth]{./figures/concept_figure/reference.png}} &
+%     \raisebox{-.5\height}{\includegraphics[width=.125\textwidth]{./figures/concept_figure/posterior_r2omc_100.png}} &
+%     \raisebox{-.5\height}{\includegraphics[width=.125\textwidth]{./figures/concept_figure/posterior_npec_1000.png}} &
+%     \raisebox{-.5\height}{\includegraphics[width=.125\textwidth]{./figures/concept_figure/posterior_npec_10000.png}} &
+%     \raisebox{-.5\height}{\includegraphics[width=.08\textwidth]{./figures/concept_figure/posterior_npec_1000.png}} &
+%     \raisebox{-.5\height}{\includegraphics[width=.08\textwidth]{./figures/concept_figure/posterior_npec_10000.png}} &
+%     \raisebox{-.5\height}{\includegraphics[width=.08\textwidth]{./figures/concept_figure/posterior_npec_1000.png}} &
+%     \raisebox{-.5\height}{\includegraphics[width=.08\textwidth]{./figures/concept_figure/posterior_npec_10000.png}} &
+%   \end{tabular}
+%   \caption{Your figure caption here.}
+%   \label{fig:pixelwise}
+% \end{figure*}
+
+\begin{figure*}
+  \centering
+  \setlength{\tabcolsep}{0.1pt} % Adjust column spacing
+  \renewcommand{\arraystretch}{.6} % Adjust row spacing
+  \begin{tabular}{c *{8}{c}} % First column for row titles
+    % Column titles (empty first cell for row labels)
+    & Reference & \scriptsize{R2OMC $\#$1K} & \scriptsize{NPE $\#$1K} & \scriptsize{NPE $\#$10K} & \scriptsize{SNPE $\#$1K} & \scriptsize{SNPE $\#$10K} & \scriptsize{FMPE $\#$1K} & \scriptsize{FMPE $\#$10K} \\
+
+    % First row
+    \rotatebox{90}{\scriptsize{\quad Simple}} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/posterior_gt} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/posterior_r2omc_100} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/posterior_npec_1000} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/posterior_npec_10000} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/posterior_snpec_1000} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/posterior_snpec_10000} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/posterior_flow_matching_1000} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/posterior_flow_matching_10000} \\
+    % Second row example
+    \rotatebox{90}{\scriptsize{\; High-dim}} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/posterior_gt} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/posterior_r2omc_1000} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/posterior_npec_1000} &
+    \includegraphics[draft, width=.12\textwidth]{figures/concept_figure/simple/posterior_npec_10000} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/posterior_snpec_1000} &
+    \includegraphics[draft, width=.12\textwidth]{figures/concept_figure/simple/posterior_npec_10000} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/posterior_flow_matching_1000} &
+    \includegraphics[draft, width=.12\textwidth]{figures/concept_figure/simple/posterior_npec_10000} \\
+    % Second row example
+    \rotatebox{90}{\scriptsize{\; Distractors}} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/distractors/posterior_gt} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/distractors/posterior_r2omc_1000} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/distractors/posterior_npec_1000} &
+    \includegraphics[draft, width=.12\textwidth]{figures/concept_figure/simple/posterior_npec_10000} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/distractors/posterior_snpec_1000} &
+    \includegraphics[draft, width=.12\textwidth]{figures/concept_figure/simple/posterior_npec_10000} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/distractors/posterior_flow_matching_1000} &
+    \includegraphics[draft, width=.12\textwidth]{figures/concept_figure/simple/posterior_npec_10000} \\
+  \end{tabular}
+  \caption{Your figure caption here.}
+  \label{fig:pixelwise}
 \end{figure*}
+
+% \begin{figure*}[ht]
+%     % Row 1: 5 images
+%     \centering
+%     \includegraphics[width=1.\linewidth]{./figures/concept_example.png}
+%   %\caption{Top to bottom: Simple, high-dimensional, distractors, multiple observations, combined. Left to right: ground truth, NPE, NLE, Naive-ROMC, R2OMC (proposed). Details in Section~\ref{app-sec:intro-example} of the Appendix.}
+%   \caption{The simple setup (1) shows two-dimensional marginals for a five-dimensional inference problem, the high-dimensional setup (2) the same for a 20-dimensional problem. Distractors (3) add 10 uninformative dimensions to (1). (4) extends (1) to four iid observations. (5) combines (2-4). Details in Appendices \ref{app-sec:methods} and \ref{app-sec:intro-example}.}
+%   \label{fig:concept_example}
+% \end{figure*}
 
 We here propose a new method that uses gradient information to deal with the above issues. We first convert the stochastic simulator to a set of deterministic simulators following the framework of Robust Optimization Monte Carlo~\citep[ROMC,][]{meeds2015optimization, ikonomov2020robust} and then use gradient-descent to efficiently obtain posterior samples. Very much like in standard optimization, the gradients are key to navigate the high-dimensional parameter space (Figure \ref{fig:concept_example}, columns 3-4). In addition, they allow us to perform sensitivity tests and filter out distractor dimensions, thereby improving the quality of the inference.
 

@@ -301,39 +301,39 @@ class BayesFlow(NPEBase):
         return self.posterior
 
 
-class TSNPE(NPEBase):
-    """
-    The Truncated Sequential Neural Posterior Estimation (TSNPE) inference method:
-    https://arxiv.org/abs/2404.09636
-    Uses the TSNPE implementation from the SBI library.
-    """
-    def __init__(self, prior, simulator, observation):
-        super().__init__("tsnpe", prior, simulator, observation)
-
-    def fit(self,
-            budget: int = 1000,
-            fit_kwargs: dict = None
-            ):
-        # default arguments
-        default_kwargs = {
-            "num_rounds": 10,  # Number of rounds for sequential inference
-        }
-        default_kwargs.update(fit_kwargs or {})
-
-        inference = NPE(self.sbi_prior)
-        proposal = self.prior.return_sbi_object()
-        nof_new_samples = budget // default_kwargs["num_rounds"]
-        for _ in range(default_kwargs["num_rounds"]):
-            theta = proposal.sample((nof_new_samples,))
-            x = self.simulator.sample_pytorch(theta)
-            _ = inference.append_simulations(theta, x).train(force_first_round_loss=True)
-            posterior = inference.build_posterior().set_default_x(torch.Tensor(self.observation))
-
-            accept_reject_fn = get_density_thresholder(posterior, quantile=1e-3)
-            proposal = RestrictedPrior(self.prior.return_sbi_object(), accept_reject_fn, sample_with="rejection")
-
-        self.posterior = inference.build_posterior().set_default_x(torch.Tensor(self.observation))
-        return self.posterior
+# class TSNPE(NPEBase):
+#     """
+#     The Truncated Sequential Neural Posterior Estimation (TSNPE) inference method:
+#     https://arxiv.org/abs/2404.09636
+#     Uses the TSNPE implementation from the SBI library.
+#     """
+#     def __init__(self, prior, simulator, observation):
+#         super().__init__("tsnpe", prior, simulator, observation)
+#
+#     def fit(self,
+#             budget: int = 1000,
+#             fit_kwargs: dict = None
+#             ):
+#         # default arguments
+#         default_kwargs = {
+#             "num_rounds": 10,  # Number of rounds for sequential inference
+#         }
+#         default_kwargs.update(fit_kwargs or {})
+#
+#         inference = NPE(self.sbi_prior)
+#         proposal = self.prior.return_sbi_object()
+#         nof_new_samples = budget // default_kwargs["num_rounds"]
+#         for _ in range(default_kwargs["num_rounds"]):
+#             theta = proposal.sample((nof_new_samples,))
+#             x = self.simulator.sample_pytorch(theta)
+#             _ = inference.append_simulations(theta, x).train(force_first_round_loss=True)
+#             posterior = inference.build_posterior().set_default_x(torch.Tensor(self.observation))
+#
+#             accept_reject_fn = get_density_thresholder(posterior, quantile=1e-3)
+#             proposal = RestrictedPrior(self.prior.return_sbi_object(), accept_reject_fn, sample_with="rejection")
+#
+#         self.posterior = inference.build_posterior().set_default_x(torch.Tensor(self.observation))
+#         return self.posterior
 
 
 class NPECMultiRound(NPEBase):
