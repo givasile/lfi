@@ -90,7 +90,7 @@ g = lfi.visualization.plot_pairwise_posterior(
     samples,
     limits=[-0., 1.5],
     samples_gt=samples_gt,
-    # savefig=os.path.join(figure_path, f"run_{ii}_posterior_pairwise.png"),
+    savefig=os.path.join(figure_path, f"posterior_pairwise.png"),
 )
 plt.show(block=False)
 

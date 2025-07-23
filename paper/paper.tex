@@ -210,7 +210,7 @@ Parameter inference becomes more challenging when the parameter and data space a
     \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/posterior_bayes_flow_1000} &
     \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/posterior_bayes_flow_30000} &
     \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/posterior_flow_matching_1000} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/posterior_flow_matching_30000} \\
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/posterior_npec_10000} \\
     % Second row example
     \rotatebox{90}{\scriptsize{Distractors}} &
     \includegraphics[width=.12\textwidth]{figures/concept_figure/distractors/posterior_gt} &
@@ -226,11 +226,11 @@ Parameter inference becomes more challenging when the parameter and data space a
     \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/posterior_gt} &
     \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/posterior_r2omc_100} &
     \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/posterior_npec_1000} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/posterior_npec_30000} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/posterior_npec_50000} &
     \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/posterior_bayes_flow_1000} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/posterior_bayes_flow_30000} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/posterior_bayes_flow_50000} &
     \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/posterior_flow_matching_1000} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/posterior_flow_matching_30000} \\
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/posterior_flow_matching_50000} \\
   \end{tabular}
   \caption{Your figure caption here.}
   \label{fig:pixelwise}
@@ -820,6 +820,16 @@ The results are shown in Figure~\ref{fig:sbi_experiments_two_moons}, plotting th
   \caption{SBI benchmark: performance (C2ST) vs compute budget (log number of simulator runs).}
   \label{fig:sbi_experiments_two_moons}
 \end{figure}
+
+\subsection{Lotka-Voltera model}
+
+\begin{figure*}
+  \centering
+  \includegraphics[width=0.95\linewidth]{./figures/sbibm/lotka_volterra/posterior_pairwise.png}
+  \caption{Lotka-Volterra model}
+  \label{fig:lotka_volterra}
+\end{figure*}
+
 
 \subsection{Image Example}
 
