@@ -1,6 +1,6 @@
 black
 elfi
-tensorflow
+tensorflow-datasets
 torch
 flake8
 ipython
