@@ -11,6 +11,7 @@ python-dotenv
 mlflow
 numpy
 pandas
+sbibm
 sbi
 optax
 matplotlib
