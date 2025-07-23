@@ -1,4 +1,7 @@
 black
+elfi
+tensorflow
+torch
 flake8
 ipython
 jupyterlab
@@ -9,7 +12,6 @@ mlflow
 numpy
 pandas
 sbi
-torch
 optax
 matplotlib
 torchdiffeq
