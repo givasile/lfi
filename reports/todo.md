@@ -1,6 +1,6 @@
 # Reviewers' feedback
 
-## You miss some SotA competitors and the ones you use are possibly in their vanilla version.
+## Point 1: You miss some SotA competitors and the ones you use are possibly in their vanilla version.
 
 On v.1 we compared against NPE, NLE, Naive-ROMC.
 I did some research and followed reviewers' suggestions, so in v.2 I compare against:
@@ -21,7 +21,7 @@ because I could not use the code they provide.
 However, people say that GATSBY is notoriously unstable and difficult to train (I have to find the references for that),
 so this is a convincing argument if a reviewer asks about it.
 
-## You do not have "really" high-dim and/or real world examples.
+## Point 2: You do not have "really" high-dim and/or real world examples.
 
 Reviewers pointed out that some extreme methods have been tested against $D > 100$.
 
@@ -52,7 +52,7 @@ If successful, it will be nice to show that R2OMC can tackle simulators with dyn
 
 Similar to Lotka-Volterra; I will try it after Lotka-Volterra.
 
-## You do not deal well with Multiple Instance 
+## Point 3: You do not deal well with Multiple Instance 
 
 Reviewers said that typically, people use summary statistics for multiple observations, and that we do not test 
 R2OMC against examples with big sets of observations.
@@ -65,6 +65,10 @@ Maybe we can keep a section on how to handle multiple observations and possibly 
 but not emphasize it as a main contribution.
 
 ## Some other ideas
+
+- Add limitation 
+
+
 
 We could remove naive-ROMC from the comparisons. 
 naive-ROMC in its current version cannot handle problems of high-dimensionality

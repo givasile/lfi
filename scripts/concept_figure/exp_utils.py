@@ -14,10 +14,11 @@ def run_inference(
         nof_samples,
         fit_kwargs,
         sample_kwargs,
+        seed=42,
 ):
     """Run inference, sample, plot, and save C2ST."""
-    np.random.seed(42)
-    torch.manual_seed(42)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
 
     inference = inference_class(
         prior=prior,
@@ -80,20 +81,39 @@ def plot_samples(figure_path, samples, gt_samples, method_name, title=None, runt
             horizontalalignment='left', verticalalignment='top',
             bbox=dict(facecolor='white', alpha=0.95, edgecolor='none')
         )
-    plt.savefig(os.path.join(figure_path, f"posterior_{method_name}.png"), bbox_inches='tight')
-    plt.savefig(os.path.join(figure_path, f"posterior_{method_name}.pdf"), bbox_inches='tight')
-    plt.show(block=False)
+    plt.savefig(os.path.join(figure_path, f"posterior.png"), bbox_inches='tight')
+    plt.savefig(os.path.join(figure_path, f"posterior.pdf"), bbox_inches='tight')
+    # plt.show(block=False)
 
-def save_stats(dir_path, samples, gt_samples, method_name, title, c2st_score, runtime):
-    plot_samples(dir_path, samples, gt_samples, method_name, title, runtime, c2st_score)
-    # save samples
-    out_file = os.path.join(dir_path, f"samples_{method_name}.csv")
+
+def save_stats(dir_path, samples, gt_samples, method_name, title, c2st_score, runtime, seed=42):
+    # dir path append method name
+    dir_path = os.path.join(dir_path, method_name)
+    os.makedirs(dir_path, exist_ok=True)
+
+    # inside dir path check for previous runs (named as run_0, run_1, ...)
+    # if not exists create run_0, else create run_{n+1}
+    run_id = 0
+    while os.path.exists(os.path.join(dir_path, f"run_{run_id}")):
+        run_id += 1
+    dir_path = os.path.join(dir_path, f"run_{run_id}")
+    os.makedirs(dir_path, exist_ok=True)
+
+    # store seed
+    out_file = os.path.join(dir_path, f"seed.csv")
+    np.savetxt(out_file, [seed], delimiter=",")
+
+    # store samples
+    out_file = os.path.join(dir_path, f"samples.csv")
     np.savetxt(out_file, samples, delimiter=",")
 
-    # save C2ST score
-    out_file = os.path.join(dir_path, f"c2st_{method_name}.csv")
+    # store C2ST score
+    out_file = os.path.join(dir_path, f"c2st.csv")
     np.savetxt(out_file, [c2st_score], delimiter=",")
 
-    # save runtime
-    out_file = os.path.join(dir_path, f"runtime_{method_name}.csv")
+    # store runtime
+    out_file = os.path.join(dir_path, f"runtime.csv")
     np.savetxt(out_file, [runtime], delimiter=",")
+
+    # plot samples
+    plot_samples(dir_path, samples, gt_samples, method_name, title, runtime, c2st_score)
