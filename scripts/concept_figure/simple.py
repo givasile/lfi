@@ -9,9 +9,9 @@ import exp_utils
 # ----------------------------- #
 
 budget_list = [1_000] # [10_000, 30_000]
-seed_list = [42, 42]
+seed_list = [42, 48930, 1234, 123456, 98765]
 
-r2omc = False
+r2omc = True
 npe = True
 snpe = False
 bayes_flow = False
@@ -20,7 +20,6 @@ flow_matching = False
 np.random.seed(42)
 torch.manual_seed(42)
 
-# dir_path = "./../../paper/figures/concept_figure/simple"
 dir_path = "./../../results/concept_figure/simple"
 os.makedirs(dir_path, exist_ok=True)
 
@@ -74,7 +73,7 @@ if r2omc:
                 samples_gt=samples_gt,
                 method_name=f"r2omc_{budget}",
                 inference_class=lfi.inference.r2omc.R2OMC,
-                budget=1000,
+                budget=budget,
                 nof_samples=nof_samples,
                 fit_kwargs={"pcg_to_keep": 1., "box_algorithm": "standard", "dx": 0.2},
                 sample_kwargs={"samples_per_region": 2},
