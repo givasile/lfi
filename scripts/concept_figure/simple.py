@@ -9,13 +9,13 @@ import exp_utils
 # ----------------------------- #
 
 budget_list = [1_000] # [10_000, 30_000]
-seed_list = [42, 48930, 1234, 123456, 98765]
+seed_list = [42, 42]
 
-r2omc = True
+r2omc = False
 npe = True
-snpe = True
-bayes_flow = True
-flow_matching = True
+snpe = False
+bayes_flow = False
+flow_matching = False
 
 np.random.seed(42)
 torch.manual_seed(42)
