@@ -67,21 +67,22 @@ for dim in D_list:
             print(f"Running experiments for D={dim}, budget={budget}, seed={seed}...")
 
             if r2omc:
-                print("Running R2OMC...")
-                c2st, runtime, samples = exp_utils.run_inference(
-                    prior=prior,
-                    simulator=simulator,
-                    observation=observation,
-                    samples_gt=samples_gt,
-                    method_name=f"r2omc_{budget}",
-                    inference_class=lfi.inference.r2omc.R2OMC,
-                    budget=budget,
-                    nof_samples=nof_samples,
-                    fit_kwargs={"pcg_to_keep": 1., "box_algorithm": "standard", "dx": 0.2, "epochs": 10, "alpha": 0.1},
-                    sample_kwargs={"samples_per_region": 2},
-                    seed=seed,
-                )
-                exp_utils.save_stats(dir_path_current, samples, samples_gt, f"r2omc_{budget}", None, c2st, runtime, seed=seed)
+                if budget == 1_000:
+                    print("Running R2OMC...")
+                    c2st, runtime, samples = exp_utils.run_inference(
+                        prior=prior,
+                        simulator=simulator,
+                        observation=observation,
+                        samples_gt=samples_gt,
+                        method_name=f"r2omc_{budget}",
+                        inference_class=lfi.inference.r2omc.R2OMC,
+                        budget=budget,
+                        nof_samples=nof_samples,
+                        fit_kwargs={"pcg_to_keep": 1., "box_algorithm": "standard", "dx": 0.2, "epochs": 10, "alpha": 0.1},
+                        sample_kwargs={"samples_per_region": 2},
+                        seed=seed,
+                    )
+                    exp_utils.save_stats(dir_path_current, samples, samples_gt, f"r2omc_{budget}", None, c2st, runtime, seed=seed)
 
             if npe:
                 print("Running NPE...")
