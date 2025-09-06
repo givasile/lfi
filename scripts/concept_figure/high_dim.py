@@ -8,13 +8,13 @@ import exp_utils
 # Global config
 # ----------------------------- #
 
-budget_list = [1_000, 10_000, 30_000]
+budget_list = [10_000]
 seed_list = [42, 48930, 1234, 123456, 98765]
 
-r2omc = True
-npe = True
-snpe = True
-bayes_flow = True
+r2omc = False
+npe = False
+snpe = False
+bayes_flow = False
 flow_matching = True
 
 np.random.seed(42)
@@ -157,7 +157,7 @@ if flow_matching:
                 inference_class=lfi.inference.from_sbi.FMPESingleRound,
                 budget=budget,
                 nof_samples=nof_samples,
-                fit_kwargs={"batch_size": 100, "training_batch_size": 100},
+                fit_kwargs={"vf_estimator": "transformer", "batch_size": 100, "training_batch_size": 100},
                 sample_kwargs=None,
                 seed=seed
             )

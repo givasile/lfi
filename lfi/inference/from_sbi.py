@@ -208,7 +208,7 @@ class FMPESingleRound(NPEBase):
 
         # default arguments
         default_kwargs = {
-            "density_estimator": "mlp", # "mlp", "resnet" or a Callable that builds a density estimator
+            "vf_estimator": "mlp", # ["mlp", "ada_mlp", "transformer", "transformer_cross_attn"] or a Callable that builds a vf_estimator
             "training_batch_size": 500, # batch size for training the density estimator
             "max_num_epochs": 1000, # maximum number of epochs for training the density estimator
         }
@@ -224,7 +224,7 @@ class FMPESingleRound(NPEBase):
         # fit the model
         self.inference_method = FMPE(
             self.sbi_prior,
-            density_estimator=default_kwargs["density_estimator"],
+            vf_estimator=default_kwargs["vf_estimator"],
         )
 
         _ = self.inference_method.append_simulations(theta, x).train(
