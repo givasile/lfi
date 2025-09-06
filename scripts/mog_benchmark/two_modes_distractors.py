@@ -39,9 +39,10 @@ for dim in D_list:
 
     # Problem setup
     prior = lfi.priors.UniformPrior(low=low, high=high, dim=dim)
-    simulator = lfi.simulators.BimodalGaussian(
+    simulator = lfi.simulators.BimodalGaussianDistractors(
         dim=dim,
         dim_y=dim_y,
+        dim_distractors=dim_distractors,
         sigma_noise=0.2,
         shift=1
     )
