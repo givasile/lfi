@@ -8,14 +8,14 @@ import exp_utils
 # Global config
 # ----------------------------- #
 
-budget_list = [20_000]
+budget_list = [30_000, 40_000, 50_000]
 seed_list = [42, 48930, 1234, 123456, 98765]
 
 r2omc = False
 npe = True
 snpe = False
-bayes_flow = False
-flow_matching = False
+bayes_flow = True
+flow_matching = True
 
 np.random.seed(42)
 torch.manual_seed(42)
@@ -25,8 +25,8 @@ os.makedirs(dir_path, exist_ok=True)
 
 # Problem setup
 low, high = -3, 3
-dim = 20
-dim_y = 20
+dim = 10
+dim_y = 10
 nof_observations = 1
 nof_samples = 1000
 
@@ -138,10 +138,10 @@ if bayes_flow:
                 budget=budget,
                 nof_samples=nof_samples,
                 fit_kwargs={
-                    "batch_size": 100,
-                    "training_batch_size": 100,
-                    "embedding_net_output_dim": 30,
-                    "embedding_net_num_layers": 2,
+                    "batch_size": 500,
+                    "training_batch_size": 500,
+                    "embedding_net_output_dim": 10,
+                    "embedding_net_num_layers": 1,
                     "embedding_net_num_hiddens": 32,
                 },
                 sample_kwargs=None,
@@ -162,7 +162,7 @@ if flow_matching:
                 inference_class=lfi.inference.from_sbi.FMPESingleRound,
                 budget=budget,
                 nof_samples=nof_samples,
-                fit_kwargs={"vf_estimator": "transformer", "batch_size": 100, "training_batch_size": 100},
+                fit_kwargs={"vf_estimator": "mlp", "batch_size": 100, "training_batch_size": 100},
                 sample_kwargs=None,
                 seed=seed
             )
