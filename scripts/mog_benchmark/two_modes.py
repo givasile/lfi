@@ -158,7 +158,7 @@ for dim in D_list:
                     inference_class=lfi.inference.from_sbi.FMPESingleRound,
                     budget=budget,
                     nof_samples=nof_samples,
-                    fit_kwargs={"vf_estimator": "mlp", "batch_size": 100, "training_batch_size": 100},
+                    fit_kwargs={"batch_size": 100, "training_batch_size": 100},
                     sample_kwargs=None,
                     seed=seed
                 )
