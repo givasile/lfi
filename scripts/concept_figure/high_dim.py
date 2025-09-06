@@ -8,14 +8,14 @@ import exp_utils
 # Global config
 # ----------------------------- #
 
-budget_list = [10_000]
+budget_list = [20_000]
 seed_list = [42, 48930, 1234, 123456, 98765]
 
 r2omc = False
-npe = False
+npe = True
 snpe = False
 bayes_flow = False
-flow_matching = True
+flow_matching = False
 
 np.random.seed(42)
 torch.manual_seed(42)
@@ -25,8 +25,8 @@ os.makedirs(dir_path, exist_ok=True)
 
 # Problem setup
 low, high = -3, 3
-dim = 30
-dim_y = 30
+dim = 20
+dim_y = 20
 nof_observations = 1
 nof_samples = 1000
 
@@ -94,7 +94,12 @@ if npe:
                 inference_class=lfi.inference.from_sbi.NPECSingleRound,
                 budget=budget,
                 nof_samples=nof_samples,
-                fit_kwargs={"batch_size": 100, "training_batch_size": 100},
+                fit_kwargs={
+                    "num_transforms": 16,
+                    "num_bins": 16,
+                    "hidden_features": 200,
+                    "training_batch_size": 500
+                },
                 sample_kwargs=None,
                 seed=seed,
             )

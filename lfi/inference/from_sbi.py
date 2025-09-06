@@ -154,6 +154,7 @@ class NPECSingleRound(NPEBase):
             "model": "nsf",
             "hidden_features": 100,
             "num_transforms": 8,
+            "num_bins": 10,
             "z_score_x": "independent",
             "z_score_theta": "independent",
             "training_batch_size": 500,
@@ -174,6 +175,7 @@ class NPECSingleRound(NPEBase):
             model=default_kwargs["model"],
             hidden_features=default_kwargs["hidden_features"],
             num_transforms=default_kwargs["num_transforms"],
+            num_bins=default_kwargs["num_bins"],
             z_score_x = default_kwargs["z_score_x"],
             z_score_theta = default_kwargs["z_score_theta"],
         )
