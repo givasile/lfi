@@ -139,8 +139,8 @@ for dim in D_list:
                     fit_kwargs={
                         "batch_size": 500,
                         "training_batch_size": 500,
-                        "embedding_net_output_dim": 20,
-                        "embedding_net_num_layers": 1,
+                        "embedding_net_output_dim": dim,
+                        "embedding_net_num_layers": 2,
                         "embedding_net_num_hiddens": 32,
                     },
                     sample_kwargs=None,

@@ -34,7 +34,7 @@ prior = lfi.priors.UniformPrior(
     dim=dim
 )
 
-simulator = lfi.simulators.GaussianNoiseDistractor(
+simulator = lfi.simulators.GaussianNoiseDistractors(
     dim=dim,
     dim_y=dim_y,
     sigma_noise=sigma_noise,

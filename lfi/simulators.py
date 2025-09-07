@@ -165,98 +165,75 @@ class BaseSimulator:
         d_hess = jax.vmap(dist, in_axes=(0, None, None))
         d_hess = jax.vmap(d_hess, in_axes=(None, 0, None))
         return d_hess
-    
+
 
 class GaussianNoise(BaseSimulator):
-    def __init__(self, dim, dim_y, sigma_noise):
+    def __init__(self, dim, dim_y, sigma_noise, shift=0):
         self.sigma_noise = sigma_noise
+        self.shift = shift
         super().__init__("gaussian_noise", dim, dim_y)
 
     def sample_numpy(self, theta):
-        return np.random.normal(theta, self.sigma_noise)
+        return np.random.normal(theta + self.shift, self.sigma_noise)
     
     def sample_jax(self, theta, seed):
         # seed -> prng key for each sample
         key, subkey = jax.random.split(jax.random.PRNGKey(seed))
-
         theta = jnp.asarray(theta)
-        y = theta + jax.random.normal(key=subkey, shape=(self.dim, )) * self.sigma_noise
+        shift = jnp.asarray(self.shift)
+        y = theta + shift + jax.random.normal(subkey, shape=theta.shape)*self.sigma_noise
         return y
 
     def sample_pytorch(self, theta):
-        return theta + torch.randn_like(theta)*self.sigma_noise
-    
-    def return_elfi_callable(self):
-        def elfi_simulator(*th_params, batch_size=1, random_state=None):
-            theta = np.stack(th_params, axis=1)
-            samples_standard_normal = ss.norm.rvs(size=(batch_size, self.dim_y), random_state=random_state)
-            samples = theta + self.sigma_noise*samples_standard_normal
-            return samples
-        return elfi_simulator
+        return theta + self.shift + torch.randn_like(theta)*self.sigma_noise
 
-class GaussianNoiseDistractor(BaseSimulator):
-    def __init__(self,
-                 dim,
-                 dim_y,
-                 sigma_noise,
-                 distractor_dim,
-                 distractor_scale=None,
-                 distractor_mu_min=None,
-                 distractor_mu_max=None
-                 ):
+
+class GaussianNoiseDistractors(BaseSimulator):
+    def __init__(self, dim, dim_y, dim_distractors, sigma_noise=0.1, shift=0):
         self.sigma_noise = sigma_noise
-        self.distractor_dim = distractor_dim
-        self.distractor_scale = distractor_scale if distractor_scale is not None else 1.0
-        self.distractor_mu_min = distractor_mu_min if distractor_mu_min is not None else -5.
-        self.distractor_mu_max = distractor_mu_max if distractor_mu_max is not None else 5.
-        total_output_dim = dim_y + distractor_dim
-        super().__init__("gaussian_noise_with_distractors", dim, total_output_dim)
+        self.shift = shift
+        self.dim_distractors = dim_distractors
+        super().__init__("gaussian_noise_distractor", dim, dim_y)
 
     def sample_numpy(self, theta):
-        # Infromative part
-        y_info = np.random.normal(theta, self.sigma_noise)
+        yy = np.random.normal(theta + self.shift, self.sigma_noise)
 
-        # Distractor part
-        mu = np.random.uniform(self.distractor_mu_min, self.distractor_mu_max, size=(theta.shape[0], self.distractor_dim))
-        y_distractors = np.random.normal(mu, np.sqrt(self.distractor_scale))
-
-        # Concatenate informative and distractor parts
-        y = np.concatenate([np.atleast_1d(y_info), y_distractors], axis=-1)
+        # add dim_distractor samples from a uniform distribution
+        yy_distractors = np.random.uniform(
+            low=-3,
+            high=3,
+            size=(theta.shape[0], self.dim_distractors)
+        )
+        # concatenate informative and distractor parts
+        y = np.concatenate([yy, yy_distractors], axis=-1)
         return y
 
-    # def sample_jax(self, theta, keys):
-    #     # keys: one key per sample
-    #     def simulate_one(theta_val, key):
-    #         key_i, key_m, key_n = jax.random.split(key, 3)
-    #
-    #         # Informative part
-    #         y_info = theta_val + jax.random.normal(key_i)*self.sigma_noise
-    #
-    #         # Distractor part
-    #         mu_val = jax.random.uniform(
-    #             key_m,
-    #             shape=(self.distractor_dim,),
-    #             minval=self.distractor_mu_min,
-    #             maxval=self.distractor_mu_max
-    #             )
-    #
-    #         noise = jax.random.normal(key_n, (self.distractor_dim,))
-    #         y_distractor = mu_val + noise * jnp.sqrt(self.distractor_scale)
-    #
-    #         return np.concatenate([np.atleast_1d(y_info), y_distractor])
-    #
-    #     return jax.vmap(simulate_one)(theta, keys)
+    def sample_jax(self, theta, seed):
+        # seed -> prng key for each sample
+        key, subkey = jax.random.split(jax.random.PRNGKey(seed))
+        yy = jax.random.multivariate_normal(subkey, theta + self.shift, jnp.eye(self.dim) * self.sigma_noise**2)
+
+        # add dim_distractor samples from a uniform distribution
+        key, subkey = jax.random.split(jax.random.PRNGKey(seed))
+        yy_distractors = jax.random.uniform(
+            subkey,
+            shape=(self.dim_distractors,),
+            minval=-3,
+            maxval=3
+        )
+        y = jnp.concatenate([yy, yy_distractors], axis=-1)
+        return y
 
     def sample_pytorch(self, theta):
-        # Informative part
-        y_info = theta + torch.randn_like(theta)*self.sigma_noise
+        yy = theta + self.shift + torch.randn_like(theta) * self.sigma_noise
 
-        # Distractor part
-        mu = (torch.rand((theta.shape[0], self.distractor_dim)) * (self.distractor_mu_max - self.distractor_mu_min) +
-                  self.distractor_mu_min)
-        y_distractors = mu + torch.randn_like(mu) * np.sqrt(self.distractor_scale)
+        # add dim_distractor samples from a uniform distribution
+        yy_distractors = torch.rand((theta.shape[0], self.dim_distractors)) * 6 - 3 # Uniform distribution in [-3, 3]
 
-        return torch.cat([y_info, y_distractors], dim=-1)
+        # concatenate informative and distractor parts
+        y = torch.cat([yy, yy_distractors], dim=-1)
+        return y
+
 
 class BimodalGaussian(BaseSimulator):
     def __init__(self, dim, dim_y, sigma_noise=0.1, shift=3):
