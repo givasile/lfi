@@ -345,7 +345,7 @@ class R2OMC(InferenceBase):
         log_weights = np.array(log_weights) # (S_accept, N_th0, N_per_region)
 
         # Normalize weights in log-space for numerical stability
-        log_weights -= np.max(log_weights, axis=-1, keepdims=True)  # for numerical stability
+        # log_weights -= np.max(log_weights, axis=-1, keepdims=True)  # for numerical stability
         weights = np.exp(log_weights)
         weights /= np.sum(weights)
 
@@ -512,7 +512,7 @@ class R2OMC(InferenceBase):
         # Step 5: find the directions for building the boxes
         print("\nStep 5: get directions")
         print("---------------------------------")
-        if fit_kwargs.get("box_algorithm") == "blind":
+        if fit_kwargs.get("box_algorithm") in ["blind", "eye"]:
             self.get_directions(False)
         else:
             self.get_directions(True)
@@ -522,7 +522,7 @@ class R2OMC(InferenceBase):
         print(f"\nStep 6: Build bounding boxes - Algorithm: {fit_kwargs['box_algorithm']}")
         print("---------------------------------")
 
-        if fit_kwargs["box_algorithm"] == "standard":
+        if fit_kwargs["box_algorithm"] in ["standard", "eye"]:
             print(
                 f"Input: \n"
                 f"- eps_2={fit_kwargs['eps_2']} \n"
@@ -583,3 +583,126 @@ class R2OMC(InferenceBase):
 
         print(f"Output:\n- Returned {samples_r2omc.shape[0]} weighted samples (after resampling)")
         return samples_r2omc
+
+
+class R2OMCMultiObs(InferenceBase):
+    def __init__(
+            self,
+            prior: lfi.priors.BasePrior,
+            simulator: lfi.simulators.BaseSimulator,
+            observation: np.ndarray, # (N_obs, Dy)
+    ):
+        """ R2OMC Inference class for the R2OMC algorithm with multiple observations.
+        """
+        self.N_obs = observation.shape[0]
+        self.r2omc_list = [R2OMC(prior, simulator, observation[i:i+1]) for i in range(self.N_obs)]
+        super().__init__("r2omc_multi_obs", prior, simulator, observation, prior.dim, observation.shape[-1])
+
+        # state variables
+        self.N_th_per_obs: Optional[int] = None  # nof posterior samples per observation
+        self.N_th_total: Optional[int] = None  # nof posterior samples in total (N_th_per_obs * Ny)
+        self.N_th_accept: Optional[int] = None  # nof accepted posterior samples
+        self.N_th_select: Optional[int] = None  # nof selected samples
+
+        self.th_total: Optional[np.ndarray] = None     # (N_th_total, D)
+        self.w_before: Optional[np.ndarray] = None     # (N_th_total,)
+        self.w_after: Optional[np.ndarray] = None      # (N_th_total,)
+        self.th_accepted: Optional[np.ndarray] = None  # (N_th_accept, D)
+        self.th_selected: Optional[np.ndarray] = None  # (N_th_select, D)
+
+    def fit(self, budget: int = 1000, fit_kwargs: Optional[dict] = None):
+        default_kwargs = {
+            "fit_seed": 21,
+            # informative dimensions
+            "find_informative_dims": True,
+            "inf_dims_nof_th": 100,
+            "inf_dims_nof_seeds": 50,
+            "inf_dims_threshold": 1e-5,
+            # sample objective functions
+            "nof_seeds_total": budget,
+            "nof_th0": 1,
+            # optimize
+            "epochs": 4,
+            "alpha": 0.1,
+            "nof_gd_steps": 50,
+            # filter_solutions
+            "pcg_to_keep": .8,
+            "eps_1": None,  # will be checked
+            # get_boxes
+            "box_algorithm": "standard", # "standard" or "blind"
+            "dx": 0.1,
+            "eps_2": None,
+            "nof_ls_steps": 100,
+            "step_size": .01,
+        }
+
+        fit_kwargs = {**default_kwargs, **(fit_kwargs or {})}
+        self.fit_kwargs = fit_kwargs
+
+        # fit each R2OMC instance
+        for i, r2omc in enumerate(self.r2omc_list):
+            print(f"\nFitting observation {i+1}/{self.N_obs}")
+            r2omc.fit(budget, fit_kwargs)
+
+    def sample(self, nof_samples: int = 100, sample_kwargs: Optional[dict] = None):
+        # tidy up parameters
+        default_kwargs = {
+            "sample_seed": 71,
+            "eps_3": 1.0,
+            "samples_per_region": 10,
+            "nof_samples_per_obs": nof_samples, # number of samples to draw per observation
+            "eps_4": 5.0,  # threshold to consider a sample accepted
+        }
+        sample_kwargs = {**default_kwargs, **(sample_kwargs or {})}
+        self.sample_kwargs = sample_kwargs
+
+        # gather samples from each R2OMC instance and stack them
+        th_list = []
+        for i, r2omc_cur in enumerate(self.r2omc_list):
+            th_i = r2omc_cur.sample(nof_samples=sample_kwargs["nof_samples_per_obs"], sample_kwargs=sample_kwargs)
+            th_list.append(th_i)
+        self.th_total = np.vstack(th_list)
+
+        # find which proposed samples are accepted
+        dist_func = self.r2omc_list[0].dist_2
+        nof_seeds_per_obs = self.r2omc_list[0].seeds.shape[0]
+        distances = np.zeros((self.N_obs, self.th_total.shape[0], nof_seeds_per_obs)) # (N_obs, N_th_total, N_seeds)
+        for n, r2omc_cur in enumerate(self.r2omc_list):
+            distances_obs = dist_func(self.th_total, r2omc_cur.seeds, r2omc_cur.y_0) # (N_seeds, N_th_total)
+            distances_obs = distances_obs.T # (N_th_total, N_seeds)
+            distances[n] = distances_obs
+        self.distances = distances # (N_obs, N_th_total, N_seeds)
+
+        # seed_total = np.concatenate([r2omc_cur.seeds for r2omc_cur in self.r2omc_list])
+        # accepted = inside at least one proposal region for each observation
+        # th_accepted: (N_th_accept, D)
+        is_inside = distances < sample_kwargs["eps_4"] # (N_obs, N_th_total, N_seeds)
+        is_accepted = is_inside.sum(-1).prod(0) > 0 # (N_th_total,)
+        print(f"Accepted samples: {is_accepted.sum()}/{self.th_total.shape[0]}")
+
+        # find the weights of the accepted samples
+        weight_inside = is_inside.sum(-1).prod(0) # (N_th_total,)
+        weight_prior = np.exp(self.r2omc_list[0].prior.logpdf(self.th_total)) # (N_th_total,)
+        w_unnorm = weight_prior * weight_inside
+        w_norm = w_unnorm / w_unnorm.sum()
+
+        # select samples based on weights
+        if np.sum(w_norm > 0) < nof_samples:
+            print("Not enough samples with positive weight")
+            th_selected = self.th_total[np.argsort(w_norm)[::-1]][:nof_samples]
+        else:
+            indices = np.random.choice(np.arange(self.th_total.shape[0]), size=nof_samples, replace=False, p=w_norm)
+            th_selected = self.th_total[indices]
+
+        print(f"Nof (selected/accepted/total) samples: ({th_selected.shape[0]}/{is_accepted.sum()}/{self.th_total.shape[0]})")
+        # self.N_th_per_obs = nof_samples
+        # self.N_th_total = self.th_total.shape[0]
+        # self.N_th_accept = is_accepted.sum()
+        # self.N_th_select = th_selected.shape[0]
+        # # self.w_before = w_unnorm
+        # # self.w_after = w_norm
+        self.th_accepted = self.th_total[is_accepted]
+        self.th_selected = th_selected
+        return th_selected
+
+

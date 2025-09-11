@@ -78,6 +78,35 @@ class UniformPrior(BasePrior):
         return np.where(inside, 1/self.volume, 0)
 
 
+class Normal(BasePrior):
+    def __init__(self, dim, mean, std):
+        self.mean = mean
+        self.std = std
+        super().__init__("normal", dim)
+
+    def sample_numpy(self, N):
+        return np.random.normal(loc=self.mean, scale=self.std, size=(N, self.dim))
+
+    def sample_jax(self, key, N):
+        keys = jax.random.split(key, self.dim)
+        z = jnp.stack([
+            jax.random.normal(keys[i], shape=(N,)) * self.std[i] + self.mean[i]
+            for i in range(self.dim)
+        ], axis=-1)
+        return z
+
+    def sample_pytorch(self, N):
+        return torch.normal(mean=torch.tensor(self.mean), std=torch.tensor(self.std)).repeat(N, 1)
+
+    def logpdf(self, x):
+        # x: [..., 4]
+        logpdf = -0.5 * np.sum(((x - self.mean) / self.std) ** 2, axis=-1) - np.sum(np.log(self.std)) - 0.5 * self.dim * np.log(2 * np.pi)
+        return logpdf
+
+    def pdf(self, x):
+        return np.exp(self.logpdf(x))
+
+
 class LogNormal(BasePrior):
     def __init__(self, dim, mean, std):
         self.loc = mean

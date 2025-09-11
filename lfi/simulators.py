@@ -1,4 +1,5 @@
 import numpy as np
+import typing
 import torch
 import jax
 from typing import Callable
@@ -274,7 +275,6 @@ class BimodalGaussian(BaseSimulator):
         return elfi_simulator
 
 
-
 class BimodalGaussianDistractors(BaseSimulator):
     def __init__(self, dim, dim_y, dim_distractors, sigma_noise=0.1, shift=3):
         self.dim_distractors = dim_distractors
@@ -404,8 +404,111 @@ class TwoMoons(BaseSimulator):
         # Compute final simulated points
         x = p + shift
         return x
-        
-    
+
+
+class SLCP(BaseSimulator):
+    def __init__(self, dim: int, dim_y: int):
+        super().__init__("slcp", dim, dim_y)
+
+    def sample_jax(self, theta: jnp.ndarray, seed: int):
+        key, subkey = jax.random.split(jax.random.PRNGKey(seed))
+        theta = jnp.array(theta)
+        mu = theta[:2]
+        s1 = theta[2] ** 2
+        s2 = theta[3] ** 2
+        rh0 = jnp.tanh(theta[4])
+        eps = 0.000001
+        cov = jnp.array([[s1 ** 2 + eps, rh0 * s1 * s2], [rh0 * s1 * s2, s2 ** 2 + eps]])
+        y = jax.random.multivariate_normal(key=subkey, mean=mu, cov=cov)
+        y = y.reshape(-1)
+        return y
+
+    def sample_numpy(self, theta: np.ndarray):
+        """SLCP simulator. D = 5, D_y = 2.
+
+        theta: (N, D)
+        """
+        theta = np.array(theta)
+        mu = theta[:, :2]
+        s1 = theta[:, 2] ** 2
+        s2 = theta[:, 3] ** 2
+        rh0 = np.tanh(theta[:, 4])
+        eps = 0.000001
+        cov = np.array([[s1 ** 2 + eps, rh0 * s1 * s2], [rh0 * s1 * s2, s2 ** 2 + eps]])
+        y = np.array([np.random.multivariate_normal(mean=mu[i], cov=cov[:, :, i]) for i in range(theta.shape[0])])
+        return y
+
+
+class SLCPDistractors(BaseSimulator):
+    def __init__(self, dim: int, dim_y: int, dim_distractors: int):
+        self.dim_distractors = dim_distractors
+        self.reindex = [
+            87, 47, 39,  9, 25, 21, 26, 94, 41, 30, 34, 44, 12, 27, 89, 20,  6, 13, 51, 40,
+            54,  5,  0,  2, 75, 43, 14, 97, 29, 72, 79, 99, 98,  1, 38, 65, 83, 52, 74, 63,
+            19, 70,  4, 36, 96, 81, 35, 49, 31, 76, 84, 28, 11, 66, 37, 85, 56, 60, 48, 10,
+            22, 82, 24,  8, 42, 32, 73,  3, 59, 95, 90, 50, 18, 68, 45, 67, 92, 91, 17, 93,
+            33, 78, 88, 62, 46, 64, 57, 86, 55, 77,  7, 80, 69, 23, 58, 71, 15, 61, 53, 16
+        ]
+        super().__init__("slcp_distractor", dim, dim_y)
+
+    def sample_jax(self, theta: jnp.ndarray, seed: int):
+        # informative part
+        key, subkey = jax.random.split(jax.random.PRNGKey(seed))
+        theta = jnp.array(theta)
+        mu = theta[:2]
+        s1 = theta[2] ** 2
+        s2 = theta[3] ** 2
+        rh0 = jnp.tanh(theta[4])
+        eps = 0.000001
+        cov = jnp.array([[s1 ** 2 + eps, rh0 * s1 * s2], [rh0 * s1 * s2, s2 ** 2 + eps]])
+        yy = jax.random.multivariate_normal(key=subkey, mean=mu, cov=cov)
+
+        # add dim_distractor samples from a uniform distribution
+        key, subkey = jax.random.split(jax.random.PRNGKey(seed))
+
+        # distractors come from a normal distribution with
+        # mu coming from normal with mu=0, sigma=15
+        # sigma = 3e^a where a comes from normal with mu=0, sigma=1
+        mu_distractors = jax.random.normal(subkey, shape=(self.dim_distractors,)) * 15.0
+        key, subkey = jax.random.split(key)
+        a = jax.random.normal(subkey, shape=(self.dim_distractors,))
+        sigma_distractors = jnp.exp(a) * 3.0
+        key, subkey = jax.random.split(key)
+        yy_distractors = jax.random.normal(
+            subkey,
+            shape=(self.dim_distractors,)
+        ) * sigma_distractors + mu_distractors
+
+        # concatenate informative and distractor parts
+        y = jnp.concatenate([yy, yy_distractors], axis=-1)
+        return y
+
+    def sample_numpy(self, theta: np.ndarray):
+        # theta is (N, D) here
+        # informative part
+        theta = np.array(theta)
+        mu = theta[:, :2]
+        s1 = theta[:, 2] ** 2
+        s2 = theta[:, 3] ** 2
+        rh0 = np.tanh(theta[:, 4])
+        eps = 0.000001
+        cov = np.array([[s1 ** 2 + eps, rh0 * s1 * s2], [rh0 * s1 * s2, s2 ** 2 + eps]])
+        yy = np.array([np.random.multivariate_normal(mean=mu[i], cov=cov[:, :, i]) for i in range(theta.shape[0])])
+
+        # add dim_distractor samples
+        # distractors come from a normal distribution with
+        # mu coming from normal with mu=0, sigma=15
+        # sigma = 3e^a where a comes from normal with mu=0, sigma=1
+        mu_distractors = np.random.normal(0, 15.0, size=(theta.shape[0], self.dim_distractors))
+        a = np.random.normal(0, 1.0, size=(theta.shape[0], self.dim_distractors))
+        sigma_distractors = np.exp(a) * 3.0
+        yy_distractors = np.random.normal(0, 1.0, size=(theta.shape[0], self.dim_distractors)) * sigma_distractors + mu_distractors
+
+        # concatenate informative and distractor parts
+        y = np.concatenate([yy, yy_distractors], axis=-1)
+        return y
+
+
 class ImageNoise(BaseSimulator):
     def __init__(self, dim, dim_y, H, W, sigma_blur=1.0, sigma_noise=0.5):
         self.H = H
@@ -637,6 +740,218 @@ class ImagePixelWiseTransform(BaseSimulator):
         noisy_images = images + noise
 
         return noisy_images.reshape(N, D)
+
+
+class SIR(BaseSimulator):
+    def __init__(
+            self,
+            dim: int,
+            dim_y: int,
+            t_span: typing.Tuple[float, float] = (0.0, 160.0),
+            saveat: float = 1.0,
+            N: float = 1_000_000.0,
+            I0: float = 1.0,
+            R0: float = 0.0,
+            total_count: int = 1000,
+            summary: str = "subsample",
+    ):
+        """SIR simulator (JAX).
+
+
+        Parameters
+        ----------
+        dim: number of parameters (should be 2: beta, gamma)
+        dim_y: number of output channels (3 when returning raw S,I,R timeseries)
+        t_span: (start, end) in days
+        saveat: time resolution (days)
+        N, I0, R0: initial population numbers
+        total_count: number of trials for Binomial observation model
+        summary: currently supports only "subsample" (returns 10 values) or None
+        """
+
+        super().__init__("sir", dim, dim_y)
+        self.t_span = t_span
+        self.saveat = saveat
+        self.N = float(N)
+        self.I0 = float(I0)
+        self.R0 = float(R0)
+        self.total_count = int(total_count)
+        self.summary = summary
+
+        # initial state S, I, R
+        S0 = float(self.N - self.I0 - self.R0)
+        self.u0 = jnp.array([S0, self.I0, self.R0], dtype=jnp.float32)
+
+        # time points: inclusive of endpoint (matching PyTorch's arange(0, days+saveat, saveat))
+        start, end = self.t_span
+        # use jnp.arange so the array is JAX-friendly
+        self.time_points = jnp.arange(start, end + self.saveat, self.saveat, dtype=jnp.float32)
+
+    # def _sir_ode(self, u, t, params):
+    #     """Right-hand side of SIR ODE. Compatible with jax.experimental.ode.odeint.
+    #
+    #
+    #     u: [S, I, R]
+    #     params: [beta, gamma]
+    #     """
+    #
+    #     S, I, R = u
+    #     beta, gamma = params
+    #     dS = -beta * S * I / self.N
+    #     dI = beta * S * I / self.N - gamma * I
+    #     dR = gamma * I
+    #     return jnp.array([dS, dI, dR], dtype=jnp.float32)
+
+    def sample_jax(self, theta: jnp.ndarray, seed: int) -> jnp.ndarray:
+        """Simulate SIR for a single parameter set and return the observation summary.
+
+        Parameters
+        ----------
+        theta: jnp.array of shape (2,) -> [beta, gamma]
+        seed: integer PRNG seed
+
+        Returns
+        -------
+        jnp.ndarray
+        - if summary is "subsample": shape (10,) float32 (binomial counts)
+        - if summary is None: shape (3, T) float32 (full S,I,R timeseries)
+        """
+
+        # define RHS inside like in Lotka-Volterra
+        def sir_ode_jax(u, t, params):
+            S, I, R = u
+            beta, gamma = params
+            dS = -beta * S * I / self.N
+            dI = beta * S * I / self.N - gamma * I
+            dR = gamma * I
+            return jnp.array([dS, dI, dR], dtype=jnp.float32)
+
+        # Ensure correct dtype
+        theta = jnp.asarray(theta, dtype=jnp.float32)
+
+        # Solve ODE: odeint(func, y0, t, *args)
+        try:
+            sol = odeint(sir_ode_jax, self.u0, self.time_points, theta)
+            # odeint returns shape (T, 3) -- transpose to (3, T) to match PyTorch layout
+            us = sol.T  # shape (3, T)
+        except Exception:
+            # If solver fails for any reason, return nan-filled observation
+            if self.summary == "subsample":
+                return jnp.full((10,), jnp.nan, dtype=jnp.float32)
+            else:
+                return jnp.full((3, self.time_points.shape[0]), jnp.nan, dtype=jnp.float32)
+
+        # detect NaNs in solution
+        if jnp.isnan(us).any():
+            if self.summary == "subsample":
+                return jnp.full((10,), jnp.nan, dtype=jnp.float32)
+            else:
+                return jnp.full((3, self.time_points.shape[0]), jnp.nan, dtype=jnp.float32)
+
+        if self.summary is None:
+            return us.astype(jnp.float32)
+
+        if self.summary == "subsample":
+            # follow the PyTorch implementation: use only I (index 1) every 17 timesteps
+            indices = jnp.arange(0, us.shape[1], 17)[:10]
+            I_sub = us[1, indices]  # infected counts at subsampled times
+
+            # convert to probabilities for Binomial observation
+            probs = jnp.clip(I_sub / self.N, 0.0, 1.0).astype(jnp.float32)
+
+            # sample Binomial(total_count, probs) using JAX PRNG
+            key = jax.random.PRNGKey(int(seed))
+            key, subkey = jax.random.split(key)
+            # jax.random.binomial(key, shape, p, n) -> returns counts
+            counts = jax.random.binomial(subkey, shape=probs.shape, p=probs, n=self.total_count)
+
+            return counts.astype(jnp.float32)
+
+        # unsupported summary option
+        raise NotImplementedError(f"Unsupported summary: {self.summary}")
+
+    def sample_numpy(self, theta: np.ndarray, rng: np.random.Generator = None) -> np.ndarray:
+        """NumPy implementation for a batch of parameter sets or a single set.
+
+
+        Parameters
+        ----------
+        theta: shape (2,) or (B,2) array-like of [beta, gamma]
+        rng: optional np.random.Generator for reproducibility
+
+
+        Returns
+        -------
+        - if summary == 'subsample': array of shape (B, 10) or (10,) with binomial counts
+        - if summary is None: array of shape (B, 3, T) or (3, T) with full timeseries
+        """
+        if rng is None:
+            rng = np.random.default_rng()
+
+
+        theta = np.asarray(theta, dtype=float)
+        single = theta.ndim == 1
+        if single:
+            theta = theta[None, :]
+
+        start, end = self.t_span
+        t_eval = np.arange(start, end + self.saveat, self.saveat)
+        T = len(t_eval)
+
+        B = theta.shape[0]
+
+        if self.summary is None:
+            outs = np.full((B, 3, T), np.nan, dtype=np.float32)
+        else:
+            outs = np.full((B, 10), np.nan, dtype=np.float32)
+
+
+        def sir_ode_np(t, u, beta, gamma):
+            S, I, R = u
+            dS = -beta * S * I / self.N
+            dI = beta * S * I / self.N - gamma * I
+            dR = gamma * I
+            return np.array([dS, dI, dR], dtype=float)
+
+
+        for i in range(B):
+            beta, gamma = theta[i]
+            u0 = np.array([self.N - self.I0 - self.R0, self.I0, self.R0], dtype=float)
+            try:
+                sol = solve_ivp(
+                    fun=lambda t, u: sir_ode_np(t, u, beta, gamma),
+                    t_span=(start, end),
+                    y0=u0,
+                    t_eval=t_eval,
+                    method='RK45',
+                    rtol=1e-8,
+                    atol=1e-10,
+                )
+                if not sol.success or sol.y.shape[1] != T:
+                    # leave NaNs
+                    continue
+
+                us = sol.y # shape (3, T)
+
+                if self.summary is None:
+                    outs[i] = us.astype(np.float32)
+                    continue
+
+                # subsample I every 17 timesteps (as in PyTorch)
+                indices = np.arange(0, T, 17)[:10]
+                I_sub = us[1, indices]
+
+                probs = np.clip(I_sub / self.N, 0.0, 1.0)
+                counts = rng.binomial(self.total_count, probs)
+                outs[i] = counts.astype(np.float32)
+
+            except Exception:
+                # leave NaNs on failure
+                continue
+
+        if single:
+            return outs[0]
+        return outs
 
 
 class LotkaVolterra(BaseSimulator):

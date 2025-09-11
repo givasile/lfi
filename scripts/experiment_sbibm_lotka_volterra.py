@@ -7,7 +7,7 @@ import os
 # set seed
 np.random.seed(42)
 
-figure_path = "./../paper/figures/sbibm/lotka_volterra"
+figure_path = "./../results/sbibm/lotka_volterra"
 if not os.path.exists(figure_path):
     os.makedirs(figure_path)
 
@@ -17,10 +17,10 @@ prior_mean = np.array([-0.125, -3.0, -0.125, -3.0])
 prior_std = np.array([0.5, 0.5, 0.5, 0.5])
 dim_y = 20
 observation_nof_obs = 1
-exp_num = 3
+exp_num = 5
 
 # inference parameters
-budget = 100
+budget = 400
 nof_samples = 100
 
 # Prior
@@ -61,36 +61,36 @@ inference.fit(
         "inf_dims_nof_th": 30,
         "inf_dims_nof_seeds": 10,
         "inf_dims_threshold": 1e-1,
-        "epochs": 50,
-        "nof_gd_steps": 40,
+        "epochs": 30,
+        "nof_gd_steps": 10,
         "alpha": 0.01,
         "pcg_to_keep": .2,
         "box_algorithm": "blind",
-        "dx": 0.01
+        "dx": 0.01,
     }
 )
 
 samples = inference.sample(
-    nof_samples=20,
+    nof_samples=100,
     sample_kwargs={
-        "samples_per_region": 1,
-        "eps_3": 10.
+        "samples_per_region": 2,
+        "eps_3": 10.0,
     }
 )
 
-samples = inference.th_star[:20, 0]
+# samples = inference.th_star[:100, 0]
 
 # Generate 100 samples
 samples_gt = lfi.ground_truth.FromSBIBM(
     task_name="lotka_volterra",
     exp_num=exp_num
-).sample(20)
+).sample(100)
 
 g = lfi.visualization.plot_pairwise_posterior(
     samples,
     limits=[-0., 1.5],
     samples_gt=samples_gt,
-    savefig=os.path.join(figure_path, f"posterior_pairwise.png"),
+    savefig=None
 )
 plt.show(block=False)
 
