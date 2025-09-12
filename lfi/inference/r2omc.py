@@ -640,8 +640,11 @@ class R2OMCMultiObs(InferenceBase):
         self.fit_kwargs = fit_kwargs
 
         # fit each R2OMC instance
+        np.random.seed(fit_kwargs["fit_seed"])
+        seeds = np.random.randint(0, 2**31-1, size=self.N_obs)
         for i, r2omc in enumerate(self.r2omc_list):
             print(f"\nFitting observation {i+1}/{self.N_obs}")
+            fit_kwargs["fit_seed"] = int(seeds[i])
             r2omc.fit(budget, fit_kwargs)
 
     def sample(self, nof_samples: int = 100, sample_kwargs: Optional[dict] = None):
@@ -684,7 +687,9 @@ class R2OMCMultiObs(InferenceBase):
         weight_inside = is_inside.sum(-1).prod(0) # (N_th_total,)
         weight_prior = np.exp(self.r2omc_list[0].prior.logpdf(self.th_total)) # (N_th_total,)
         w_unnorm = weight_prior * weight_inside
+        self.w_unnorm = w_unnorm
         w_norm = w_unnorm / w_unnorm.sum()
+        self.w_norm = w_norm
 
         # select samples based on weights
         if np.sum(w_norm > 0) < nof_samples:
