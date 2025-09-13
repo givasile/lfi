@@ -257,48 +257,47 @@ def plot_runtime_success_frontier(savepath, methods, threshold=0.75, agg="mean",
     plt.show(block=False)
 
 # main part
-if __name__ == "__main__":
-    experiment = "single_mode_distractors"
-    savepath = os.path.join("./../../results/mog_benchmark", experiment)
+experiment = "two_modes_distractors"
+savepath = os.path.join("./../../results/mog_benchmark", experiment)
 
-    # df_mean = load_table(results_root, metric="c2st", method="npec", agg="mean")
-    # df_best = load_table(results_root, metric="c2st", method="npec", agg="best")
-    #
-    # print("Mean scores:\n", df_mean)
-    # print("Best scores:\n", df_best)
-    #
-    # plot_c2st_vs_dim(df_mean, "NPE-C")
-    # plot_c2st_vs_budget(df_mean, "NPE-C")
-    # plot_c2st_heatmap(df_mean, "NPE-C")
+# df_mean = load_table(results_root, metric="c2st", method="npec", agg="mean")
+# df_best = load_table(results_root, metric="c2st", method="npec", agg="best")
+#
+# print("Mean scores:\n", df_mean)
+# print("Best scores:\n", df_best)
+#
+# plot_c2st_vs_dim(df_mean, "NPE-C")
+# plot_c2st_vs_budget(df_mean, "NPE-C")
+# plot_c2st_heatmap(df_mean, "NPE-C")
 
-    plot_c2st_success_frontier(
-        savepath,
-        methods=["npec", "bayes_flow", "flow_matching", "r2omc"],
-        threshold=0.8,
-        agg="mean",
-        savefig=True
-    )
+plot_c2st_success_frontier(
+    savepath,
+    methods=["npec", "bayes_flow", "flow_matching", "r2omc"],
+    threshold=0.8,
+    agg="mean",
+    savefig=False
+)
 
-    # plot_c2st_success_frontier(
-    #     savepath,
-    #     methods=["npec", "bayes_flow", "flow_matching", "r2omc"],
-    #     threshold=0.8,
-    #     agg="best",
-    #     savefig=True
-    # )
+plot_c2st_success_frontier(
+    savepath,
+    methods=["npec", "bayes_flow", "flow_matching", "r2omc"],
+    threshold=0.8,
+    agg="best",
+    savefig=False
+)
 
-    plot_runtime_success_frontier(
-        savepath,
-        methods=["npec", "bayes_flow", "flow_matching", "r2omc"],
-        threshold=0.8,
-        agg="mean",
-        savefig=True
-    )
+# plot_runtime_success_frontier(
+#     savepath,
+#     methods=["npec", "bayes_flow", "flow_matching", "r2omc"],
+#     threshold=0.8,
+#     agg="mean",
+#     savefig=False
+# )
 
-    # plot_runtime_success_frontier(
-    #     savepath,
-    #     methods=["npec", "bayes_flow", "flow_matching", "r2omc"],
-    #     threshold=0.8,
-    #     agg="best",
-    #     savefig=True
-    # )
+plot_runtime_success_frontier(
+    savepath,
+    methods=["npec", "bayes_flow", "flow_matching", "r2omc"],
+    threshold=0.8,
+    agg="best",
+    savefig=False
+)

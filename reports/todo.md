@@ -1,3 +1,20 @@
+# TODO
+
+finished:
+- concept figure
+- mog_benchmark
+- multiple_observations
+- sbibm: two moons
+
+todo:
+- concept figure: select plots to show
+- mog_benchmark: 
+  - check plots and maybe pick correct results
+  - maybe create a second experiment, possibly the old concept figure (last priority)
+- sbibm: lotka-volterra
+- sbibm: two moons: just align the code and the plot 
+- images examples: just align the code
+
 # Reviewers' feedback
 
 ## Point 1: You miss some SotA competitors and the ones you use are possibly in their vanilla version.
