@@ -8,13 +8,13 @@ import exp_utils
 # Global config
 # ----------------------------- #
 
-budget_list = [30_000, 40_000, 50_000]
-seed_list = [42, 48930, 1234, 123456, 98765]
+budget_list = [1_000]
+seed_list = [48930, 1234, 123456, 98765]# [42, 48930, 1234, 123456, 98765]
 
 r2omc = False
-npe = True
+npe = False
 snpe = False
-bayes_flow = True
+bayes_flow = False
 flow_matching = True
 
 np.random.seed(42)

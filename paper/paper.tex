@@ -174,63 +174,44 @@ A range of methods have been developed to infer parameters of simulators. They a
 % Challenge
 Parameter inference becomes more challenging when the parameter and data space are high-dimensional. SBI methods tend to be particularly affected because they rely on populating the parameter and data space with samples \citep{lintusaari2017fundamentals, sisson2018handbook, cranmer2020frontier}, so that the curse of dimensionality becomes notable. For complex simulators, where many parameters and variables interact in intricate ways, some variables may only depend weakly, or not at all, on a subset of parameters \citep{Saltelli2008, MonsalveBravo2022}. This can lead to situations where some observable variables are not informative of the parameters of interest and become ``distractors'' during parameter inference \citep{lueckmann2021benchmarking}. Multiple iid observations can exacerbate issues in SBI since the methods need to find parameter configurations that not only explain one observation, which is already difficult, but multiple ones at the same time. Figure \ref{fig:concept_example} illustrates the difficulty of existing SBI methods with high-dimensional parameter spaces, the presence of distractors, multiple iid observations, or all of them combined.
 
-
-% \begin{figure*}
-%   \centering
-%   \setlength{\tabcolsep}{1pt}
-%   \renewcommand{\arraystretch}{2}
-%   \begin{tabular}{*{8}{c} >{\centering\arraybackslash}m{0.1\textwidth}}
-%     \raisebox{-.5\height}{\includegraphics[width=.125\textwidth]{./figures/concept_figure/reference.png}} &
-%     \raisebox{-.5\height}{\includegraphics[width=.125\textwidth]{./figures/concept_figure/posterior_r2omc_100.png}} &
-%     \raisebox{-.5\height}{\includegraphics[width=.125\textwidth]{./figures/concept_figure/posterior_npec_1000.png}} &
-%     \raisebox{-.5\height}{\includegraphics[width=.125\textwidth]{./figures/concept_figure/posterior_npec_10000.png}} &
-%     \raisebox{-.5\height}{\includegraphics[width=.08\textwidth]{./figures/concept_figure/posterior_npec_1000.png}} &
-%     \raisebox{-.5\height}{\includegraphics[width=.08\textwidth]{./figures/concept_figure/posterior_npec_10000.png}} &
-%     \raisebox{-.5\height}{\includegraphics[width=.08\textwidth]{./figures/concept_figure/posterior_npec_1000.png}} &
-%     \raisebox{-.5\height}{\includegraphics[width=.08\textwidth]{./figures/concept_figure/posterior_npec_10000.png}} &
-%   \end{tabular}
-%   \caption{Your figure caption here.}
-%   \label{fig:pixelwise}
-% \end{figure*}
-
 \begin{figure*}
   \centering
   \setlength{\tabcolsep}{0.1pt} % Adjust column spacing
   \renewcommand{\arraystretch}{.6} % Adjust row spacing
   \begin{tabular}{c *{8}{c}} % First column for row titles
     % Column titles (empty first cell for row labels)
-    & Reference & \scriptsize{R2OMC $\#$1K} & \scriptsize{NPE $\#$1K} & \scriptsize{NPE $\#$10K} & \scriptsize{BayesFlow $\#$1K} & \scriptsize{BayesFlow $\#$10K} & \scriptsize{FMPE $\#$1K} & \scriptsize{FMPE $\#$10K} \\
+    & \scriptsize{Reference} & \scriptsize{R2OMC} & \scriptsize{NPE-low} & \scriptsize{NPE-high} & \scriptsize{BayesFlow-low} & \scriptsize{BayesFlow-high} & \scriptsize{FMPE-low} & \scriptsize{FMPE-high} \\
 
     % First row
     \rotatebox{90}{\scriptsize{\quad Simple}} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/posterior_gt} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/posterior_r2omc_100} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/posterior_npec_1000} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/posterior_npec_30000} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/posterior_bayes_flow_1000} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/posterior_bayes_flow_30000} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/posterior_flow_matching_1000} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/posterior_npec_10000} \\
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/gt} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/r2omc} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/npec_low} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/npec_high} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/bayes_flow_low} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/bayes_flow_high} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/flow_matching_low} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/simple/flow_matching_high} \\
     % Second row example
     \rotatebox{90}{\scriptsize{Distractors}} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/distractors/posterior_gt} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/distractors/posterior_r2omc_100} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/distractors/posterior_npec_1000} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/distractors/posterior_npec_30000} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/distractors/posterior_bayes_flow_1000} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/distractors/posterior_bayes_flow_30000} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/distractors/posterior_flow_matching_1000} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/distractors/posterior_flow_matching_30000} \\
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/distractors/gt} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/distractors/r2omc} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/distractors/npec_low} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/distractors/npec_high} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/distractors/bayes_flow_low} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/distractors/bayes_flow_high} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/distractors/flow_matching_low} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/distractors/flow_matching_high} \\
     % Second row example
     \rotatebox{90}{\scriptsize{\; High-dim}} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/posterior_gt} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/posterior_r2omc_100} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/posterior_npec_1000} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/posterior_npec_50000} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/posterior_bayes_flow_1000} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/posterior_bayes_flow_50000} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/posterior_flow_matching_1000} &
-    \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/posterior_flow_matching_50000} \\
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/gt} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/r2omc} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/npec_low} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/npec_high} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/bayes_flow_low} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/bayes_flow_high} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/flow_matching_low} &
+    \includegraphics[width=.12\textwidth]{figures/concept_figure/high_dim/flow_matching_high} \\
   \end{tabular}
   \caption{Your figure caption here.}
   \label{fig:pixelwise}
