@@ -368,7 +368,7 @@ This results in a large $\epsilon$, which again leads to a posterior that is muc
 We here present our new method for Bayesian parameter inference in simulator models. The method uses gradients to obtain posterior samples even in high-dimensional parameter spaces. The method belongs to the ROMC framework so that we start with discussing how we deal with iid observations and distractors before discussing its implementation.
 \begin{figure*}[!ht]
   \centering
-  \includegraphics[width=\linewidth]{./figures/concept_image.png}
+  \includegraphics[width=\linewidth]{figures/old/concept_image}
   \caption{
     Overview \rromc: Distractors are automatically filtered out and proposal distributions $q_i^n$ are created for each observation (here two): the blue-dotted region indicates where the proposal distributions for the first observation are nonzero, and the green-dotted region indicates the same for the second observation. Only samples that fall within the intersection of both regions are given a positive weight and become posterior samples.}
   \label{fig:concept_image}
@@ -653,49 +653,53 @@ The posterior for $S_{\mathtt{linear}}$ is then approximated by a truncated Gaus
 \paragraph{High-dimensional simulators.}
 \label{subsec:gaussian-high-dim}
 
-\begin{figure}[t]
+\begin{figure*}[t]
   \centering
-  \begin{subfigure}[b]{0.23\textwidth}
-    \includegraphics[width=\linewidth]{./figures/experiments/high_dim_linear_gaussian.pdf}
-    \caption{$S_{\mathtt{base}}$: C2ST}
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{./figures/mog_benchmark/single_mode/c2st_frontier}
+    \caption{$S_{\mathtt{base}}$}
   \end{subfigure}
-  \begin{subfigure}[b]{0.23\textwidth}
-    \includegraphics[width=\linewidth]{./figures/experiments/high_dim_linear_gaussian_runtimes.pdf}
-    \caption{$S_{\mathtt{base}}$: Log runtime}
-  \end{subfigure}\\
-  \begin{subfigure}[b]{0.23\textwidth}
-    \includegraphics[width=\linewidth]{./figures/experiments/high_dim_linear_gaussian_distractors.pdf}
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{./figures/mog_benchmark/single_mode_distractors/c2st_frontier}
     \caption{$S_{\mathtt{base}}^{\mathtt{dist}}$: C2ST}
-  \end{subfigure}
-  \begin{subfigure}[b]{0.23\textwidth}
-    \includegraphics[width=\linewidth]{./figures/experiments/high_dim_linear_gaussian_distractors_runtimes.pdf}
-    \caption{$S_{\mathtt{base}}^{\mathtt{dist}}$: Log runtime}
-  \end{subfigure}
-  \caption{Base simulator, varying dimensionality.}
-  \label{fig:high_dim_benchmark_base}
-\end{figure}
-
-\begin{figure}[t]
-  \centering
-  \begin{subfigure}[b]{0.23\textwidth}
-    \includegraphics[width=\linewidth]{./figures/experiments/high_dim_MoG_diff_sigma.pdf}
+  \end{subfigure}\\
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{./figures/mog_benchmark/two_modes/c2st_frontier}
     \caption{$S_{\mathtt{MoG}}$: C2ST}
   \end{subfigure}
-  \begin{subfigure}[b]{0.23\textwidth}
-    \includegraphics[width=\linewidth]{./figures/experiments/high_dim_MoG_diff_sigma_runtimes.pdf}
-    \caption{$S_{\mathtt{MoG}}$: Log runtime}
-  \end{subfigure}\\
-  \begin{subfigure}[b]{0.23\textwidth}
-    \includegraphics[width=\linewidth]{./figures/experiments/high_dim_MoG_diff_sigma_distractors.pdf}
+  \begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\linewidth]{./figures/mog_benchmark/two_modes_distractors/c2st_frontier}
     \caption{$S^{\mathtt{dist}}_{\mathtt{MoG}}$: C2ST}
   \end{subfigure}
-  \begin{subfigure}[b]{0.23\textwidth}
-    \includegraphics[width=\linewidth]{./figures/experiments/high_dim_MoG_diff_sigma_distractors_runtimes.pdf}
-    \caption{$S^{\mathtt{dist}}_{\mathtt{MoG}}$: Log runtime}
-  \end{subfigure}
-  \caption{MoG simulator, varying dimensionality.}
-  \label{fig:high_dim_benchmark_mog}
-\end{figure}
+  \label{fig:high_dim_benchmark_base}
+\end{figure*}
+
+  
+  % \begin{subfigure}[b]{0.23\textwidth}
+  %   \includegraphics[width=\linewidth]{./figures/mog_benchmark/single_mode_distractors/runtime_frontier}
+  %   \caption{$S_{\mathtt{base}}^{\mathtt{dist}}$: Log runtime}
+  % \end{subfigure}
+  % \caption{Base simulator, varying dimensionality.}
+%   \label{fig:high_dim_benchmark_base}
+% \end{figure*}
+
+% \begin{figure*}[t]
+%   \centering
+%   % \begin{subfigure}[b]{0.23\textwidth}
+%   %   \includegraphics[width=\linewidth]{./figures/mog_benchmark/two_modes/runtime_frontier}
+%   %   \caption{$S_{\mathtt{MoG}}$: Log runtime}
+%   % \end{subfigure}\\
+%   \begin{subfigure}[b]{0.49\textwidth}
+%     \includegraphics[width=\linewidth]{./figures/mog_benchmark/two_modes_distractors/c2st_frontier}
+%     \caption{$S^{\mathtt{dist}}_{\mathtt{MoG}}$: C2ST}
+%   \end{subfigure}
+%   % \begin{subfigure}[b]{0.23\textwidth}
+%   %   \includegraphics[width=\linewidth]{./figures/mog_benchmark/two_modes_distractors/runtime_frontier}
+%   %   \caption{$S^{\mathtt{dist}}_{\mathtt{MoG}}$: Log runtime}
+%   % \end{subfigure}
+%   \caption{C2ST Success Frontier ($\leq 0.75$)}
+%   \label{fig:high_dim_benchmark_mog}
+% \end{figure*}
 
 We set $N=1$ and vary the dimensionality of the parameter space, using $D \in \{5, 10, 25, 30\}$. Figure~\ref{fig:high_dim_benchmark_base} shows the results for $S_{\mathtt{base}}$ with $\sigma=1.5$.
 In case of no distractors, all methods perform similarly for $D<10$ in terms of accuracy but the neural methods start to struggle as $D$ increases. Both \rromc~and \nromc~ perform well as they both use gradients, enabling scalability. When distractors are added, however, all methods but \rromc~fail already at low dimensions. In terms of compute time, the ROMC-based methods are at least an order of magnitude faster. In particular note that the runtime is only weakly affected by the dimensionality. 
@@ -713,32 +717,32 @@ We set $D=10$ and vary the number $N$ of iid observations in $\{2, 5, 10, 15, 20
 The results are shown in Figure~\ref{fig:multi_observation_base} for $S_{\mathtt{base}}$ ($\sigma=1$) and Figure~\ref{fig:multi_observation_mog} for $S_{\mathtt{MoG}}$ ($\sigma_1=\sigma_2=1$). 
 \NPE~is strongly affected by multiple observations, breaking down quickly. \NLE~performs better but the performance deteriorates significantly as $N$ increases. While \nromc~performs well for $S_{\mathtt{base}}$, it breaks for $S_{\mathtt{MoG}}$. In contrast, \rromc~achieves good performance across all $N$. In line with the analysis in Section \ref{subsec:implementation}, the runtime increases roughly linearly with $N$ (logarithmically on the log-scale).
 
-\begin{figure}[t] % t! puts fig 6 in the left column
-    \centering
-    \begin{subfigure}[b]{0.23\textwidth}
-    \includegraphics[width=\linewidth]{./figures/exp_multi_observation_base_c2st.pdf}
-    \caption{$S_{\mathtt{base}}$: C2ST}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.23\textwidth}
-    \includegraphics[width=\linewidth]{./figures/exp_multi_observation_base_runtime.pdf}
-    \caption{$S_{\mathtt{base}}$: Log runtime}
-  \end{subfigure}
-  \caption{\label{fig:multi_observation_base} Base simulator, varying nb of observations.}
-\end{figure}
+% \begin{figure}[t] % t! puts fig 6 in the left column
+%     \centering
+%     \begin{subfigure}[b]{0.23\textwidth}
+%     \includegraphics[width=\linewidth]{./figures/exp_multi_observation_base_c2st.pdf}
+%     \caption{$S_{\mathtt{base}}$: C2ST}
+%     \end{subfigure}
+%     \begin{subfigure}[b]{0.23\textwidth}
+%     \includegraphics[width=\linewidth]{./figures/exp_multi_observation_base_runtime.pdf}
+%     \caption{$S_{\mathtt{base}}$: Log runtime}
+%   \end{subfigure}
+%   \caption{\label{fig:multi_observation_base} Base simulator, varying nb of observations.}
+% \end{figure}
 
-\begin{figure}[t] % t! puts fig 6 in the left column
-    \centering
-    \begin{subfigure}[b]{0.23\textwidth}
-    \includegraphics[width=\linewidth]{./figures/exp_multi_observation_MoG_c2st.pdf}
-    \caption{$S_{\mathtt{MoG}}$: C2ST}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.23\textwidth}
-    \includegraphics[width=\linewidth]{./figures/exp_multi_observation_MoG_runtime.pdf}
-    \caption{$S_{\mathtt{MoG}}$: Log runtime}
-    \label{subfig:high_dim_mog_diff_sigma}
-  \end{subfigure}
-  \caption{\label{fig:multi_observation_mog} MoG simulator, varying nb of observations.}
-\end{figure}
+% \begin{figure}[t] % t! puts fig 6 in the left column
+%     \centering
+%     \begin{subfigure}[b]{0.23\textwidth}
+%     \includegraphics[width=\linewidth]{./figures/exp_multi_observation_MoG_c2st.pdf}
+%     \caption{$S_{\mathtt{MoG}}$: C2ST}
+%     \end{subfigure}
+%     \begin{subfigure}[b]{0.23\textwidth}
+%     \includegraphics[width=\linewidth]{./figures/exp_multi_observation_MoG_runtime.pdf}
+%     \caption{$S_{\mathtt{MoG}}$: Log runtime}
+%     \label{subfig:high_dim_mog_diff_sigma}
+%   \end{subfigure}
+%   \caption{\label{fig:multi_observation_mog} MoG simulator, varying nb of observations.}
+% \end{figure}
 
 \paragraph{Summary.}
 Although the used simulators are simple, we observe that most methods struggle when the parameter dimensionality increases, multiple observations are used, or distractors (uninformative dimensions) are present, in line with Figure~\ref{fig:concept_example}. \rromc, in contrast, performs well in all-setups (\CtwoST~between 0.5 and 0.7) while running at least an order of magnitude faster than the tested neural methods.
@@ -754,8 +758,80 @@ The SBI Benchmark~\citep{lueckmann2021benchmarking} enables the comparison with 
 % \textbf{Gaussian Linear Uniform (T.2).}
 % The simulator is a 10 dimensional Gaussian $\mathcal(N)(\thb, 0.1 \mathbf{I})$ with a uniform prior $\mathcal{U}\mathbf{-1}, \mathbf{1})$ on the mean $\thb$. This creates a truncated Gaussian posterior. This is similar to the $S_{\mathtt{base}}$ simulator, but with a smaller range on the prior and fewer parameter dimensions. We include to compare to a wider range of methods.
 
-\textbf{Gaussian Mixture (T.7).}
-The simulator is $\yb|\thb \sim 0.5\mathcal{N}(\thb, \mathbf{I}) + 0.5 \mathcal{N}(\thb, 0.01 \mathbf{I})$. The parameters $\thb$ are two-dimensional and the prior is $\thb \sim \mathcal{U}(\mathbf{-10}, \mathbf{10})$. The ground truth posterior is $\thb|\data \sim 0.5 \mathcal{N}(\data, \mathbf{I}) + 0.5 \mathcal{N}(\data,0.01 \mathbf{I})$, truncated to the support of the prior. The task tests whether methods can accurately estimate a mixture of two Gaussians with same mean but one with much broader variance than the other.
+\subsubsection{SLCP and SLCP with distractors}
+
+\begin{figure*}
+    \centering
+    \begin{subfigure}[b]{0.24\linewidth}
+        \includegraphics[width=\linewidth]{./figures/sbibm/slcp/c2st}
+        \caption{SLCP: C2ST}
+        \label{subfig:sbi_slcp_c2st}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.24\linewidth}
+        \includegraphics[width=\linewidth]{./figures/sbibm/slcp/runtime}
+        \caption{SLCP: Log runtime}
+        \label{subfig:sbi_slcp_runtime}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.24\linewidth}
+        \includegraphics[width=\linewidth]{./figures/sbibm/slcp_distractors/c2st}
+        \caption{SLCP-dist: C2ST}
+        \label{subfig:sbi_slcp_dist_c2st}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.24\linewidth}
+        \includegraphics[width=\linewidth]{./figures/sbibm/slcp_distractors/runtime}
+        \caption{SLCP-dist: Log runtime}
+        \label{subfig:sbi_slcp_dist_runtime}
+    \end{subfigure}
+    \caption{SLCP and SLCP with distractors benchmark results.}
+    \label{fig:sbi_experiments_slcp_c2st}
+\end{figure*}
+
+\begin{figure*}
+    \centering
+    \begin{subfigure}[b]{0.32\linewidth}
+        \includegraphics[width=\linewidth]{figures/sbibm/slcp/pairwise_posterior_total.png}
+        \caption{SLCP total}
+        \label{subfig:sbi_slcp_total}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.32\linewidth}
+        \includegraphics[width=\linewidth]{figures/sbibm/slcp/pairwise_posterior_accepted.png}
+        \caption{SLCP accepted}
+        \label{subfig:sbi_slcp_accepted}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.32\linewidth}
+        \includegraphics[width=\linewidth]{figures/sbibm/slcp/pairwise_posterior_selected.png}
+        \caption{SLCP selected}
+        \label{subfig:sbi_slcp_selected}
+    \end{subfigure}
+    \caption{SLCP pairwise posteriors}
+    \label{fig:sbi_experiments_slcp}
+\end{figure*}
+
+\subsubsection{2-moons (T.8)}
+
+\begin{figure*}
+    \centering
+    \begin{subfigure}[b]{0.32\linewidth}
+        \includegraphics[width=\linewidth]{figures/sbibm/two_moons/c2st}
+        \caption{2-moons total}
+        \label{subfig:sbi_two_moons_total}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.32\linewidth}
+        \includegraphics[width=\linewidth]{figures/sbibm/two_moons/runtime}
+        \caption{2-moons accepted}
+        \label{subfig:sbi_two_moons_accepted}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.32\linewidth}
+        \includegraphics[width=\linewidth]{figures/sbibm/two_moons/pairwise_posterior.png}
+        \caption{2-moons selected}
+        \label{subfig:sbi_two_moons_selected}
+    \end{subfigure}
+    \caption{2-moons pairwise posteriors}
+    \label{fig:sbi_experiments_two_moons_posteriors}
+\end{figure*}
+
+% \textbf{Gaussian Mixture (T.7).}
+% The simulator is $\yb|\thb \sim 0.5\mathcal{N}(\thb, \mathbf{I}) + 0.5 \mathcal{N}(\thb, 0.01 \mathbf{I})$. The parameters $\thb$ are two-dimensional and the prior is $\thb \sim \mathcal{U}(\mathbf{-10}, \mathbf{10})$. The ground truth posterior is $\thb|\data \sim 0.5 \mathcal{N}(\data, \mathbf{I}) + 0.5 \mathcal{N}(\data,0.01 \mathbf{I})$, truncated to the support of the prior. The task tests whether methods can accurately estimate a mixture of two Gaussians with same mean but one with much broader variance than the other.
 
 \textbf{2-moons (T.8).}
 The simulator is $\yb|\thb \sim  (r\cos(\alpha) + 0.25, r \sin(\alpha)) + (-|\theta_1 + \theta_2| / \sqrt{2}, (-\theta_1 + \theta_2) / \sqrt{2})$, $\alpha \sim \mathcal{U}(-\pi/2, \pi/2)$, $r \sim \mathcal{N}(0.1, 0.01^2)$.
@@ -771,63 +847,63 @@ The task tests whether the methods can accurately estimate a posterior with both
 The results are shown in Figure~\ref{fig:sbi_experiments_two_moons}, plotting the performance in terms of \CtwoST~score versus the number of simulator runs needed. The figure shows that
 \rromc~has a \CtwoST~score close to $0.5$ even with a simulation budget of $10^3$ samples, while the rest of the methods need a budget of $10^5$ or more to achieve a similar score and perform much worse for smaller budgets. As in the Gaussian benchmark, we observe that most SBI methods fail to produce accurate posterior samples without a large simulation budget even in relatively simple tasks.
 
-\begin{figure}
-  \centering
-  % taken out due to space issues. Plus, it's another Gaussian, which would make the simulations too Gaussian heavy.
-  % \begin{subfigure}[b]{.24\linewidth}
-  %   \centering
-  %   \includegraphics[width=\linewidth]{./figures/two_moons_romc.pdf}
-  %   \caption{\texttt{R2OMC (C2ST)}}
-  %   \label{subfig:sbi_two_moons_r2omc}
-  % \end{subfigure}\\
-  % \begin{subfigure}[b]{\linewidth}
-  %   \centering
-  %   \includegraphics[width=0.6\linewidth]{./figures/gaussian_linear_uniform.pdf}
-  %   \caption{Gaussian Linear Uniform}
-  %   \label{subfig:sbi_gaussian_mixture_r2omc}
-  % \end{subfigure}
-  \begin{subfigure}[b]{0.49\linewidth}
-     \centering
-     \includegraphics[width=\linewidth]{./figures/gaussian_mixture.pdf}
-     \caption{Mixture of Gaussians}
-     \label{subfig:sbi_gaussian_mixture_r2omc}
-   \end{subfigure}
-  \begin{subfigure}[b]{.49\linewidth}
-    \centering
-    \includegraphics[width=\linewidth]{./figures/two_moons.pdf}
-    \caption{2-moons}
-    \label{subfig:sbi_two_moons_rest}
-  \end{subfigure}
-  \caption{SBI benchmark: performance (C2ST) vs compute budget (log number of simulator runs).}
-  \label{fig:sbi_experiments_two_moons}
-\end{figure}
+% \begin{figure}
+%   \centering
+%   % taken out due to space issues. Plus, it's another Gaussian, which would make the simulations too Gaussian heavy.
+%   % \begin{subfigure}[b]{.24\linewidth}
+%   %   \centering
+%   %   \includegraphics[width=\linewidth]{./figures/two_moons_romc.pdf}
+%   %   \caption{\texttt{R2OMC (C2ST)}}
+%   %   \label{subfig:sbi_two_moons_r2omc}
+%   % \end{subfigure}\\
+%   % \begin{subfigure}[b]{\linewidth}
+%   %   \centering
+%   %   \includegraphics[width=0.6\linewidth]{./figures/gaussian_linear_uniform.pdf}
+%   %   \caption{Gaussian Linear Uniform}
+%   %   \label{subfig:sbi_gaussian_mixture_r2omc}
+%   % \end{subfigure}
+%   \begin{subfigure}[b]{0.49\linewidth}
+%      \centering
+%      \includegraphics[width=\linewidth]{./figures/gaussian_mixture.pdf}
+%      \caption{Mixture of Gaussians}
+%      \label{subfig:sbi_gaussian_mixture_r2omc}
+%    \end{subfigure}
+%   \begin{subfigure}[b]{.49\linewidth}
+%     \centering
+%     \includegraphics[width=\linewidth]{./figures/two_moons.pdf}
+%     \caption{2-moons}
+%     \label{subfig:sbi_two_moons_rest}
+%   \end{subfigure}
+%   \caption{SBI benchmark: performance (C2ST) vs compute budget (log number of simulator runs).}
+%   \label{fig:sbi_experiments_two_moons}
+% \end{figure}
 
-\subsection{Lotka-Voltera model}
+\subsubsection{Lotka-Voltera model}
 
 \begin{figure*}
   \centering
-  \includegraphics[width=0.95\linewidth]{./figures/sbibm/lotka_volterra/posterior_pairwise.png}
+  \includegraphics[width=0.7\linewidth]{./figures/sbibm/lotka_volterra/posterior_pairwise.png}
   \caption{Lotka-Volterra model}
   \label{fig:lotka_volterra}
 \end{figure*}
 
 
-\subsection{Image Example}
+\subsection{Images}
 
 \begin{figure*}
   \centering
   \setlength{\tabcolsep}{1pt}
   \renewcommand{\arraystretch}{2}
   \begin{tabular}{*{10}{c} >{\centering\arraybackslash}m{0.1\textwidth}}
-    \imagerow{image_pixelwise}{image_clean}{Clean: $\thb^*$}
+    \imagerow{images/image_pixelwise}{image_clean}{Clean: $\thb^*$}
     \hline
-    \imagerow{image_pixelwise}{image_observation}{Observed: $\data$}
-    \imagerow{image_pixelwise}{posterior_mean}{Posterior mean}
-    \imagerow{image_pixelwise}{posterior_std}{Posterior std}
+    \imagerow{images/image_pixelwise}{image_observation}{Observed: $\data$}
+    \imagerow{images/image_pixelwise}{posterior_mean}{Posterior mean}
+    \imagerow{images/image_pixelwise}{posterior_std}{Posterior std}
     \hline
-    \imagerow{image_checkerboard}{image_observation}{Observed: $\data$}
-    \imagerow{image_checkerboard}{posterior_mean}{Posterior mean}
-    \imagerow{image_checkerboard}{posterior_std}{Posterior std}
+    \imagerow{images/image_checkerboard}{image_observation}{Observed: $\data$}
+    \imagerow{images/image_checkerboard}{posterior_mean}{Posterior mean}
+    \imagerow{images/image_checkerboard}{posterior_std}{Posterior std}
   \end{tabular}
   \caption{Your figure caption here.}
   \label{fig:pixelwise}

@@ -7,9 +7,9 @@ finished:
 - sbibm: two moons
 
 todo:
-- concept figure: select plots to show
-- mog_benchmark: 
-  - check plots and maybe pick correct results
+- ~~concept figure: select plots to show~~ 
+- ~~mog_benchmark:~~ 
+  - ~~check plots and maybe pick correct results~~
   - maybe create a second experiment, possibly the old concept figure (last priority)
 - sbibm: lotka-volterra
 - sbibm: two moons: just align the code and the plot 
