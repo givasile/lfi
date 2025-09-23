@@ -1,4 +1,4 @@
-\begin{thebibliography}{23}
+\begin{thebibliography}{24}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -133,12 +133,6 @@ Jan-Matthis Lueckmann, Jan Boelts, David Greenberg, Pedro Goncalves, and Jakob
 \newblock In \emph{International conference on artificial intelligence and
   statistics}, pages 343--351. PMLR, 2021.
 
-\bibitem[Meeds and Welling(2015)]{meeds2015optimization}
-Ted Meeds and Max Welling.
-\newblock Optimization monte carlo: Efficient and embarrassingly parallel
-  likelihood-free inference.
-\newblock \emph{Advances in Neural Information Processing Systems}, 28, 2015.
-
 \bibitem[Ikonomov and Gutmann(2020)]{ikonomov2020robust}
 Borislav Ikonomov and Michael~U Gutmann.
 \newblock Robust optimisation monte carlo.
@@ -151,6 +145,20 @@ Vasilis Gkolemis, Michael Gutmann, and Henri Pesonen.
 \newblock An extendable python implementation of robust optimisation monte
   carlo.
 \newblock \emph{arXiv preprint arXiv:2309.10612}, 2023.
+
+\bibitem[Meeds and Welling(2015)]{meeds2015optimization}
+Ted Meeds and Max Welling.
+\newblock Optimization monte carlo: Efficient and embarrassingly parallel
+  likelihood-free inference.
+\newblock \emph{Advances in Neural Information Processing Systems}, 28, 2015.
+
+\bibitem[Wildberger et~al.(2023)Wildberger, Dax, Buchholz, Green, Macke, and
+  Sch{\"o}lkopf]{wildberger2023flow}
+Jonas Wildberger, Maximilian Dax, Simon Buchholz, Stephen Green, Jakob~H Macke,
+  and Bernhard Sch{\"o}lkopf.
+\newblock Flow matching for scalable simulation-based inference.
+\newblock \emph{Advances in Neural Information Processing Systems},
+  36:\penalty0 16837--16864, 2023.
 
 \bibitem[Tejero-Cantero et~al.(2020)Tejero-Cantero, Boelts, Deistler,
   Lueckmann, Durkan, Gonçalves, Greenberg, and Macke]{tejero-cantero2020sbi}

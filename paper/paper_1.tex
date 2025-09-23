@@ -330,6 +330,13 @@ ROMC is vulnerable to failure in this setting because typical distance functions
 Therefore, the minimal distances $d_i^*$ will generally be large for seeds that generate $\yb^{(2)}$ significantly different from $\yb^{o, (2)}$.
 This results in an inflated $\epsilon$, and in turn to a much broader posterior than the ground truth.
 
+\begin{figure*}
+  \centering
+  \includegraphics[height=.35\linewidth, width=.95\linewidth]{figures/old/concept_image}
+  \caption{
+    Overview \rromc: Distractors are automatically filtered out and proposal distributions $q_i^n$ are created for each observation (here two): the blue-dotted region indicates where the proposal distributions for the first observation are nonzero, and the green-dotted region indicates the same for the second observation. Only samples that fall within the intersection of both regions are given a positive weight and become posterior samples.}
+  \label{fig:concept_image}
+\end{figure*}
 
 \paragraph{Multiple iid observations.}
 
@@ -352,14 +359,10 @@ Second, the construction of the acceptance regions $\accregioni$ with a line-sea
 
 \section{Proposed method: \rromc}
 \label{sec:rromc}
+
+
+
 We here present our new method for Bayesian parameter inference in simulator models. The method uses gradients to obtain posterior samples even in high-dimensional parameter spaces. The method belongs to the ROMC framework so that we start with discussing how we deal with iid observations and distractors before discussing its implementation.
-\begin{figure*}[!ht]
-  \centering
-  \includegraphics[width=\linewidth]{figures/old/concept_image}
-  \caption{
-    Overview \rromc: Distractors are automatically filtered out and proposal distributions $q_i^n$ are created for each observation (here two): the blue-dotted region indicates where the proposal distributions for the first observation are nonzero, and the green-dotted region indicates the same for the second observation. Only samples that fall within the intersection of both regions are given a positive weight and become posterior samples.}
-  \label{fig:concept_image}
-\end{figure*}
 
 \subsection{Uninformative dimensions (distractors)}
 \label{subsec:distractors}
@@ -377,20 +380,9 @@ The procedure is illustrated in Figure~\ref{fig:concept_image}, step (i).
 
 The threshold $\tau$ controls the sensitivity of the test. In our experiments, we set $\tau$ to machine precision; more sophisticated approaches consist in monitoring the distribution of the expected norm of the gradient, or by assessing false vs true positives under control conditions. This is possible since the mask $\mask$ can be computed prior to receiving observed data.
 
-% \rromc~includes a filtering step (Step (i) in Figure~\ref{fig:concept_image}) to identify and eliminate output dimensions that are not relevant to the parameters of interest. A binary mask \( I = (I_1, \ldots, I_{D_{\yb}}) \) is created, where \( I_i \) represents the \( i \)-th output dimension. This mask is computed using the gradients of the output dimensions with respect to the parameters of interest:
-
-% \begin{equation}
-%   \label{eq:informative_dimensions}
-%   I_i = \left( \frac{1}{L} \frac{1}{M} \sum_{l=1}^L \sum_{m=1}^M || \nabla_{\thb} g_i(\thb_l, \ub_m) || \right) > \tau
-% \end{equation}
-
-% where \( \thb_l \sim p(\thb) \), \( \ub_m \sim p(\ub) \) and \( \nabla_{\thb} g_i(\thb_l, \ub_m) \) is the gradient of the \( i \)-th output dimension wrt each parameter \( \thb_j \), i.e., \( ( \sfrac{\partial g_i(\thb_l, \ub_m)}{\partial \thb_1}, \ldots, \sfrac{\partial g_i(\thb_l, \ub_m)}{\partial \thb_D} ) \). 
-% If the sum of the gradient norms is below the threshold \( \tau \), the \( i \)-th output dimension is deemed uninformative, resulting in \( I_i = 0 \). The gradients are calculated over \( L \) parameter values \( \thb_l \) and \( M \) seeds \( \ub_m \), where both \( L \) and \( M \) can be adjusted by the user. In our experiments, we set both values to 50. This process is repeated for all output dimensions, producing the binary vector \( I \). The distance function is then defined as \( d(\yb \odot I, \data \odot I) \).
-% The threshold \( \tau \) is a hyperparameter that controls the sensitivity of the test. In our experiments, we set \( \tau = 0 \), meaning that all gradients must be zero for an output dimension to be considered uninformative; however, users can modify it to a less strict value.
-
-
 \subsection{Multiple iid observations}
 \label{subsec:multiple-observations}
+
 The likelihood for multiple iid observations $\{\data_n\}_{n=1}^N$ is the product of the likelihoods for each data point. Approximating the likelihood for each data point as in (\ref{eq:omc_likelihood}) and multiplying-in the prior $p(\thb)$, we can obtain a formal expression for the approximate posterior
 \begin{equation}
   \label{eq:rromc_posterior}
@@ -407,33 +399,7 @@ We now address the question how to efficiently sample from $p_{\epsilon}(\thb | 
   \label{eq:rromc_expectation}
   \bar{h} = \frac{ \int h(\thb) p(\thb) \prod_n^N \sum_i^S \mathbb{1}_{C_{\epsilon}^{i,n}}(\thb) d\thb}{\int p(\thb) \prod_n^N \sum_i^S \mathbb{1}_{C_{\epsilon}^{i,n}}(\thb) d\thb}.
 \end{equation}
-%
-%
-% We derive the ABC posterior for iid observations $\{\data_n\}_{n=1}^N$. Let $L_{\epsilon}^n(\thb)$ be the ABC likelihood for the $n$-th observation and $L_{\epsilon}(\thb)$ the joint likelihood. Due to iid, $L_{\epsilon}(\thb) = \prod_{n}^{N} L_{\epsilon}^n(\thb)$ and the ABC posterior is:
-% \begin{equation}
-%   \label{eq:joint-ABC}
-%   p(\thb | \{\data_n\}_n) \propto p(\thb) \prod_{n}^{N} \Pr(d(g(\thb, \ub), \data_n) \leq \epsilon)
-% \end{equation}
-% % Eq.~(\ref{eq:joint-ABC}) generalizes (\ref{eq:abc_posterior}) to multiple observations.
-% Each $L_{\epsilon}^n(\thb)$ can be approximated using $S$ different seeds;
-% let $\ub_{i,n}$ be the $i$-th seed of the $n$-th observation wich defines the distance function $d_i^n(\thb) = d(g(\thb, \ub_{i,n}), \data_n)$.
-% The OMC-posterior for $N$ iid observations is defined through $S * N$ distances, each corresponding to an acceptance region $C_{\epsilon}^{i,n} = \{\thb : d(g(\thb, \ub_{i,n}), \data_n) \leq \epsilon \}$:
 
-% \begin{equation}
-%   \label{eq:rromc_posterior}
-%   p_{\epsilon}(\thb | \{\data_n\}) \propto p(\thb) \prod_{n}^{N} \sum_{i}^S \mathbb{1}_{C_{\epsilon}^{i,n}}(\thb)
-%   % \quad \text{where}
-%   % \quad \mathbb{1}_{C_{\epsilon}^{i,n}}(\thb) = \begin{cases} 1 & \text{if } d(g(\thb, \ub_{i,n}), \data_n) \leq \epsilon \\ 0 & \text{otherwise} \end{cases}
-% \end{equation}
-
-% where $\mathbb{1}_{C_{\epsilon}^{i,n}}(\thb) = 1$ if $d(g(\thb, \ub_{i,n}), \data_n) \leq \epsilon$ and $0$ otherwise.
-% Eq.~(\ref{eq:rromc_posterior}) is a direct consequence of (\ref{eq:omc_posterior}) and (\ref{eq:joint-ABC}) and is a Monte Carlo approximation of (\ref{eq:joint-ABC}) with $S * N$ deterministic functions.
-
-% The task is to efficiently sample from it and compute any expectation $\bar{h} = \E_{p_{\epsilon}}[h(\thb)]$:
-% \begin{equation}
-%   \label{eq:rromc_expectation}
-%   \bar{h} = \frac{ \int h(\thb) p(\thb) \prod_n^N \sum_i^S \mathbb{1}_{C_{\epsilon}^{i,n}}(\thb) d\thb}{\int p(\thb) \prod_n^N \sum_i^S \mathbb{1}_{C_{\epsilon}^{i,n}}(\thb) d\thb}
-% \end{equation}
 The integrals in the equation are typically intractable. But they correspond to expectations with respect to the prior $p(\thb)$ and hence could be approximated with a sample average. However, this is very inefficient. Few (or no) prior samples will generate outputs $\epsilon$-close to all observations, so most (or all) will get zero weight, leading to a very low effective sample size. Following the general ROMC framework by \citet{ikonomov2020robust}, we thus employ importance sampling with an adaptive proposal distribution obtained via optimization. 
 
 We first treat each data point $\data_n$ separately and construct proposal distributions $q_i^n(\thb)$, $i=1, \ldots, S$, as in Section \ref{subsec:ROMC}: We use optimization to find the minimizers $\thb_{i,n}^*$ of the deterministic functions $d_i^n(\thb) = d(g(\thb, \ub_{i,n}), \data_n)$,       
@@ -463,13 +429,28 @@ This means that the $\thb_p \sim q(\thb)$, weighted by $w_p$, represent samples 
 The rationale for choosing $q(\thb)$ in (\ref{eq:R2OMC-proposal}) as proposal distribution is as follows: it is a mixture of uniform distributions, so sampling and evaluating is easy. It seamlessly combines the contribution from multiple data points, allowing future data points to be included without re-computation. If each $q_i^n$ encloses the corresponding acceptance region $C_{\epsilon}^{i,n}$, then $q(\thb) > 0$ in areas of the parameter space where $\prod_n^N \sum_i^S \mathbb{1}_{C_{\epsilon}^{i,n}}(\thb) > 0$ and no posterior mass is discarded in the weighting in (\ref{eq:rromc_weight}). Finally, regions of high likelihood are characterized by regions where multiple $C_{\epsilon}^{i,n}$ overlap. As the proposal distribution $q(\thb)$ consists of a mixture of the $q_i^n(\thb)$ with equal weights, areas where multiple $C_{\epsilon}^{i,n}$ overlap will be sampled more often, so that areas of high likelihood will be represented with more samples.
 
 Figure~\ref{fig:concept_image}, steps (ii-iii), illustrates the proposed procedure to obtain posterior samples. We have two observed data points and the $\thb_p$ come from regions that match at least one observation; the blue-dotted area for $\data_1$ and the green-dotted region for $\data_2$. However, only the ones that match both will get a positive weight (red dots) and become posterior samples.
-% If the per-observation acceptance regions have little (or no) overlap, i.e. $\bigcap_n^N \bigcup_i^S C_{\epsilon}^{i,n}(\thb)$ is small (or empty), the acceptance rate will drop or even become zero.
-% In this case, we may use a higher $\epsilon$ threshold, but if the problem persists, it is
-% an alarm about possible model-misspecification; there are no parameter values that can match all observations.
 
-% Finally, note that~(\ref{eq:rromc_weight}) holds independently of a specific $q$.
-% The main \rromc~algorithm (Algorithm~\ref{alg:r2omc}, repeatedly calls the \texttt{CoreR2OMC} algorithm (Algorithm~\ref{alg:core_r2omc}) for building the per-observation proposal regions.
-% Therefore, if a more efficient or accurate proposal region algorithm is developed, it can be easily integrated into \rromc~framework.
+\begin{figure*}[!t]
+  \centering
+  \begin{subfigure}[b]{0.245\textwidth}
+    \includegraphics[width=\linewidth]{./figures/mog_benchmark/single_mode/c2st_frontier}
+    \caption{$S_{\mathtt{base}}$}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.245\textwidth}
+    \includegraphics[width=\linewidth]{./figures/mog_benchmark/single_mode_distractors/c2st_frontier}
+    \caption{$S_{\mathtt{base}}^{\mathtt{dist}}$}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.245\textwidth}
+    \includegraphics[width=\linewidth]{./figures/mog_benchmark/two_modes/c2st_frontier}
+    \caption{$S_{\mathtt{MoG}}$}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.245\textwidth}
+    \includegraphics[width=\linewidth]{./figures/mog_benchmark/two_modes_distractors/c2st_frontier}
+    \caption{$S^{\mathtt{dist}}_{\mathtt{MoG}}$}
+  \end{subfigure}
+  \caption{MoG benchmark: Success Frontier plots showing the lowest budget required to reach a C2ST score $\leq 0.75$ for varying $D$.}
+  \label{fig:high_dim_benchmark}
+\end{figure*}
 
 
 \subsection{\texttt{JAX} implementation}
@@ -504,380 +485,142 @@ The simulator is only used for computing $\prod_n^N \sum_i^S \mathbb{1}_{C_{\eps
 The code is available at \LinkToCode.
 
 
-% \subsection{\rromc~algorithm}
-% \label{subsec:rromc_algorithm}
-
-% \rromc~is presented in Algorithms~\ref{alg:r2omc} and~\ref{alg:core_r2omc}.
-
-% \textbf{Algorithm~\ref{alg:r2omc} (\texttt{R2OMC})}:
-% Performs the inference and returns the weighted posterior samples. It
-% identifies the informative dimensions (Step 2) using (\ref{eq:informative_dimensions}), 
-% applies \texttt{CoreR2OMC} (Algorithm~\ref{alg:core_r2omc}) to define the per observation proposal regions (Steps 3-5),
-% defines the proposal distribution $q(\thb)$ (Step 6)
-% and computes the weighted samples (Steps 7-8) using (\ref{eq:rromc_weight}).
-
-% \textbf{Algorithm~\ref{alg:core_r2omc} (\texttt{CoreR2OMC})}:
-% Creates the proposal regions for a single observation.
-% For each seed, it finds the optimal $\thb_i^*$ that minimizes $d(g(\thb, \ub_i) \odot \mask, \data \odot \mask)$ (Step 4), and if it is $\epsilon_1$-close to the observation, it builds a hyperbox around it (Step 6) using Algorithm~\ref{alg:region_construction} provided in the appendix.
-% % The algorithm is similar to ROMC.
-% % The only difference is the use of the mask $I$ and the two $\epsilon$ thresholds:
-% % $\epsilon_1$ for accepting a solution and $\epsilon_2$ for constructing the hyperbox, where $\epsilon_1 < \epsilon_2$.
-
-% \begin{algorithm}[!ht]
-%   \caption{\texttt{R2OMC}. Requires: $p(\thb), g(\thb, \ub), \{\data_n\}_{n=1}^{N}$}
-%   \label{alg:r2omc}
-%   \begin{algorithmic}[1]
-%     \Procedure{\rromc}{$\tau, S, \epsilon_1, \epsilon_2, \epsilon_3, \eta, R, L, P$}
-%       \State $\mask = (I_1, \ldots, I_{D_{y}})$ using~(\ref{eq:informative_dimensions}) with $\tau$ 
-%       \For{\(n \gets 1 \textrm{ to } N\)}
-%       \State $\{q_i^n\}_i^S \leftarrow$ Algorithm~\ref{alg:core_r2omc} with $\data_n, S, \epsilon_1, \epsilon_2$
-%     \EndFor
-%     \State $\thb_p \sim q(\thb)$, where $ q(\thb)= \frac{1}{N} \frac{1}{S} \sum_n \sum_i q_i^n (\thb)$
-%     \State Compute $\{w_p\}_p^P $ using Eq.~\ref{eq:rromc_weight} with $\epsilon_3$
-%     \State \Return $\{w_p, \thb_p\}_{p=1}^{P}$ 
-%     \EndProcedure
-%   \end{algorithmic}
-% \end{algorithm}
-
-% \begin{algorithm}[!ht]
-%   \caption{\texttt{CoreR2OMC}. Requires: $p(\thb), g(\thb, \ub), \data, \mask$}
-%   \label{alg:core_r2omc}
-%   \begin{algorithmic}[1]
-%     \Procedure{CoreR2OMC}{$S, \epsilon_1, \epsilon_2, \eta, R, L$}
-%       \For{\(i \gets 1 \textrm{ to } S\)}
-%         \State{$\ub_i \sim p(\ub)$}
-%         \State{$\thb_i^* = \text{argmin}_{\thb} d(g(\thb, \ub_i) \odot \mask, \data \odot \mask)$}
-%         \State{\text{if} {$d^*_i (\thb) > \epsilon_1$} \textbf{then} go to line 2}
-%         \State{$q_i$ around $\thb_i^*$ with Alg.~\ref{alg:region_construction} using $\eta, R, L, \epsilon_2$}
-%       \EndFor
-%       \State \Return $\{q_i\}_{i}^{S}$
-%     \EndProcedure
-%   \end{algorithmic}
-% \end{algorithm}
-
-% \subsection{Implementation and Efficiency}
-% \label{subsec:implementation}
-% We offer an efficient \texttt{JAX} implementation of $\rromc$, benefiting from automatic differentiation (\texttt{grad}), vectorization (\texttt{vmap}), and just-in-time compilation (\texttt{jit}). 
-% In many cases, \rromc~executes in seconds where most SBI methods require minutes (see Section~\ref{sec:experiments}).
-% % \rromc~cost equals approximately $N * S$ evaluations of the simulator, which is affordable given that $N$ is small in most SBI problems. Even if $N$ is large, $S$ can be decreased to balance the cost.
-
-% % \rromc~is very efficient due to its implementation in \texttt{JAX}, which offers automatic differentiation (\texttt{grad}), vectorization (\texttt{vmap}), and just-in-time compilation (\texttt{jit}). In many cases, \rromc~executes in seconds where most SBI methods require some minutes (see Section~\ref{sec:experiments} and Appendix~\ref{app-subsec:runtime}).
-% % \rromc~cost equals approximately $N * S$ evaluations of the simulator, which is affordable given that $N$ is small in most SBI problems. Even if $N$ is large, $S$ can be decreased to balance the cost.
-
-% Algorithm~\ref{alg:r2omc} hast three parts; distractors (Step 2), proposal regions (Steps 3-5) and weighted samples (Steps 6-8).
-% For the distractors, \texttt{grad} computes $\partial g_i/\partial \thb_j$ for all $i$ and $j$ in one call, and \texttt{vmap} evaluates multiple $\thb$ at once.
-% Combining them, the cost is $S$.
-% For candidate samples (Steps 3-5), the cost is $N$ executions of \texttt{CoreR2OMC}, so $N*S$.
-% For computing weights (Steps 6-8), (\ref{eq:rromc_weight}) is evaluated on $P$ samples.
-% The simulator is only used for computing $\prod_n^N \sum_i^S \mathbb{1}_{C_{\epsilon}^{i,n}}(\thb_p)$ which requires evaluating $S * N$ different distance functions on $P$ points each. Using \texttt{vmap} in each distance function, the total cost is $S * N$. Evaluating $q(\cdot)$ and $p(\cdot)$ does not require calling the simulator. If the simulator is expensive, the $S *N$ cost of checking whether the samples are in the acceptance regions can be avoided by using the hyperbox or another model for the acceptance region, see \citet{ikonomov2020robust}.
-
-% Algorithm~\ref{alg:core_r2omc} has two expensive steps: optimization (Step 4) and hyperbox building (Step 6).
-% Optimization requires $T$ gradient descent steps, where $T$ is a user-defined hyperparameter.
-% \texttt{jit} allows compiling $T_1$ consequtive steps to apply them at the cost of a single execution, so the cost reduces to $S \frac{T}{T_1}$.
-% $\frac{T}{T_1}$ is normally small, and can even reach $1$ if memory allows setting $T_1 = T$.
-% Hyperboxes require, for each axis and each seed, $2L+1$ query points and up to $R$ refinements (see Appendix).
-% The $(2L+1) * D$ query points can be evaluated in a single call (using \texttt{vmap}), limiting the cost to $S*R$.
-% In most cases, $R$ can be set to a small value (or even $1$).
-% The total cost of \texttt{CoreR2OMC} is $S (\frac{T}{T_1} + R)$, which is approximately $S$.
-
 \section{Experiments}
 \label{sec:experiments}
 
-We report simulation results on a Mixture of Gaussians (MoG) benchmark in Section~\ref{subsec:gaussian} and the SBI  benchmark by \citet{lueckmann2021benchmarking} in Section~\ref{subsec:sbi-benchmark}.
-The MoG benchmark thoroughly evaluates methods under high-dimensionality, distractors and multiple observations.
-SBI considers popular test simulators.
+To assess \rromc, we conduct experiments on a Mixture of Gaussians benchmark, on the synthetic SBI benchmark and an image-based inference problem, covering scenarios with high-dimesional data, distractors, multiple observations and complex posterior shapes.
 
 \paragraph{Methods.}
-In the MoG benchmark, we compare \rromc~with a straightforward use of the \romc~framework (\nromc) and two neural methods: \NPE~\citep[specifically, ``SNPE-C'' by][]{greenberg2019automatic} and \NLE~\citep[specifically, ``NLE-A'' by][]{papamakarios2019sequential}.
-For the MoG benchmark, the maximal simulation budget is $10^4$. This means $10^4$ simulated samples for \NPE~and \NLE~, and maximally $10^4$ simulator calls for \rromc~and \nromc. For the SBI benchmark, we test multiple budgets.
-Both \rromc~and \nromc~use the squared Euclidean norm as distance function.
-\nromc~does not filter out distractors and concatenates iid observations to form a single vector of observed data. 
-%
-We use our \texttt{JAX} implementation for \rromc, and also a \texttt{JAX} implementation for \nromc, which gives both of them access to gradients, and the \texttt{SBI Pytorch} implementation for \NLE~and \NPE~\citep{tejero-cantero2020sbi}.
-%
-In the SBI benchmark, we compare \rromc~with Rejection ABC (\REJ), Sequential Monte Carlo ABC (\SMC), Neural Likelihood Estimation (\NLE), Neural Ratio Estimation (\NRE), and their sequential variants.
-%
+
+In the MoG benchmark, we compare \rromc~against three well-known neural methods: \NPE~\citep{greenberg2019automatic}, BayesFlow~\citep{radev2020bayesflow} and FlowMatching~\citep{wildberger2023flow}.
+We use our \texttt{JAX} implementation for \rromc and for the competitors the implementation provided by the \texttt{SBI Pytorch} package.
+In the SBI benchmark, we compare \rromc~against all methods reported by \citet{lueckmann2021benchmarking}.
+% i.e., Rejection ABC (\REJ), Sequential Monte Carlo ABC (\SMC), Neural Likelihood Estimation (\NLE), Neural Ratio Estimation (\NRE), and their sequential variants.
+In the image-based inference problem, we illustrate the applicability of \rromc~to a high-dimensional real-world problem, without comparing it.
 All experiments were conducted on a single Dell XPS PC equipped with an Intel® Core™ i7-10750H CPU @ 2.60GHz with 12 cores.
-%
 Appendix~\ref{app-sec:experiments} contains further details on the setup and methods.
-%
 
 \paragraph{Metrics.}
-We evaluate all the methods with the \CtwoST~score, which uses classification to measure the similarity between two data sets \citep{gutmann2018likelihood, lueckmann2021benchmarking}. The first set are the samples from the approximate posterior while the second set are the ground truth posterior samples. The best score is $0.5$, indicating that the two sets are indistinguishable, while the worst score is $1.0$, indicating perfect separation.
-As classifier, we use a fully-connected neural network trained on $1,000$ samples from each set and report the mean \CtwoST~score over $5$ independent runs.
+
+All methods are evaluated with the \CtwoST~score~\citep{gutmann2018likelihood, lueckmann2021benchmarking}, which uses classification to measure the similarity between two sets; the first set are the samples from the approximate posterior and the second set from the ground truth. The best score is $0.5$, indicating that the two sets are indistinguishable, while the worst score is $1.0$, indicating perfect separation.
+% As classifier, we use a fully-connected neural network trained on $1,000$ samples from each set and report the mean \CtwoST~score over $5$ independent runs.
 
 \subsection{MoG benchmark}
 \label{subsec:gaussian}
-The simulator models used here allow us to systematically evaluate SBI methods when (a) the dimensionality of the parameter space $D$, (b) the number of observations $N$, and (c) the number of uninformative dimensions increases, without altering the problem's structure. Moreover, they are amenable to closed form approximations to the posterior. For all simulators, we use a uniform prior $p(\thb) = \mathcal{U}(\mathbf{-15}, \mathbf{15})$.
 
-The simulators are
-\begin{itemize}
-  \item $S_{\mathtt{base}}: \yb \sim \mathcal{N}(\thb, \sigma^2 \mathbf{I})$,
-  \item $S_{\mathtt{MoG}}: \yb \sim \frac{1}{2}\left ( \mathcal{N}(\thb, \sigma_1^2 \mathbf{I}) + \mathcal{N}(-\thb, \sigma_2^2\mathbf{I})\right)$,
-  %$S_{\mathtt{MoG}}: \yb \sim \frac{1}{2}\left ( \mathcal{N}(\thb, \sigma_1^2 \mathbf{I}) + \mathcal{N}(-\thb, \sigma_2^2 \mathbf{I})\right)$
-% which leads a mixture of two Gaussians as posterior. We use $S_{\mathtt{MoG}(\Sigma_1=\Sigma_2)}$ when $\sigma_1 = \sigma_2$ and $S_{\mathtt{MoG}(\Sigma_1 \neq \Sigma_2)}$ when $\sigma_1 \neq \sigma_2$.
-% Both simulators test the ability of a method to capture bi-modal posteriors, with the latter being more challenging due to the different variances.
-  %\item $S_{\mathtt{shift}}: \yb \sim \frac{1}{2} \left ( \mathcal{N}(\thb + \mathbf{5}, \sigma^2 \mathbf{I}) + \mathcal{N}(\thb, \sigma^2 \mathbf{I}) \right )$
-% , which leads to two Gaussian modes shifted by $5$ units along each axis.
-% We use this simulator in the multiple observations setup, where we setup the observations in a way, that although each observation leads to a bi-modal Gaussian, in the light of all observations, the posterior is uni-modal.
-%  \item $S_{\mathtt{cartesian}}: \yb \sim \frac{1}{|\mathcal{M}|} \sum_{\mu_i \in \mathcal{M}} \mathcal{N}(\mu_i, \sigma^2 \mathbf{I})$, where $\mathcal{M} = \{ \{ \pm \theta_1\} \times \ldots \times \{\pm \theta_{D}\} \}$.
-% , which leads to $2^{D}$ modes, so this simulator tests the ability of a method to capture multi-modal posteriors.
-\end{itemize}
-for more, see Appendix \ref{sec:additional-experiments}.
-Each simulator $S$ is used in a simple and extended setup. In the simple setup, the output has the same dimensionality as the parameter vector ($D_y = D$) and we have a single observation $\data \in \mathbb{R}^{D_y}$. In the extended setup, we further consider distractors and/or additional iid data points. In the distractors version, we denote the simulator as $S^{\mathtt{dist}}$ and we append $100$ distractors to the simulator output, thus augmenting the output space to $D_y+100$. The distractor variables are sampled from $\yb^{\mathtt{dist}} \sim \mathcal{N}(\boldsymbol{\mu}, 100 \mathbf{I})$, with $\boldsymbol{\mu} \sim \mathcal{U}(-10, 10)$. In the version with multiple iid observations, we denote the simulator as $S^{\mathtt{multi}}$. %To indicate the joint case of distractors and multiple iid observations, we use the notation $S^{\mathtt{dist+multi}}$. % removed as it does not seem to be used
+We systematically evaluate SBI methods when the dimensionality of the parameter space $D$ increases.
+We use two simulators,
+$S_{\mathtt{base}}: \yb \sim \mathcal{N}(\thb, \sigma^2 \mathbf{I})$ and
+$S_{\mathtt{MoG}}: \yb \sim \frac{1}{2}\left ( \mathcal{N}(\thb, \sigma_1^2 \mathbf{I}) + \mathcal{N}(-\thb, \sigma_2^2\mathbf{I})\right)$, that lead to uni-modal and bi-modal posteriors respectively.
+For each simulator, we consider a simple version, where the output has the same dimensionality as the parameter vector ($D_y = D$), and a distractor version, where where we append $100$ uninformative dimensions to the output ($D_y = D + 100$).
+The distractor dimensions are sampled from $\mathcal{N}(\boldsymbol{\mu}, 100 \mathbf{I})$, with $\boldsymbol{\mu} \sim \mathcal{U}(-10, 10)$.
+That is, we consider four simulators in total.
 
-As observed data, we use $\data_n \approx (5, \ldots, 5)$, that is a vector of 5's with some small noise around it. In case of distractors, we append $100$ zeros to it. 
-The posterior for $S_{\mathtt{linear}}$ is then approximated by a truncated Gaussian, while the posterior for $S_{\mathtt{MoG}}$ is well approximated by a truncated bi-modal Gaussian, see Appendix \ref{app-sec:experiments}. 
+As observed data, we use $\data_n \approx (5, \ldots, 5)$, that is a vector of 5's with some small noise around it.
+In case of distractors, we append $100$ zeros to it. 
+The posterior for $S_{\mathtt{base}}$ is then approximated by a truncated Gaussian, while the posterior for $S_{\mathtt{MoG}}$ is well approximated by a truncated bi-modal Gaussian.
 
-% \paragraph{Standard setup.}
-%  At the standard setup, the output of each simulator has the same dimensionality as the parameter vector ($D_{\yb} = D_{\thb}$) and we have a single observation $\data \in \mathbb{R}^{D_{\yb}}$.
+For each simulator, we evaluate \rromc~against the three neural methods mentioned above, varying $D$ from $2$ to $20$ and the simulation budget from $1\_000$ to $100\_000$.
+For all simulators, we use $\mathcal{U}(\mathbf{-3}, \mathbf{3})$ as prior.
+For more details on the setup, see Appendix \ref{app-sec:experiments}.
 
-% \paragraph{Distractor setup.}
-% Here, we append a vector of $D_{\mathtt{dist}} = 100$ uninformative dimensions to the output. The distractor vector is $\yb^{\mathtt{dist}} \sim \mathcal{N}(\mathbf{\mu}, 10^2 \odot \mathbf{I})$, where $\mathbf{\mu} \sim \mathcal{U}(-10, 10)$ and is concatenated the original output. Therefore, the modified simulator ($S_{\mathtt{<name>}}^{\mathtt{dist}}$) produces the output $\yb \leftarrow \yb^\frown \yb^{\mathtt{dist}}$, with dimensionality $D_{\yb} = D_{\thb} + D_{\mathtt{dist}}$. In the same way, the observation $\data \in \mathbb{R}^{D_{\thb} + D_{\mathtt{dist}}}$. Alhtough distractors do not affect the ground truth posterior, they pose an extra challenge for inference methods due to increasing the output dimensionality with uninformative dimensions.
-
-% \paragraph{Multiple observations setup.}
-% Here, the simulator, denoted as $S_{\mathtt{<name>}}^{\mathtt{multi}}$, produces a set of $N_y$ outputs $\{\yb_k: k \in \{1, \ldots, N_y\}\}$ which are then concatenated to a flat vector $\yb = \yb_1 \frown \ldots \frown \yb_{N_y}$, with dimensionality $D_{\yb} = N_y \cdot D_{\thb}$. The observation is similarly a flat vector of the concatenated observations, $\data = \data_1 \frown \ldots \frown \data_{N_y}$. An exception is \rromc, which handles multiple observations differently, so it works with the standard simulator $S_{\mathtt{<name>}}$ and takes the observations as a list $\data = [\data_1, \ldots, \data_{N_y}]$.
-
-
-\paragraph{High-dimensional simulators.}
-\label{subsec:gaussian-high-dim}
-
-\begin{figure*}[t]
-  \centering
-  \begin{subfigure}[b]{0.45\textwidth}
-    \includegraphics[width=\linewidth]{./figures/mog_benchmark/single_mode/c2st_frontier}
-    \caption{$S_{\mathtt{base}}$}
-  \end{subfigure}
-  \begin{subfigure}[b]{0.45\textwidth}
-    \includegraphics[width=\linewidth]{./figures/mog_benchmark/single_mode_distractors/c2st_frontier}
-    \caption{$S_{\mathtt{base}}^{\mathtt{dist}}$: C2ST}
-  \end{subfigure}\\
-  \begin{subfigure}[b]{0.45\textwidth}
-    \includegraphics[width=\linewidth]{./figures/mog_benchmark/two_modes/c2st_frontier}
-    \caption{$S_{\mathtt{MoG}}$: C2ST}
-  \end{subfigure}
-  \begin{subfigure}[b]{0.45\textwidth}
-    \includegraphics[width=\linewidth]{./figures/mog_benchmark/two_modes_distractors/c2st_frontier}
-    \caption{$S^{\mathtt{dist}}_{\mathtt{MoG}}$: C2ST}
-  \end{subfigure}
-  \label{fig:high_dim_benchmark_base}
-\end{figure*}
-
-  
-  % \begin{subfigure}[b]{0.23\textwidth}
-  %   \includegraphics[width=\linewidth]{./figures/mog_benchmark/single_mode_distractors/runtime_frontier}
-  %   \caption{$S_{\mathtt{base}}^{\mathtt{dist}}$: Log runtime}
-  % \end{subfigure}
-  % \caption{Base simulator, varying dimensionality.}
-%   \label{fig:high_dim_benchmark_base}
-% \end{figure*}
-
-% \begin{figure*}[t]
-%   \centering
-%   % \begin{subfigure}[b]{0.23\textwidth}
-%   %   \includegraphics[width=\linewidth]{./figures/mog_benchmark/two_modes/runtime_frontier}
-%   %   \caption{$S_{\mathtt{MoG}}$: Log runtime}
-%   % \end{subfigure}\\
-%   \begin{subfigure}[b]{0.49\textwidth}
-%     \includegraphics[width=\linewidth]{./figures/mog_benchmark/two_modes_distractors/c2st_frontier}
-%     \caption{$S^{\mathtt{dist}}_{\mathtt{MoG}}$: C2ST}
-%   \end{subfigure}
-%   % \begin{subfigure}[b]{0.23\textwidth}
-%   %   \includegraphics[width=\linewidth]{./figures/mog_benchmark/two_modes_distractors/runtime_frontier}
-%   %   \caption{$S^{\mathtt{dist}}_{\mathtt{MoG}}$: Log runtime}
-%   % \end{subfigure}
-%   \caption{C2ST Success Frontier ($\leq 0.75$)}
-%   \label{fig:high_dim_benchmark_mog}
-% \end{figure*}
-
-We set $N=1$ and vary the dimensionality of the parameter space, using $D \in \{5, 10, 25, 30\}$. Figure~\ref{fig:high_dim_benchmark_base} shows the results for $S_{\mathtt{base}}$ with $\sigma=1.5$.
-In case of no distractors, all methods perform similarly for $D<10$ in terms of accuracy but the neural methods start to struggle as $D$ increases. Both \rromc~and \nromc~ perform well as they both use gradients, enabling scalability. When distractors are added, however, all methods but \rromc~fail already at low dimensions. In terms of compute time, the ROMC-based methods are at least an order of magnitude faster. In particular note that the runtime is only weakly affected by the dimensionality. 
-Figure~\ref{fig:high_dim_benchmark_mog} shows the results for $S_{\mathtt{MoG}}$ with $\sigma_1 = 0.1$ and $\sigma_2=1$. The results are largely similar except that the difference in performance is notable at low dimensions already.
-
-% Results are presented in Figure~\ref{fig:high_dim_benchmark}.
-% We observe that the increased dimensionality and the distractors pose significant challenges for \nromc and \NPE.
-% In particular, \NPE~fails in all cases but the $S_{\mathtt{base}}$ simulator. In the standard version of both $S_{\mathtt{MoG}}^{\sigma_1, \sigma_2}$ simulators, and in all distractor setups, \NPE~has a \CtwoST~score close to $1.0$.
-% \nromc~performs well in all standard setups, but it fails in the distractors setups for reasons described in Section \ref{sec:romc-limitations}. In contrast, \rromc~achieves a perfect \CtwoST~close to $0.5$ in all setups and dimensions
-% In terms of compute time, \rromc~needs less than $10$ seconds irrespective of the setup and the dimension, while \NPE~needs more than $10$ minutes to run, even for $D=5$. Overall, the performance of \rromc in higher dimensional parameter spaces highlights the benefit of using gradient-information, both to scale to higher dimensions and to deal with distractors.
-
-\paragraph{Multiple observations.}
-\label{subsec:gaussian-multi-obs}
-We set $D=10$ and vary the number $N$ of iid observations in $\{2, 5, 10, 15, 20\}$. To isolate the effect of the number of observations, we do not consider distractors. 
-The results are shown in Figure~\ref{fig:multi_observation_base} for $S_{\mathtt{base}}$ ($\sigma=1$) and Figure~\ref{fig:multi_observation_mog} for $S_{\mathtt{MoG}}$ ($\sigma_1=\sigma_2=1$). 
-\NPE~is strongly affected by multiple observations, breaking down quickly. \NLE~performs better but the performance deteriorates significantly as $N$ increases. While \nromc~performs well for $S_{\mathtt{base}}$, it breaks for $S_{\mathtt{MoG}}$. In contrast, \rromc~achieves good performance across all $N$. In line with the analysis in Section \ref{subsec:implementation}, the runtime increases roughly linearly with $N$ (logarithmically on the log-scale).
-
-% \begin{figure}[t] % t! puts fig 6 in the left column
-%     \centering
-%     \begin{subfigure}[b]{0.23\textwidth}
-%     \includegraphics[width=\linewidth]{./figures/exp_multi_observation_base_c2st.pdf}
-%     \caption{$S_{\mathtt{base}}$: C2ST}
-%     \end{subfigure}
-%     \begin{subfigure}[b]{0.23\textwidth}
-%     \includegraphics[width=\linewidth]{./figures/exp_multi_observation_base_runtime.pdf}
-%     \caption{$S_{\mathtt{base}}$: Log runtime}
-%   \end{subfigure}
-%   \caption{\label{fig:multi_observation_base} Base simulator, varying nb of observations.}
-% \end{figure}
-
-% \begin{figure}[t] % t! puts fig 6 in the left column
-%     \centering
-%     \begin{subfigure}[b]{0.23\textwidth}
-%     \includegraphics[width=\linewidth]{./figures/exp_multi_observation_MoG_c2st.pdf}
-%     \caption{$S_{\mathtt{MoG}}$: C2ST}
-%     \end{subfigure}
-%     \begin{subfigure}[b]{0.23\textwidth}
-%     \includegraphics[width=\linewidth]{./figures/exp_multi_observation_MoG_runtime.pdf}
-%     \caption{$S_{\mathtt{MoG}}$: Log runtime}
-%     \label{subfig:high_dim_mog_diff_sigma}
-%   \end{subfigure}
-%   \caption{\label{fig:multi_observation_mog} MoG simulator, varying nb of observations.}
-% \end{figure}
-
-\paragraph{Summary.}
-Although the used simulators are simple, we observe that most methods struggle when the parameter dimensionality increases, multiple observations are used, or distractors (uninformative dimensions) are present, in line with Figure~\ref{fig:concept_example}. \rromc, in contrast, performs well in all-setups (\CtwoST~between 0.5 and 0.7) while running at least an order of magnitude faster than the tested neural methods.
+Figure~\ref{fig:high_dim_benchmark} summarizes the results in form of Success Frontier plots, showing the lowest budget required for a successful inference, defined as reaching a \CtwoST~score $\leq 0.75$, for varying $D$.
+All neural-based methods follow the same trend; as $D$ increases, so does the requird budget, and soon they ask for more than $100\_000$ simulations to succeed, which incurs very high runtimes (see Appendix \ref{app-sec:experiments}).
+They struggle more with $S_{\mathtt{MoG}}$ than with $S_{\mathtt{base}}$, as the posterior is more complex and more on the distractor versions than on the simple ones.
+In contrast, \rromc~succeeds with a budget of up to $1\_000$ simulations and a runtime of a few seconds for all $D$ and all simulators.
 
 \subsection{SBI benchmark}
 \label{subsec:sbi-benchmark}
 
-The SBI Benchmark~\citep{lueckmann2021benchmarking} enables the comparison with a range of methods. We select the following two experiments from the benchmark:
-%
-% \texttt{Gaussian Mixture} from the SBI Benchmark, and we add the \texttt{Linear Gaussian} experiment.
-% the Gaussian Mixture, and the Linear Gaussian. The Two Moons is used to test \rromc beyond Gaussian simulators, while the Gaussian Mixture and the Linear Gaussian are used to confirm the results of the Gaussian benchmark. Furthermore, since the SBI Benchmark provides the scres of many inference methods, we can broaden the comparison of \rromc~against other methods.
-% taken out for now due to space issue. Plus it's another Gaussian-based simulator, which would be too many Gaussians IMHO
-% \textbf{Gaussian Linear Uniform (T.2).}
-% The simulator is a 10 dimensional Gaussian $\mathcal(N)(\thb, 0.1 \mathbf{I})$ with a uniform prior $\mathcal{U}\mathbf{-1}, \mathbf{1})$ on the mean $\thb$. This creates a truncated Gaussian posterior. This is similar to the $S_{\mathtt{base}}$ simulator, but with a smaller range on the prior and fewer parameter dimensions. We include to compare to a wider range of methods.
+The SBI~\citep{lueckmann2021benchmarking} is a widely used benchmark for SBI methods.
+We select two characteristic experiments from the benchmark that cover different challenges.
 
-\subsubsection{SLCP and SLCP with distractors}
+\subsubsection{SLCP (T.3) and plus distractors (T.4)}
 
-\begin{figure*}
+\begin{figure}
     \centering
-    \begin{subfigure}[b]{0.24\linewidth}
+    \begin{subfigure}[b]{0.49\linewidth}
         \includegraphics[width=\linewidth]{./figures/sbibm/slcp/c2st}
         \caption{SLCP: C2ST}
         \label{subfig:sbi_slcp_c2st}
     \end{subfigure}
-    \begin{subfigure}[b]{0.24\linewidth}
+    \begin{subfigure}[b]{0.49\linewidth}
         \includegraphics[width=\linewidth]{./figures/sbibm/slcp/runtime}
         \caption{SLCP: Log runtime}
         \label{subfig:sbi_slcp_runtime}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.24\linewidth}
+    \end{subfigure}\\
+    \begin{subfigure}[b]{0.49\linewidth}
         \includegraphics[width=\linewidth]{./figures/sbibm/slcp_distractors/c2st}
         \caption{SLCP-dist: C2ST}
         \label{subfig:sbi_slcp_dist_c2st}
     \end{subfigure}
-    \begin{subfigure}[b]{0.24\linewidth}
+    \begin{subfigure}[b]{0.49\linewidth}
         \includegraphics[width=\linewidth]{./figures/sbibm/slcp_distractors/runtime}
         \caption{SLCP-dist: Log runtime}
         \label{subfig:sbi_slcp_dist_runtime}
     \end{subfigure}
     \caption{SLCP and SLCP with distractors benchmark results.}
     \label{fig:sbi_experiments_slcp_c2st}
-\end{figure*}
+\end{figure}
 
-\begin{figure*}
+\begin{figure}
     \centering
-    \begin{subfigure}[b]{0.32\linewidth}
+    \begin{subfigure}[b]{0.49\linewidth}
         \includegraphics[width=\linewidth]{figures/sbibm/slcp/pairwise_posterior_total.png}
         \caption{SLCP total}
         \label{subfig:sbi_slcp_total}
     \end{subfigure}
-    \begin{subfigure}[b]{0.32\linewidth}
-        \includegraphics[width=\linewidth]{figures/sbibm/slcp/pairwise_posterior_accepted.png}
-        \caption{SLCP accepted}
-        \label{subfig:sbi_slcp_accepted}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.32\linewidth}
+    % \begin{subfigure}[b]{0.32\linewidth}
+    %     \includegraphics[width=\linewidth]{figures/sbibm/slcp/pairwise_posterior_accepted.png}
+    %     \caption{SLCP accepted}
+    %     \label{subfig:sbi_slcp_accepted}
+    % \end{subfigure}
+    \begin{subfigure}[b]{0.49\linewidth}
         \includegraphics[width=\linewidth]{figures/sbibm/slcp/pairwise_posterior_selected.png}
         \caption{SLCP selected}
         \label{subfig:sbi_slcp_selected}
     \end{subfigure}
     \caption{SLCP pairwise posteriors}
     \label{fig:sbi_experiments_slcp}
-\end{figure*}
+\end{figure}
 
-\subsubsection{2-moons (T.8)}
+As its name suggests, the SLCP task is designed to have a Simple Likelihood but a Complex Posterior~\citep{papamakarios2019sequential, greenberg2019automatic}.
 
-\begin{figure*}
+The prior is uniform over five parameters $\thb \in \mathcal{U}(-\mathbf{3}, \mathbf{3})^5$ and the observations consist of four two-dimensional points drawn from a Gaussian distribution whose mean and variance are nonlinear functions of~$\theta$.
+This setup yields a posterior with four symmetric modes and sharp vertical cut-offs.
+SLCP with distractors augments the original SLCP task by adding 92 additional non-informative outputs, resulting in a total of 100 output dimensions.
+
+Figure~\ref{fig:sbi_experiments_slcp_c2st} illustrates the \CtwoST~score and runtime of \rromc~and all methods reported by \citet{lueckmann2021benchmarking} for SLCP (top row) and SLCP with distractors (bottom row).
+\rromc~achieves an accurate posterior approximation (\CtwoST~score between $0.7$ and $0.8$) with a small simulation budget of $10^3$ samples and a runtime of a few seconds.
+All other methods require a budget of at least $10^4$ (and often $10^5$) samples to reach a similar score, leading to runtimes of several minutes or even hours.
+The results are more pronounced in the distractor version, where most methods fail to reach a \CtwoST~score below $0.8$ even with a budget of $10^5$ samples.
+
+Figure~\ref{fig:sbi_experiments_slcp} illustrates the rationale behind the multiple observation weighting scheme in \rromc (Eq.\ref{eq:rromc_weight}).
+Figure~\ref{subfig:sbi_slcp_total} shows the pairwise posteriors using all proposal samples generated by \rromc, while Figure~\ref{subfig:sbi_slcp_selected} using only the ones that are finally selected.
+The proposal samples are the ones that are in $\epsilon$-distance to at least one observation, while the selected samples are the ones that are in $\epsilon$-distance to all observations and thus represent the posterior.
+
+\subsubsection{Two-moons (T.8)}
+
+\begin{figure}
     \centering
-    \begin{subfigure}[b]{0.32\linewidth}
+    \begin{subfigure}[b]{0.49\linewidth}
         \includegraphics[width=\linewidth]{figures/sbibm/two_moons/c2st}
         \caption{2-moons total}
-        \label{subfig:sbi_two_moons_total}
+        \label{subfig:sbi_two_moons_c2st}
     \end{subfigure}
-    \begin{subfigure}[b]{0.32\linewidth}
-        \includegraphics[width=\linewidth]{figures/sbibm/two_moons/runtime}
-        \caption{2-moons accepted}
-        \label{subfig:sbi_two_moons_accepted}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.32\linewidth}
+    % \begin{subfigure}[b]{0.32\linewidth}
+    %     \includegraphics[width=\linewidth]{figures/sbibm/two_moons/runtime}
+    %     \caption{2-moons accepted}
+    %     \label{subfig:sbi_two_moons_accepted}
+    % \end{subfigure}
+    \begin{subfigure}[b]{0.49\linewidth}
         \includegraphics[width=\linewidth]{figures/sbibm/two_moons/pairwise_posterior.png}
         \caption{2-moons selected}
-        \label{subfig:sbi_two_moons_selected}
+        \label{subfig:sbi_two_moons_posterior}
     \end{subfigure}
     \caption{2-moons pairwise posteriors}
-    \label{fig:sbi_experiments_two_moons_posteriors}
-\end{figure*}
-
-% \textbf{Gaussian Mixture (T.7).}
-% The simulator is $\yb|\thb \sim 0.5\mathcal{N}(\thb, \mathbf{I}) + 0.5 \mathcal{N}(\thb, 0.01 \mathbf{I})$. The parameters $\thb$ are two-dimensional and the prior is $\thb \sim \mathcal{U}(\mathbf{-10}, \mathbf{10})$. The ground truth posterior is $\thb|\data \sim 0.5 \mathcal{N}(\data, \mathbf{I}) + 0.5 \mathcal{N}(\data,0.01 \mathbf{I})$, truncated to the support of the prior. The task tests whether methods can accurately estimate a mixture of two Gaussians with same mean but one with much broader variance than the other.
-
-\textbf{2-moons (T.8).}
-The simulator is $\yb|\thb \sim  (r\cos(\alpha) + 0.25, r \sin(\alpha)) + (-|\theta_1 + \theta_2| / \sqrt{2}, (-\theta_1 + \theta_2) / \sqrt{2})$, $\alpha \sim \mathcal{U}(-\pi/2, \pi/2)$, $r \sim \mathcal{N}(0.1, 0.01^2)$.
-The parameters $\thb=(\theta_1, \theta_2)$ are two-dimensional and the prior is $\thb \sim \mathcal{U}(\mathbf{-1}, \mathbf{1})$. This creates a posterior with two half-moon shape modes. %as shown in Figure~\ref{subfig:sbi_two_moons_gt}.
-The task tests whether the methods can accurately estimate a posterior with both global (bimodality) and local (crescent shape) structure.
-
-% \textbf{Linear Gaussian.}
-% The simulator samples from a multivariate Gaussian with a fixed covariance; $\yb | \thb \sim \mathcal{N}(\thb, 0.1 \odot \mathbf{I})$. The parameters $\thb$ belong in $\mathbb{R}^{10}$ and the prior is $\mathcal{U}(-\mathbf{1}, \mathbf{1})$. The ground truth posterior is a unimodal Gaussian truncated by the prior, $\thb|\data = \mathcal{U}(\thb; -\mathbf{1}, \mathbf{1}) \mathcal{N}(\thb=\data, 0.1 \odot \mathbf{I})$, as shown in Figure~\ref{subfig:sbi_linear_gt}.
-% The task tests whether the inference algorithms can accurately estimate a high-dimensional posterior. 
-
-
-\textbf{Results.}
-The results are shown in Figure~\ref{fig:sbi_experiments_two_moons}, plotting the performance in terms of \CtwoST~score versus the number of simulator runs needed. The figure shows that
-\rromc~has a \CtwoST~score close to $0.5$ even with a simulation budget of $10^3$ samples, while the rest of the methods need a budget of $10^5$ or more to achieve a similar score and perform much worse for smaller budgets. As in the Gaussian benchmark, we observe that most SBI methods fail to produce accurate posterior samples without a large simulation budget even in relatively simple tasks.
-
-% \begin{figure}
-%   \centering
-%   % taken out due to space issues. Plus, it's another Gaussian, which would make the simulations too Gaussian heavy.
-%   % \begin{subfigure}[b]{.24\linewidth}
-%   %   \centering
-%   %   \includegraphics[width=\linewidth]{./figures/two_moons_romc.pdf}
-%   %   \caption{\texttt{R2OMC (C2ST)}}
-%   %   \label{subfig:sbi_two_moons_r2omc}
-%   % \end{subfigure}\\
-%   % \begin{subfigure}[b]{\linewidth}
-%   %   \centering
-%   %   \includegraphics[width=0.6\linewidth]{./figures/gaussian_linear_uniform.pdf}
-%   %   \caption{Gaussian Linear Uniform}
-%   %   \label{subfig:sbi_gaussian_mixture_r2omc}
-%   % \end{subfigure}
-%   \begin{subfigure}[b]{0.49\linewidth}
-%      \centering
-%      \includegraphics[width=\linewidth]{./figures/gaussian_mixture.pdf}
-%      \caption{Mixture of Gaussians}
-%      \label{subfig:sbi_gaussian_mixture_r2omc}
-%    \end{subfigure}
-%   \begin{subfigure}[b]{.49\linewidth}
-%     \centering
-%     \includegraphics[width=\linewidth]{./figures/two_moons.pdf}
-%     \caption{2-moons}
-%     \label{subfig:sbi_two_moons_rest}
-%   \end{subfigure}
-%   \caption{SBI benchmark: performance (C2ST) vs compute budget (log number of simulator runs).}
-%   \label{fig:sbi_experiments_two_moons}
-% \end{figure}
-
-\subsubsection{Lotka-Voltera model}
-
-\begin{figure*}
-  \centering
-  \includegraphics[width=0.7\linewidth]{./figures/sbibm/lotka_volterra/posterior_pairwise.png}
-  \caption{Lotka-Volterra model}
-  \label{fig:lotka_volterra}
-\end{figure*}
-
-
-\subsection{Images}
+    \label{fig:sbi_two_moons}
+\end{figure}
 
 \begin{figure*}
   \centering
@@ -897,6 +640,29 @@ The results are shown in Figure~\ref{fig:sbi_experiments_two_moons}, plotting th
   \caption{Your figure caption here.}
   \label{fig:pixelwise}
 \end{figure*}
+
+The 2-moons task tests whether the methods can accurately estimate a posterior with both global (bimodality) and local (crescent shape) structure.
+The simulator is $\yb|\thb \sim  (r\cos(\alpha) + 0.25, r \sin(\alpha)) + (-|\theta_1 + \theta_2| / \sqrt{2}, (-\theta_1 + \theta_2) / \sqrt{2})$, $\alpha \sim \mathcal{U}(-\pi/2, \pi/2)$, $r \sim \mathcal{N}(0.1, 0.01^2)$.
+The parameters $\thb=(\theta_1, \theta_2)$ are two-dimensional and the prior is $\thb \sim \mathcal{U}(\mathbf{-1}, \mathbf{1})$. This creates a posterior with two half-moon shape modes.
+
+Figure~\ref{fig:sbi_two_moons} shows the \CtwoST~score (left) and the pairwise posterior (right) of \rromc~and all methods reported by \citet{lueckmann2021benchmarking}.
+\rromc~has a \CtwoST~score close to $0.5$ even with a simulation budget of $10^3$ samples, while the rest of the methods need a budget of $10^5$ or more to achieve a similar score and perform much worse for smaller budgets.
+The pairwise posterior in Figure~\ref{subfig:sbi_two_moons_posterior} shows that \rromc~accurately captures the two crescent-shaped modes of the posterior.
+
+\subsection{Image-based inference}
+\label{subsec:image-based}
+
+We consider a high-dimensional image-based inference problem, where the goal is to infer the parameters of a random simulator that distorts and adds Gaussian noise to an input image.
+The problem tests the ability of \rromc to handle very high-dimensional data ($D_y = 28 \times 28 = 784$), even beyond the dimensionality of conventional SBI problems.
+The simulator is $\mathbf{y} = \text{transform}(\thb) + \boldsymbol{\epsilon}$, where $\boldsymbol{\epsilon} \sim \mathcal{N}(\mathbf{0}, 0.1^2 \mathbf{I})$ and $\text{transform}(\thb)$ applies a transformations to the base image.
+We test two types of transformations: (a) pixel-wise intensity changes, where $\thb \in \mathbb{R}^{28 \times 28}$ and each parameter controls the intensity of one pixel; (b) a checkerboard filter, where an edge-detection filter is applied to the base image.
+
+Figure~\ref{fig:pixelwise} summarizes the results.
+In the top row, we show the initial clean image.
+In the second row the pixel-wise distorted observation and in the third and fourth rows the posterior mean and standard deviation obtained by \rromc (case (a)).
+In the last three rows, we show the observation, posterior mean and standard deviation for the checkerboard filter (case (b)).
+In both cases, \rromc~obtains a posterior mean that is relatively close to the clean image, in terms of optical similarity, which means that the posterior mode is close to parameter $\thb^*$ that generated the observation.
+
 
 \section{Conclusion}
 \label{sec:conclusion}
