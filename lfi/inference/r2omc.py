@@ -478,6 +478,7 @@ class R2OMC(InferenceBase):
                 f"Applying {fit_kwargs['nof_gd_steps']} gradient descent steps with alpha={fit_kwargs['alpha']}"
             )
             self.optimize(fit_kwargs["nof_gd_steps"], fit_kwargs["alpha"])
+            print(f"Some stats after optimization: {self.d_star_init.mean():.5f} ± {self.d_star_init.std():.5f}, [{self.d_star_init.min():.5f}, {self.d_star_init.max():.5f}]")
 
         print("Statistics:")
         print(

@@ -1,3 +1,13 @@
+# Experiments
+
+1. Concept figure
+2. MoG benchmark
+3. SLCP + SCLP with distractors
+4. 2-moons
+5. Lotka-Volterra (still pending)
+6. Images dataset
+
+
 # TODO
 
 finished:

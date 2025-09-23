@@ -1,0 +1,48 @@
+This is BibTeX, Version 0.99d (TeX Live 2023/Debian)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: paper_1.aux
+The style file: unsrtnat.bst
+Database file #1: paper.bib
+Warning--empty journal in MonsalveBravo2022
+You've used 23 entries,
+            2481 wiz_defined-function locations,
+            715 strings with 9899 characters,
+and the built_in function-call counts, 10952 in all, are:
+= -- 895
+> -- 693
+< -- 11
++ -- 254
+- -- 208
+* -- 925
+:= -- 1749
+add.period$ -- 84
+call.type$ -- 23
+change.case$ -- 44
+chr.to.int$ -- 23
+cite$ -- 24
+duplicate$ -- 518
+empty$ -- 918
+format.name$ -- 237
+if$ -- 2331
+int.to.chr$ -- 1
+int.to.str$ -- 24
+missing$ -- 25
+newline$ -- 132
+num.names$ -- 71
+pop$ -- 200
+preamble$ -- 1
+purify$ -- 23
+quote$ -- 0
+skip$ -- 316
+stack$ -- 0
+substring$ -- 531
+swap$ -- 117
+text.length$ -- 7
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 155
+warning$ -- 1
+while$ -- 85
+width$ -- 0
+write$ -- 326
+(There was 1 warning)
