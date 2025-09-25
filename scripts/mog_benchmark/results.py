@@ -213,6 +213,9 @@ def plot_c2st_success_frontier(loadpath, methods, threshold=0.75, agg="mean", sa
     if loadpath.endswith("single_mode"):
         plt.legend(fontsize=16)
     plt.grid(True, linestyle="--", alpha=0.6)
+    # remove top and right spines
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
     plt.tight_layout()
     if savepath is not None:
         os.makedirs(savepath, exist_ok=True)
@@ -299,6 +302,9 @@ def plot_runtime_success_frontier(loadpath, methods, threshold=0.75, agg="mean",
     if loadpath.endswith("single_mode"):
         plt.legend(fontsize=16)
     plt.grid(True, linestyle="--", alpha=0.6)
+    # remove top and right spines
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
     plt.tight_layout()
     if savepath is not None:
         os.makedirs(savepath, exist_ok=True)
