@@ -22,9 +22,8 @@
 \providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
 \newlabel{fig:concept_example}{{1}{2}{Top to bottom: Simple, high-dimensional, distractors, multiple observations, combined. Left to right: ground truth, NPE, NLE, Naive-ROMC, R2OMC (proposed). Details in Section~\ref {app-sec:intro-example} of the Appendix}{figure.caption.2}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {2}Background and Motivation}{2}{section.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Neural-based methods are data-intensive}{2}{subsection.2.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}ROMC framework}{2}{subsection.2.2}\protected@file@percent }
-\newlabel{subsec:ROMC}{{2.2}{2}{ROMC framework}{subsection.2.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}ROMC framework}{2}{subsection.2.1}\protected@file@percent }
+\newlabel{subsec:ROMC}{{2.1}{2}{ROMC framework}{subsection.2.1}{}}
 \newlabel{eq:abc_likelihood}{{1}{2}{ROMC framework}{equation.2.1}{}}
 \citation{ikonomov2020robust}
 \citation{ikonomov2020robust}
@@ -33,9 +32,9 @@
 \newlabel{eq:omc_likelihood}{{3}{3}{ROMC framework}{equation.2.3}{}}
 \newlabel{eq:romc_weight}{{4}{3}{ROMC framework}{equation.2.4}{}}
 \newlabel{eq:optim_end_points}{{5}{3}{ROMC framework}{equation.2.5}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}ROMC challenges and limitations}{3}{subsection.2.3}\protected@file@percent }
-\newlabel{sec:romc-limitations}{{2.3}{3}{ROMC challenges and limitations}{subsection.2.3}{}}
-\newlabel{sec:romc-limitation-1}{{2.3}{3}{Uninformative dimensions (distractors)}{section*.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}ROMC challenges and limitations}{3}{subsection.2.2}\protected@file@percent }
+\newlabel{sec:romc-limitations}{{2.2}{3}{ROMC challenges and limitations}{subsection.2.2}{}}
+\newlabel{sec:romc-limitation-1}{{2.2}{3}{Uninformative dimensions (distractors)}{section*.3}{}}
 \@writefile{toc}{\contentsline {paragraph}{Uninformative dimensions (distractors).}{3}{section*.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{Multiple iid observations.}{3}{section*.5}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{Computational efficiency.}{3}{section*.6}\protected@file@percent }
@@ -68,6 +67,7 @@
 \citation{gutmann2018likelihood,lueckmann2021benchmarking}
 \@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces MoG benchmark: Success Frontier plots showing the lowest budget required to reach a C2ST score $\leq 0.75$ for varying $D$.}}{6}{figure.caption.7}\protected@file@percent }
 \newlabel{fig:high_dim_benchmark}{{3}{6}{MoG benchmark: Success Frontier plots showing the lowest budget required to reach a C2ST score $\leq 0.75$ for varying $D$}{figure.caption.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Discussion - Limitations}{6}{subsection.3.4}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {4}Experiments}{6}{section.4}\protected@file@percent }
 \newlabel{sec:experiments}{{4}{6}{Experiments}{section.4}{}}
 \@writefile{toc}{\contentsline {paragraph}{Methods.}{6}{section*.8}\protected@file@percent }
@@ -75,37 +75,22 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.1}MoG benchmark}{6}{subsection.4.1}\protected@file@percent }
 \newlabel{subsec:gaussian}{{4.1}{6}{MoG benchmark}{subsection.4.1}{}}
 \citation{lueckmann2021benchmarking}
-\citation{papamakarios2019sequential,greenberg2019automatic}
 \citation{lueckmann2021benchmarking}
-\newlabel{subfig:sbi_slcp_c2st}{{4a}{7}{SLCP: C2ST}{figure.caption.10}{}}
-\newlabel{sub@subfig:sbi_slcp_c2st}{{a}{7}{SLCP: C2ST}{figure.caption.10}{}}
-\newlabel{subfig:sbi_slcp_runtime}{{4b}{7}{SLCP: Log runtime}{figure.caption.10}{}}
-\newlabel{sub@subfig:sbi_slcp_runtime}{{b}{7}{SLCP: Log runtime}{figure.caption.10}{}}
-\newlabel{subfig:sbi_slcp_dist_c2st}{{4c}{7}{SLCP-dist: C2ST}{figure.caption.10}{}}
-\newlabel{sub@subfig:sbi_slcp_dist_c2st}{{c}{7}{SLCP-dist: C2ST}{figure.caption.10}{}}
-\newlabel{subfig:sbi_slcp_dist_runtime}{{4d}{7}{SLCP-dist: Log runtime}{figure.caption.10}{}}
-\newlabel{sub@subfig:sbi_slcp_dist_runtime}{{d}{7}{SLCP-dist: Log runtime}{figure.caption.10}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces SLCP and SLCP with distractors benchmark results.}}{7}{figure.caption.10}\protected@file@percent }
-\newlabel{fig:sbi_experiments_slcp_c2st}{{4}{7}{SLCP and SLCP with distractors benchmark results}{figure.caption.10}{}}
-\newlabel{subfig:sbi_slcp_total}{{5a}{7}{SLCP total}{figure.caption.11}{}}
-\newlabel{sub@subfig:sbi_slcp_total}{{a}{7}{SLCP total}{figure.caption.11}{}}
-\newlabel{subfig:sbi_slcp_selected}{{5b}{7}{SLCP selected}{figure.caption.11}{}}
-\newlabel{sub@subfig:sbi_slcp_selected}{{b}{7}{SLCP selected}{figure.caption.11}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces SLCP pairwise posteriors}}{7}{figure.caption.11}\protected@file@percent }
-\newlabel{fig:sbi_experiments_slcp}{{5}{7}{SLCP pairwise posteriors}{figure.caption.11}{}}
+\citation{lueckmann2021benchmarking}
+\citation{lecun1998gradient}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces SLCP (left) and SLCP with distractors (right): C2ST score vs. runtime.}}{7}{figure.caption.10}\protected@file@percent }
+\newlabel{fig:slcp_c2st_runtime}{{4}{7}{SLCP (left) and SLCP with distractors (right): C2ST score vs. runtime}{figure.caption.10}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces SLCP pairwise posteriors: using all proposal samples (left) and only the selected ones (right).}}{7}{figure.caption.11}\protected@file@percent }
+\newlabel{fig:slcp_posterior}{{5}{7}{SLCP pairwise posteriors: using all proposal samples (left) and only the selected ones (right)}{figure.caption.11}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.2}SBI benchmark}{7}{subsection.4.2}\protected@file@percent }
 \newlabel{subsec:sbi-benchmark}{{4.2}{7}{SBI benchmark}{subsection.4.2}{}}
-\newlabel{subfig:sbi_two_moons_c2st}{{6a}{7}{2-moons total}{figure.caption.12}{}}
-\newlabel{sub@subfig:sbi_two_moons_c2st}{{a}{7}{2-moons total}{figure.caption.12}{}}
-\newlabel{subfig:sbi_two_moons_posterior}{{6b}{7}{2-moons selected}{figure.caption.12}{}}
-\newlabel{sub@subfig:sbi_two_moons_posterior}{{b}{7}{2-moons selected}{figure.caption.12}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces 2-moons pairwise posteriors}}{7}{figure.caption.12}\protected@file@percent }
-\newlabel{fig:sbi_two_moons}{{6}{7}{2-moons pairwise posteriors}{figure.caption.12}{}}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.1}SLCP (T.3) and plus distractors (T.4)}{7}{subsubsection.4.2.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces  Two-moons results: C2ST score vs. runtime (Left) and pairwise posterior (Right). }}{7}{figure.caption.12}\protected@file@percent }
+\newlabel{fig:sbi_two_moons}{{6}{7}{Two-moons results: C2ST score vs. runtime (Left) and pairwise posterior (Right)}{figure.caption.12}{}}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.2}Two-moons (T.8)}{7}{subsubsection.4.2.2}\protected@file@percent }
-\citation{lueckmann2021benchmarking}
-\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Your figure caption here.}}{8}{figure.caption.13}\protected@file@percent }
-\newlabel{fig:pixelwise}{{7}{8}{Your figure caption here}{figure.caption.13}{}}
+\citation{ramesh2022gatsbi}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces  Image-based inference results. Top row shows the clean ground truth image $\bm  {\theta }^*$. Rows 2--4 display the distorted observation, posterior mean, and posterior standard deviation obtained by~R2OMCfor pixel-wise distortion. Rows 5--7 show the same results for the edge-detection filter distortion. }}{8}{figure.caption.13}\protected@file@percent }
+\newlabel{fig:pixelwise}{{7}{8}{Image-based inference results. Top row shows the clean ground truth image $\thb ^*$. Rows 2--4 display the distorted observation, posterior mean, and posterior standard deviation obtained by~\rromc for pixel-wise distortion. Rows 5--7 show the same results for the edge-detection filter distortion}{figure.caption.13}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Image-based inference}{8}{subsection.4.3}\protected@file@percent }
 \newlabel{subsec:image-based}{{4.3}{8}{Image-based inference}{subsection.4.3}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {5}Conclusion}{8}{section.5}\protected@file@percent }
@@ -133,117 +118,136 @@
 \bibcite{gkolemis2023extendable}{{19}{2023}{{Gkolemis et~al.}}{{Gkolemis, Gutmann, and Pesonen}}}
 \bibcite{meeds2015optimization}{{20}{2015}{{Meeds and Welling}}{{}}}
 \bibcite{wildberger2023flow}{{21}{2023}{{Wildberger et~al.}}{{Wildberger, Dax, Buchholz, Green, Macke, and Sch{\"o}lkopf}}}
-\bibcite{tejero-cantero2020sbi}{{22}{2020}{{Tejero-Cantero et~al.}}{{Tejero-Cantero, Boelts, Deistler, Lueckmann, Durkan, Gonçalves, Greenberg, and Macke}}}
-\bibcite{gutmann2018likelihood}{{23}{2018}{{Gutmann et~al.}}{{Gutmann, Dutta, Kaski, and Corander}}}
-\bibcite{elfipackage}{{24}{2018}{{Lintusaari et~al.}}{{Lintusaari, Vuollekoski, Kangasraasio, Skyt{\'e}n, Jarvenpaa, Marttinen, Gutmann, Vehtari, Corander, and Kaski}}}
+\bibcite{gutmann2018likelihood}{{22}{2018}{{Gutmann et~al.}}{{Gutmann, Dutta, Kaski, and Corander}}}
+\bibcite{lecun1998gradient}{{23}{1998}{{LeCun et~al.}}{{LeCun, Bottou, Bengio, and Haffner}}}
+\bibcite{ramesh2022gatsbi}{{24}{2022}{{Ramesh et~al.}}{{Ramesh, Lueckmann, Boelts, Tejero-Cantero, Greenberg, Gon{\c {c}}alves, and Macke}}}
+\bibcite{elfipackage}{{25}{2018}{{Lintusaari et~al.}}{{Lintusaari, Vuollekoski, Kangasraasio, Skyt{\'e}n, Jarvenpaa, Marttinen, Gutmann, Vehtari, Corander, and Kaski}}}
 \citation{ikonomov2020robust}
 \citation{greenberg2019automatic}
 \citation{papamakarios2019sequential}
 \citation{ikonomov2020robust}
-\@writefile{toc}{\contentsline {section}{\numberline {A}Methods}{12}{appendix.A}\protected@file@percent }
-\newlabel{app-sec:methods}{{A}{12}{Methods}{appendix.A}{}}
-\@writefile{toc}{\contentsline {paragraph}{R2OMC.}{12}{section*.16}\protected@file@percent }
-\@writefile{loa}{\contentsline {algorithm}{\numberline {2}{\ignorespaces Hyperbox Computation \newline  \textit  {Input:} Optimal point \(\bm  {\theta }^*\), distance function \(d(\bm  {\theta })\), Jacobian \(\mathbf  {J}\) at \(\bm  {\theta }^*\) \newline  \textit  {Parameters:} Step size \(\eta \), number of refinements \(R\), number of steps \(L\), distance threshold \(\epsilon \)}}{12}{algorithm.2}\protected@file@percent }
-\newlabel{alg:region_construction}{{2}{12}{Hyperbox Computation \newline \textit {Input:} Optimal point \(\thb ^*\), distance function \(d(\thb )\), Jacobian \(\jac \) at \(\thb ^*\) \newline \textit {Parameters:} Step size \(\eta \), number of refinements \(R\), number of steps \(L\), distance threshold \(\epsilon \)}{algorithm.2}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {A}Methods}{11}{appendix.A}\protected@file@percent }
+\newlabel{app-sec:methods}{{A}{11}{Methods}{appendix.A}{}}
+\@writefile{toc}{\contentsline {paragraph}{R2OMC.}{11}{section*.16}\protected@file@percent }
+\@writefile{loa}{\contentsline {algorithm}{\numberline {2}{\ignorespaces Hyperbox Computation \newline  \textit  {Input:} Optimal point \(\bm  {\theta }^*\), distance function \(d(\bm  {\theta })\), Jacobian \(\mathbf  {J}\) at \(\bm  {\theta }^*\) \newline  \textit  {Parameters:} Step size \(\eta \), number of refinements \(R\), number of steps \(L\), distance threshold \(\epsilon \)}}{11}{algorithm.2}\protected@file@percent }
+\newlabel{alg:region_construction}{{2}{11}{Hyperbox Computation \newline \textit {Input:} Optimal point \(\thb ^*\), distance function \(d(\thb )\), Jacobian \(\jac \) at \(\thb ^*\) \newline \textit {Parameters:} Step size \(\eta \), number of refinements \(R\), number of steps \(L\), distance threshold \(\epsilon \)}{algorithm.2}{}}
 \citation{gkolemis2023extendable}
 \citation{elfipackage}
 \citation{lueckmann2021benchmarking}
 \citation{greenberg2019automatic}
 \citation{greenberg2019automatic}
 \citation{papamakarios2019sequential}
-\@writefile{toc}{\contentsline {paragraph}{NAIVE-ROMC.}{13}{section*.17}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{NPE}{13}{section*.18}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{NLE}{13}{section*.19}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {B}Discussion about simulation budget}{14}{appendix.B}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {C}Introductory Example}{14}{appendix.C}\protected@file@percent }
-\newlabel{app-sec:intro-example}{{C}{14}{Introductory Example}{appendix.C}{}}
-\@writefile{toc}{\contentsline {paragraph}{Notation.}{14}{section*.20}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Setup.}{14}{section*.21}\protected@file@percent }
-\newlabel{eq:intro-simulator}{{15}{14}{Setup}{equation.C.15}{}}
-\newlabel{eq:intro-simulator-distractor}{{16}{14}{Setup}{equation.C.16}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {C.1}Simple Case}{14}{subsection.C.1}\protected@file@percent }
-\newlabel{eq:intro-simple-1}{{18}{14}{Simple Case}{equation.C.18}{}}
-\newlabel{eq:intro-simple-2}{{19}{14}{Simple Case}{equation.C.19}{}}
-\newlabel{eq:intro-simple}{{20}{14}{Simple Case}{equation.C.20}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {C.2}High-dimensional Case}{14}{subsection.C.2}\protected@file@percent }
-\newlabel{eq:intro-highdim}{{21}{14}{High-dimensional Case}{equation.C.21}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {C.3}Distractor Case}{14}{subsection.C.3}\protected@file@percent }
-\newlabel{eq:intro-distractors-1}{{23}{15}{Distractor Case}{equation.C.23}{}}
-\newlabel{eq:intro-distractors-2}{{24}{15}{Distractor Case}{equation.C.24}{}}
-\newlabel{eq:intro-distractors-3}{{25}{15}{Distractor Case}{equation.C.25}{}}
-\newlabel{eq:intro-distractors}{{27}{15}{Distractor Case}{equation.C.27}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {C.4}Multiple Observations Case}{15}{subsection.C.4}\protected@file@percent }
-\newlabel{eq:intro-multiple-1}{{29}{15}{Multiple Observations Case}{equation.C.29}{}}
-\newlabel{eq:intro-multiple-2}{{30}{15}{Multiple Observations Case}{equation.C.30}{}}
-\newlabel{eq:intro-multiple-3}{{31}{15}{Multiple Observations Case}{equation.C.31}{}}
-\newlabel{eq:intro-multiple-4}{{32}{15}{Multiple Observations Case}{equation.C.32}{}}
-\newlabel{eq:intro-multiple-5}{{33}{15}{Multiple Observations Case}{equation.C.33}{}}
-\newlabel{eq:intro-multiple-6}{{34}{15}{Multiple Observations Case}{equation.C.34}{}}
-\newlabel{eq:intro-multiple}{{35}{15}{Multiple Observations Case}{equation.C.35}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {C.5}Combined Case}{15}{subsection.C.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{NAIVE-ROMC.}{12}{section*.17}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{NPE}{12}{section*.18}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{NLE}{12}{section*.19}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {B}Discussion about simulation budget}{13}{appendix.B}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {C}Introductory Example}{13}{appendix.C}\protected@file@percent }
+\newlabel{app-sec:intro-example}{{C}{13}{Introductory Example}{appendix.C}{}}
+\@writefile{toc}{\contentsline {paragraph}{Notation.}{13}{section*.20}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Setup.}{13}{section*.21}\protected@file@percent }
+\newlabel{eq:intro-simulator}{{15}{13}{Setup}{equation.C.15}{}}
+\newlabel{eq:intro-simulator-distractor}{{16}{13}{Setup}{equation.C.16}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {C.1}Simple Case}{13}{subsection.C.1}\protected@file@percent }
+\newlabel{eq:intro-simple-1}{{18}{13}{Simple Case}{equation.C.18}{}}
+\newlabel{eq:intro-simple-2}{{19}{13}{Simple Case}{equation.C.19}{}}
+\newlabel{eq:intro-simple}{{20}{13}{Simple Case}{equation.C.20}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {C.2}High-dimensional Case}{13}{subsection.C.2}\protected@file@percent }
+\newlabel{eq:intro-highdim}{{21}{13}{High-dimensional Case}{equation.C.21}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {C.3}Distractor Case}{13}{subsection.C.3}\protected@file@percent }
+\newlabel{eq:intro-distractors-1}{{23}{14}{Distractor Case}{equation.C.23}{}}
+\newlabel{eq:intro-distractors-2}{{24}{14}{Distractor Case}{equation.C.24}{}}
+\newlabel{eq:intro-distractors-3}{{25}{14}{Distractor Case}{equation.C.25}{}}
+\newlabel{eq:intro-distractors}{{27}{14}{Distractor Case}{equation.C.27}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {C.4}Multiple Observations Case}{14}{subsection.C.4}\protected@file@percent }
+\newlabel{eq:intro-multiple-1}{{29}{14}{Multiple Observations Case}{equation.C.29}{}}
+\newlabel{eq:intro-multiple-2}{{30}{14}{Multiple Observations Case}{equation.C.30}{}}
+\newlabel{eq:intro-multiple-3}{{31}{14}{Multiple Observations Case}{equation.C.31}{}}
+\newlabel{eq:intro-multiple-4}{{32}{14}{Multiple Observations Case}{equation.C.32}{}}
+\newlabel{eq:intro-multiple-5}{{33}{14}{Multiple Observations Case}{equation.C.33}{}}
+\newlabel{eq:intro-multiple-6}{{34}{14}{Multiple Observations Case}{equation.C.34}{}}
+\newlabel{eq:intro-multiple}{{35}{14}{Multiple Observations Case}{equation.C.35}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {C.5}Combined Case}{14}{subsection.C.5}\protected@file@percent }
 \citation{lueckmann2021benchmarking}
-\newlabel{eq:intro-combined-1}{{36}{16}{Combined Case}{equation.C.36}{}}
-\newlabel{eq:intro-combined-2}{{37}{16}{Combined Case}{equation.C.37}{}}
-\newlabel{eq:intro-combined-3}{{38}{16}{Combined Case}{equation.C.38}{}}
-\newlabel{eq:intro-combined-4}{{39}{16}{Combined Case}{equation.C.39}{}}
-\newlabel{eq:intro-combined-5}{{40}{16}{Combined Case}{equation.C.40}{}}
-\newlabel{eq:intro-combined}{{41}{16}{Combined Case}{equation.C.41}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {C.6}Results}{16}{subsection.C.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Setup.}{16}{section*.22}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Conclusions.}{16}{section*.23}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {D}Additional information on the experiments}{17}{appendix.D}\protected@file@percent }
-\newlabel{app-sec:experiments}{{D}{17}{Additional information on the experiments}{appendix.D}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {D.1}MoG Benchmark - High Dimensional Simulators}{17}{subsection.D.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.1.1}Base simulator - without distractors}{17}{subsubsection.D.1.1}\protected@file@percent }
-\newlabel{eq:mog_base}{{D.1.1}{17}{Base simulator - without distractors}{subsubsection.D.1.1}{}}
-\newlabel{eq:mog_base_posterior-1}{{42}{17}{Base simulator - without distractors}{equation.D.42}{}}
-\newlabel{eq:mog_base_posterior-2}{{43}{17}{Base simulator - without distractors}{equation.D.43}{}}
-\newlabel{eq:mog_base_posterior-3}{{44}{17}{Base simulator - without distractors}{equation.D.44}{}}
-\newlabel{eq:mog_base_posterior}{{45}{17}{Base simulator - without distractors}{equation.D.45}{}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.1.2}Base simulator - with distractors}{17}{subsubsection.D.1.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.1.3}MoG simulator - without distractors}{17}{subsubsection.D.1.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.1.4}MoG simulator - with distractors}{18}{subsubsection.D.1.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {D.2}MoG Benchmark - Multiple Observations}{18}{subsection.D.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.2.1}Base simulator}{18}{subsubsection.D.2.1}\protected@file@percent }
-\newlabel{eq:mog_mult_obs-1}{{46}{18}{Base simulator}{equation.D.46}{}}
-\newlabel{eq:mog_mult_obs-2}{{47}{18}{Base simulator}{equation.D.47}{}}
-\newlabel{eq:mog_mult_obs-3}{{48}{18}{Base simulator}{equation.D.48}{}}
-\newlabel{eq:mog_mult_obs-4}{{49}{18}{Base simulator}{equation.D.49}{}}
-\newlabel{eq:mog_mult_obs-5}{{50}{18}{Base simulator}{equation.D.50}{}}
-\newlabel{eq:mog_mult_obs}{{51}{18}{Base simulator}{equation.D.51}{}}
+\newlabel{eq:intro-combined-1}{{36}{15}{Combined Case}{equation.C.36}{}}
+\newlabel{eq:intro-combined-2}{{37}{15}{Combined Case}{equation.C.37}{}}
+\newlabel{eq:intro-combined-3}{{38}{15}{Combined Case}{equation.C.38}{}}
+\newlabel{eq:intro-combined-4}{{39}{15}{Combined Case}{equation.C.39}{}}
+\newlabel{eq:intro-combined-5}{{40}{15}{Combined Case}{equation.C.40}{}}
+\newlabel{eq:intro-combined}{{41}{15}{Combined Case}{equation.C.41}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {C.6}Results}{15}{subsection.C.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Setup.}{15}{section*.22}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Conclusions.}{15}{section*.23}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {D}Additional information on the experiments}{16}{appendix.D}\protected@file@percent }
+\newlabel{app-sec:experiments}{{D}{16}{Additional information on the experiments}{appendix.D}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {D.1}MoG Benchmark - High Dimensional Simulators}{16}{subsection.D.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.1.1}Base simulator - without distractors}{16}{subsubsection.D.1.1}\protected@file@percent }
+\newlabel{eq:mog_base}{{D.1.1}{16}{Base simulator - without distractors}{subsubsection.D.1.1}{}}
+\newlabel{eq:mog_base_posterior-1}{{42}{16}{Base simulator - without distractors}{equation.D.42}{}}
+\newlabel{eq:mog_base_posterior-2}{{43}{16}{Base simulator - without distractors}{equation.D.43}{}}
+\newlabel{eq:mog_base_posterior-3}{{44}{16}{Base simulator - without distractors}{equation.D.44}{}}
+\newlabel{eq:mog_base_posterior}{{45}{16}{Base simulator - without distractors}{equation.D.45}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.1.2}Base simulator - with distractors}{16}{subsubsection.D.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.1.3}MoG simulator - without distractors}{16}{subsubsection.D.1.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.1.4}MoG simulator - with distractors}{17}{subsubsection.D.1.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {D.2}MoG Benchmark - Multiple Observations}{17}{subsection.D.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.2.1}Base simulator}{17}{subsubsection.D.2.1}\protected@file@percent }
+\newlabel{eq:mog_mult_obs-1}{{46}{17}{Base simulator}{equation.D.46}{}}
+\newlabel{eq:mog_mult_obs-2}{{47}{17}{Base simulator}{equation.D.47}{}}
+\newlabel{eq:mog_mult_obs-3}{{48}{17}{Base simulator}{equation.D.48}{}}
+\newlabel{eq:mog_mult_obs-4}{{49}{17}{Base simulator}{equation.D.49}{}}
+\newlabel{eq:mog_mult_obs-5}{{50}{17}{Base simulator}{equation.D.50}{}}
+\newlabel{eq:mog_mult_obs}{{51}{17}{Base simulator}{equation.D.51}{}}
 \citation{lueckmann2021benchmarking}
-\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Multi observations Base: Left to right: ground truth, NPE, NLE, Naive-ROMC, R2OMC. Top to bottom: $N=3$, $N=5$, $N=10$, $N=10$}}{19}{figure.caption.24}\protected@file@percent }
-\newlabel{fig:mo_multi_obs_base}{{8}{19}{Multi observations Base: Left to right: ground truth, NPE, NLE, Naive-ROMC, R2OMC. Top to bottom: $N=3$, $N=5$, $N=10$, $N=10$}{figure.caption.24}{}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.2.2}MoG simulator}{19}{subsubsection.D.2.2}\protected@file@percent }
-\newlabel{eq:mog_mog_mult_obs}{{52}{19}{MoG simulator}{equation.D.52}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {D.3}SBI - Mixtures of Gaussians (T.7)}{19}{subsection.D.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Multi observations Base: Left to right: ground truth, NPE, NLE, Naive-ROMC, R2OMC. Top to bottom: $N=3$, $N=5$, $N=10$, $N=10$}}{18}{figure.caption.24}\protected@file@percent }
+\newlabel{fig:mo_multi_obs_base}{{8}{18}{Multi observations Base: Left to right: ground truth, NPE, NLE, Naive-ROMC, R2OMC. Top to bottom: $N=3$, $N=5$, $N=10$, $N=10$}{figure.caption.24}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {D.2.2}MoG simulator}{18}{subsubsection.D.2.2}\protected@file@percent }
+\newlabel{eq:mog_mog_mult_obs}{{52}{18}{MoG simulator}{equation.D.52}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {D.3}SBI - Mixtures of Gaussians (T.7)}{18}{subsection.D.3}\protected@file@percent }
 \citation{lueckmann2021benchmarking}
-\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Multi observations MoG: Left to right: ground truth, NPE, NLE, Naive-ROMC, R2OMC. Top to bottom: $N=3$, $N=5$, $N=10$, $N=10$}}{20}{figure.caption.25}\protected@file@percent }
-\newlabel{fig:mog_multi_obs}{{9}{20}{Multi observations MoG: Left to right: ground truth, NPE, NLE, Naive-ROMC, R2OMC. Top to bottom: $N=3$, $N=5$, $N=10$, $N=10$}{figure.caption.25}{}}
-\@writefile{toc}{\contentsline {paragraph}{Results.}{20}{section*.26}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces T.7: Gaussian Mixture. From left to right: \texttt  {C2ST} score, ground truth samples, and samples by R2OMC.}}{20}{figure.caption.27}\protected@file@percent }
-\newlabel{fig:exp_sbi_gaussian_mixture}{{10}{20}{T.7: Gaussian Mixture. From left to right: \texttt {C2ST} score, ground truth samples, and samples by R2OMC}{figure.caption.27}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {D.4}SBI - Two Moons (T.8)}{20}{subsection.D.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Results.}{21}{section*.28}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces T.8: Two Moons. From left to right: \texttt  {C2ST} score, ground truth samples, and samples by R2OMC.}}{21}{figure.caption.29}\protected@file@percent }
-\newlabel{fig:exp_sbi_two_moons}{{11}{21}{T.8: Two Moons. From left to right: \texttt {C2ST} score, ground truth samples, and samples by R2OMC}{figure.caption.29}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {E}Additional results}{22}{appendix.E}\protected@file@percent }
-\newlabel{sec:additional-experiments}{{E}{22}{Additional results}{appendix.E}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {E.1}MoG - Shifted Gaussian}{22}{subsection.E.1}\protected@file@percent }
-\newlabel{eq:gauss_mult_obs}{{53}{22}{MoG - Shifted Gaussian}{equation.E.53}{}}
-\newlabel{eq:gauss_mult_obs_1}{{54}{22}{MoG - Shifted Gaussian}{equation.E.54}{}}
-\newlabel{eq:gauss_mult_obs_3}{{56}{22}{MoG - Shifted Gaussian}{equation.E.56}{}}
-\newlabel{eq:gauss_mult_obs_4}{{57}{22}{MoG - Shifted Gaussian}{equation.E.57}{}}
-\@writefile{toc}{\contentsline {paragraph}{Case 1:}{22}{section*.30}\protected@file@percent }
-\newlabel{eq:mog_shifted_gaussian_case_1}{{58}{22}{Case 1:}{equation.E.58}{}}
-\newlabel{eq:gauss_mult_obs_case_1_1}{{62}{22}{Case 1:}{equation.E.62}{}}
-\newlabel{eq:gauss_mult_obs_case_1_2}{{63}{22}{Case 1:}{equation.E.63}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {12}{\ignorespaces From left to right: R2OMC on Case 1, Naive-ROMC on Case 1, R2OMC on Case 2, and Naive-ROMC on Case 2.}}{23}{figure.caption.33}\protected@file@percent }
-\newlabel{fig:multi_obs}{{12}{23}{From left to right: R2OMC on Case 1, Naive-ROMC on Case 1, R2OMC on Case 2, and Naive-ROMC on Case 2}{figure.caption.33}{}}
-\@writefile{toc}{\contentsline {paragraph}{Case 2:}{23}{section*.31}\protected@file@percent }
-\newlabel{eq:mog_shifted_gaussian_case_2}{{64}{23}{Case 2:}{equation.E.64}{}}
-\newlabel{eq:gauss_mult_obs_case_2_1}{{68}{23}{Case 2:}{equation.E.68}{}}
-\newlabel{eq:gauss_mult_obs_case_2_2}{{69}{23}{Case 2:}{equation.E.69}{}}
-\newlabel{eq:gauss_mult_obs_case_2_3}{{70}{23}{Case 2:}{equation.E.70}{}}
-\@writefile{toc}{\contentsline {paragraph}{Results.}{23}{section*.32}\protected@file@percent }
-\gdef \@abspage@last{23}
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Multi observations MoG: Left to right: ground truth, NPE, NLE, Naive-ROMC, R2OMC. Top to bottom: $N=3$, $N=5$, $N=10$, $N=10$}}{19}{figure.caption.25}\protected@file@percent }
+\newlabel{fig:mog_multi_obs}{{9}{19}{Multi observations MoG: Left to right: ground truth, NPE, NLE, Naive-ROMC, R2OMC. Top to bottom: $N=3$, $N=5$, $N=10$, $N=10$}{figure.caption.25}{}}
+\@writefile{toc}{\contentsline {paragraph}{Results.}{19}{section*.26}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces T.7: Gaussian Mixture. From left to right: \texttt  {C2ST} score, ground truth samples, and samples by R2OMC.}}{19}{figure.caption.27}\protected@file@percent }
+\newlabel{fig:exp_sbi_gaussian_mixture}{{10}{19}{T.7: Gaussian Mixture. From left to right: \texttt {C2ST} score, ground truth samples, and samples by R2OMC}{figure.caption.27}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces MoG benchmark: Success Frontier plots showing the lowest budget required to reach a C2ST score $\leq 0.75$ for varying $D$.}}{20}{figure.caption.28}\protected@file@percent }
+\newlabel{fig:mog_benchmark_frontier}{{11}{20}{MoG benchmark: Success Frontier plots showing the lowest budget required to reach a C2ST score $\leq 0.75$ for varying $D$}{figure.caption.28}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {12}{\ignorespaces MoG Benchmark - Base simulator: C2ST heatmaps for R2OMC, NPE, BayesFlow, and Flow Matching.}}{20}{figure.caption.29}\protected@file@percent }
+\newlabel{fig:mog_benchmark_base_heatmaps}{{12}{20}{MoG Benchmark - Base simulator: C2ST heatmaps for R2OMC, NPE, BayesFlow, and Flow Matching}{figure.caption.29}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {D.4}MoG Benchmark}{20}{subsection.D.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {D.5}SBI - SLCP (T.3) and SLCP Distractors (T.4)}{20}{subsection.D.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {D.6}SBI - Two Moons (T.8)}{20}{subsection.D.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Results.}{20}{section*.36}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {13}{\ignorespaces MoG Benchmark - Base simulator with distractors: C2ST heatmaps for R2OMC, NPE, BayesFlow, and Flow Matching.}}{20}{figure.caption.30}\protected@file@percent }
+\newlabel{fig:mog_benchmark_base_distractors_heatmaps}{{13}{20}{MoG Benchmark - Base simulator with distractors: C2ST heatmaps for R2OMC, NPE, BayesFlow, and Flow Matching}{figure.caption.30}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {14}{\ignorespaces MoG Benchmark - MoG simulator: C2ST heatmaps for R2OMC, NPE, BayesFlow, and Flow Matching.}}{21}{figure.caption.31}\protected@file@percent }
+\newlabel{fig:mog_benchmark_mog_heatmaps}{{14}{21}{MoG Benchmark - MoG simulator: C2ST heatmaps for R2OMC, NPE, BayesFlow, and Flow Matching}{figure.caption.31}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {15}{\ignorespaces MoG Benchmark - MoG simulator with distractors: C2ST heatmaps for R2OMC, NPE, BayesFlow, and Flow Matching.}}{21}{figure.caption.32}\protected@file@percent }
+\newlabel{fig:mog_benchmark_mog_distractors_heatmaps}{{15}{21}{MoG Benchmark - MoG simulator with distractors: C2ST heatmaps for R2OMC, NPE, BayesFlow, and Flow Matching}{figure.caption.32}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {16}{\ignorespaces T.3: SLCP. From left to right: \texttt  {C2ST} vs. budget, and runtime vs. budget.}}{21}{figure.caption.33}\protected@file@percent }
+\newlabel{fig:exp_sbi_slcp}{{16}{21}{T.3: SLCP. From left to right: \texttt {C2ST} vs. budget, and runtime vs. budget}{figure.caption.33}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {17}{\ignorespaces T.4: SLCP Distractors. From left to right: \texttt  {C2ST} vs. budget, and runtime vs. budget.}}{21}{figure.caption.34}\protected@file@percent }
+\newlabel{fig:exp_sbi_slcp_distractors}{{17}{21}{T.4: SLCP Distractors. From left to right: \texttt {C2ST} vs. budget, and runtime vs. budget}{figure.caption.34}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {18}{\ignorespaces T.3: SLCP. From left to right: total samples, accepted samples, and selected samples by R2OMC.}}{22}{figure.caption.35}\protected@file@percent }
+\newlabel{fig:exp_sbi_slcp_samples}{{18}{22}{T.3: SLCP. From left to right: total samples, accepted samples, and selected samples by R2OMC}{figure.caption.35}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {19}{\ignorespaces T.8: Two Moons. From left to right: \texttt  {C2ST} score, ground truth samples, and samples by R2OMC.}}{22}{figure.caption.37}\protected@file@percent }
+\newlabel{fig:exp_sbi_two_moons}{{19}{22}{T.8: Two Moons. From left to right: \texttt {C2ST} score, ground truth samples, and samples by R2OMC}{figure.caption.37}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {E}Additional results}{23}{appendix.E}\protected@file@percent }
+\newlabel{sec:additional-experiments}{{E}{23}{Additional results}{appendix.E}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {E.1}MoG - Shifted Gaussian}{23}{subsection.E.1}\protected@file@percent }
+\newlabel{eq:gauss_mult_obs}{{53}{23}{MoG - Shifted Gaussian}{equation.E.53}{}}
+\newlabel{eq:gauss_mult_obs_1}{{54}{23}{MoG - Shifted Gaussian}{equation.E.54}{}}
+\newlabel{eq:gauss_mult_obs_3}{{56}{23}{MoG - Shifted Gaussian}{equation.E.56}{}}
+\newlabel{eq:gauss_mult_obs_4}{{57}{23}{MoG - Shifted Gaussian}{equation.E.57}{}}
+\@writefile{toc}{\contentsline {paragraph}{Case 1:}{23}{section*.38}\protected@file@percent }
+\newlabel{eq:mog_shifted_gaussian_case_1}{{58}{23}{Case 1:}{equation.E.58}{}}
+\newlabel{eq:gauss_mult_obs_case_1_1}{{62}{23}{Case 1:}{equation.E.62}{}}
+\newlabel{eq:gauss_mult_obs_case_1_2}{{63}{23}{Case 1:}{equation.E.63}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {20}{\ignorespaces From left to right: R2OMC on Case 1, Naive-ROMC on Case 1, R2OMC on Case 2, and Naive-ROMC on Case 2.}}{24}{figure.caption.41}\protected@file@percent }
+\newlabel{fig:multi_obs}{{20}{24}{From left to right: R2OMC on Case 1, Naive-ROMC on Case 1, R2OMC on Case 2, and Naive-ROMC on Case 2}{figure.caption.41}{}}
+\@writefile{toc}{\contentsline {paragraph}{Case 2:}{24}{section*.39}\protected@file@percent }
+\newlabel{eq:mog_shifted_gaussian_case_2}{{64}{24}{Case 2:}{equation.E.64}{}}
+\newlabel{eq:gauss_mult_obs_case_2_1}{{68}{24}{Case 2:}{equation.E.68}{}}
+\newlabel{eq:gauss_mult_obs_case_2_2}{{69}{24}{Case 2:}{equation.E.69}{}}
+\newlabel{eq:gauss_mult_obs_case_2_3}{{70}{24}{Case 2:}{equation.E.70}{}}
+\@writefile{toc}{\contentsline {paragraph}{Results.}{24}{section*.40}\protected@file@percent }
+\gdef \@abspage@last{24}

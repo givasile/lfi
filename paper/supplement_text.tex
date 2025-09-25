@@ -536,6 +536,9 @@ In Figure~\ref{fig:mog_multi_obs}, we present the results for the MoG simulator 
   \label{fig:mog_multi_obs}
 \end{figure}
 
+
+
+
 \subsection{SBI - Mixtures of Gaussians (T.7)}
 
 We here provide additional information on example T.7 of the SBI benchmark~\cite{lueckmann2021benchmarking}.
@@ -577,6 +580,100 @@ The results are illustrated in Figure~\ref{fig:exp_sbi_gaussian_mixture}.
   \label{fig:exp_sbi_gaussian_mixture}
 \end{figure}
 
+
+\subsection{MoG Benchmark}
+
+\begin{figure*}[!t]
+  \centering
+  \begin{subfigure}[b]{0.245\textwidth}
+    \includegraphics[width=\linewidth]{./figures/mog_benchmark/single_mode/runtime_frontier}
+    \caption{$S_{\mathtt{base}}$}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.245\textwidth}
+    \includegraphics[width=\linewidth]{./figures/mog_benchmark/single_mode_distractors/runtime_frontier}
+    \caption{$S_{\mathtt{base}}^{\mathtt{dist}}$}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.245\textwidth}
+    \includegraphics[width=\linewidth]{./figures/mog_benchmark/two_modes/runtime_frontier}
+    \caption{$S_{\mathtt{MoG}}$}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.245\textwidth}
+    \includegraphics[width=\linewidth]{./figures/mog_benchmark/two_modes_distractors/runtime_frontier}
+    \caption{$S^{\mathtt{dist}}_{\mathtt{MoG}}$}
+  \end{subfigure}
+  \caption{MoG benchmark: Success Frontier plots showing the lowest budget required to reach a C2ST score $\leq 0.75$ for varying $D$.}
+  \label{fig:mog_benchmark_frontier}
+\end{figure*}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=.24\linewidth]{figures/mog_benchmark/single_mode/R2OMC_c2st_heatmap}
+    \includegraphics[width=.24\linewidth]{figures/mog_benchmark/single_mode/NPE_c2st_heatmap}
+    \includegraphics[width=.24\linewidth]{figures/mog_benchmark/single_mode/BayesFlow_c2st_heatmap}
+    \includegraphics[width=.24\linewidth]{figures/mog_benchmark/single_mode/Flow Matching_c2st_heatmap}
+    \caption{MoG Benchmark - Base simulator: C2ST heatmaps for R2OMC, NPE, BayesFlow, and Flow Matching.}
+    \label{fig:mog_benchmark_base_heatmaps}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=.24\linewidth]{figures/mog_benchmark/single_mode_distractors/R2OMC_c2st_heatmap}
+    \includegraphics[width=.24\linewidth]{figures/mog_benchmark/single_mode_distractors/NPE_c2st_heatmap}
+    \includegraphics[width=.24\linewidth]{figures/mog_benchmark/single_mode_distractors/BayesFlow_c2st_heatmap}
+    \includegraphics[width=.24\linewidth]{figures/mog_benchmark/single_mode_distractors/Flow Matching_c2st_heatmap}
+    \caption{MoG Benchmark - Base simulator with distractors: C2ST heatmaps for R2OMC, NPE, BayesFlow, and Flow Matching.}
+    \label{fig:mog_benchmark_base_distractors_heatmaps}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=.24\linewidth]{figures/mog_benchmark/two_modes/R2OMC_c2st_heatmap}
+    \includegraphics[width=.24\linewidth]{figures/mog_benchmark/two_modes/NPE_c2st_heatmap}
+    \includegraphics[width=.24\linewidth]{figures/mog_benchmark/two_modes/BayesFlow_c2st_heatmap}
+    \includegraphics[width=.24\linewidth]{figures/mog_benchmark/two_modes/Flow Matching_c2st_heatmap}
+    \caption{MoG Benchmark - MoG simulator: C2ST heatmaps for R2OMC, NPE, BayesFlow, and Flow Matching.}
+    \label{fig:mog_benchmark_mog_heatmaps}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=.24\linewidth]{figures/mog_benchmark/two_modes_distractors/R2OMC_c2st_heatmap}
+    \includegraphics[width=.24\linewidth]{figures/mog_benchmark/two_modes_distractors/NPE_c2st_heatmap}
+    \includegraphics[width=.24\linewidth]{figures/mog_benchmark/two_modes_distractors/BayesFlow_c2st_heatmap}
+    \includegraphics[width=.24\linewidth]{figures/mog_benchmark/two_modes_distractors/Flow Matching_c2st_heatmap}
+    \caption{MoG Benchmark - MoG simulator with distractors: C2ST heatmaps for R2OMC, NPE, BayesFlow, and Flow Matching.}
+    \label{fig:mog_benchmark_mog_distractors_heatmaps}
+\end{figure}
+
+
+\subsection{SBI - SLCP (T.3) and SLCP Distractors (T.4)}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=.49\linewidth]{figures/sbibm/slcp/c2st}
+    \includegraphics[width=.49\linewidth]{figures/sbibm/slcp/runtime}
+    \caption{T.3: SLCP. From left to right: \texttt{C2ST} vs. budget, and runtime vs. budget.}
+    \label{fig:exp_sbi_slcp}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=.49\linewidth]{figures/sbibm/slcp_distractors/c2st}
+    \includegraphics[width=.49\linewidth]{figures/sbibm/slcp_distractors/runtime}
+    \caption{T.4: SLCP Distractors. From left to right: \texttt{C2ST} vs. budget, and runtime vs. budget.}
+    \label{fig:exp_sbi_slcp_distractors}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=.32\linewidth]{./figures/sbibm/slcp/pairwise_posterior_total}
+    \includegraphics[width=.32\linewidth]{./figures/sbibm/slcp/pairwise_posterior_accepted}
+    \includegraphics[width=.32\linewidth]{./figures/sbibm/slcp/pairwise_posterior_selected}
+    \caption{T.3: SLCP. From left to right: total samples, accepted samples, and selected samples by R2OMC.}
+    \label{fig:exp_sbi_slcp_samples}
+\end{figure}
+
+
 \subsection{SBI - Two Moons (T.8)}
 
 We here provide additional information on example T.8 of the SBI benchmark~\cite{lueckmann2021benchmarking}.
@@ -604,22 +701,16 @@ We observe that \rromc~is able to capture the bimodal structure of the posterior
 
 \begin{figure}[ht]
   \centering
-  \begin{subfigure}[b]{0.32\linewidth}
+  \begin{subfigure}[b]{0.49\linewidth}
     \centering
-    \includegraphics[width=\linewidth]{figures/old/two_moons}
+    \includegraphics[width=\linewidth]{figures/sbibm/two_moons/c2st}
     \caption{\texttt{C2ST} score}
   \end{subfigure}
   \hfill
-  \begin{subfigure}[b]{0.32\linewidth}
+  \begin{subfigure}[b]{0.49\linewidth}
     \centering
-    \includegraphics[width=\linewidth]{figures/old/exp_sbi_two_moons_gt}
+    \includegraphics[width=\linewidth]{figures/sbibm/two_moons/runtime}
     \caption{Ground truth samples}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}[b]{0.32\linewidth}
-    \centering
-    \includegraphics[width=\linewidth]{figures/old/exp_sbi_two_moons_r2omc}
-    \caption{Samples by R2OMC}
   \end{subfigure}
   \caption{T.8: Two Moons. From left to right: \texttt{C2ST} score, ground truth samples, and samples by R2OMC.}
   \label{fig:exp_sbi_two_moons}

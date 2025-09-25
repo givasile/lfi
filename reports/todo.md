@@ -77,7 +77,7 @@ If successful, it will be nice to show that R2OMC can tackle simulators with dyn
 
 ### SIR model: 
 
-Similar to Lotka-Volterra; I will try it after Lotka-Volterra.
+Not differentiable, so I have to drop it.
 
 ## Point 3: You do not deal well with Multiple Instance 
 

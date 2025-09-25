@@ -79,7 +79,7 @@ def load_table(results_root, metric, method, agg="mean"):
     return df
 
 
-def plot_c2st_vs_budget(df, method_name):
+def plot_c2st_vs_budget(df, method_name, savepath=None):
     """
     Plot c2st score vs budget with separate curves for each dimension.
 
@@ -101,10 +101,14 @@ def plot_c2st_vs_budget(df, method_name):
     plt.legend(title="Dimensions")
     plt.grid(True, linestyle="--", alpha=0.6)
     plt.tight_layout()
+    if savepath is not None:
+        os.makedirs(savepath, exist_ok=True)
+        plt.savefig(os.path.join(savepath, f"{method_name}_c2st_vs_budget.png"))
+        plt.savefig(os.path.join(savepath, f"{method_name}_c2st_vs_budget.pdf"))
     plt.show(block=False)
 
 
-def plot_c2st_vs_dim(df, method_name):
+def plot_c2st_vs_dim(df, method_name, savepath=None):
     """
     Plot c2st score vs dimensionality with separate curves for each budget.
 
@@ -126,6 +130,10 @@ def plot_c2st_vs_dim(df, method_name):
     plt.legend(title="Budgets")
     plt.grid(True, linestyle="--", alpha=0.6)
     plt.tight_layout()
+    if savepath is not None:
+        os.makedirs(savepath, exist_ok=True)
+        plt.savefig(os.path.join(savepath, f"{method_name}_c2st_vs_dim.png"))
+        plt.savefig(os.path.join(savepath, f"{method_name}_c2st_vs_dim.pdf"))
     plt.show(block=False)
 
 
@@ -322,12 +330,12 @@ for experiment in experimets:
     print("Mean scores:\n", df)
     print("Best scores:\n", df)
 
-    # plot_c2st_vs_dim(df, "NPE-C")
-    # plot_c2st_vs_budget(df, "NPE-C")
+    plot_c2st_vs_dim(df, "NPE-C")
+    plot_c2st_vs_budget(df, "NPE-C")
     for method in ["npec", "bayes_flow", "flow_matching", "r2omc"]:
         df = load_table(loadpath, metric="c2st", method=method, agg="mean")
-        # plot_c2st_vs_dim(df, method)
-        # plot_c2st_vs_budget(df, method)
+        plot_c2st_vs_dim(df, method)
+        plot_c2st_vs_budget(df, method)
         plot_c2st_heatmap(df, method_names.get(method, method), savepath=savepath)
 
     plot_c2st_success_frontier(

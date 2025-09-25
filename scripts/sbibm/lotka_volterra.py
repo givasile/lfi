@@ -19,7 +19,7 @@ dim_y = 20
 observation_nof_obs = 1
 
 
-for exp_num in [4]: # range(1, 9):
+for exp_num in [5]: # range(1, 9):
     # inference parameters
     budget = 1000
     nof_samples = 100
@@ -27,7 +27,6 @@ for exp_num in [4]: # range(1, 9):
     path = f"../../results/sbibm/lotka_volterra/budget_{budget}/exp_{exp_num}"
     if not os.path.exists(path):
         os.makedirs(path)
-
 
     # Prior
     prior = lfi.priors.LogNormal(
@@ -55,7 +54,6 @@ for exp_num in [4]: # range(1, 9):
         observation=observation,
     )
 
-
     # check
     task = sbibm.get_task("lotka_volterra")
     gt_theta = task.get_true_parameters(exp_num).numpy()
@@ -67,20 +65,22 @@ for exp_num in [4]: # range(1, 9):
             "inf_dims_nof_th": 30,
             "inf_dims_nof_seeds": 10,
             "inf_dims_threshold": 1e-1,
-            "epochs": 15,
-            "nof_gd_steps": 20,
+            "epochs": 5,
+            "nof_gd_steps": 10,
             "alpha": 0.001,
             "pcg_to_keep": .1,
-            "box_algorithm": "blind",
-            "dx": 0.005,
+            "box_algorithm": "standard_jacobian",
+            "dx": 0.1,
+            "nof_ls_steps": 10,
+            "step_size": 0.02,
         }
     )
 
     samples = inference.sample(
         nof_samples=100,
         sample_kwargs={
-            "samples_per_region": 100,
-            "eps_3": 2.0,
+            "samples_per_region": 200,
+            "eps_3": 5.0,
         }
     )
     np.savetxt(f"{path}/samples.csv", samples, delimiter=",")

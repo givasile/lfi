@@ -122,10 +122,16 @@ def gather_r2omc_results_two_moons(path):
     return c2st, runtime
 
 
-
-def plot_results(task_name, plot_type, r2omc_c2st, r2omc_runtime, add_legend=False, savefig=False):
-     # Plotting
+def plot_c2st_or_runtime_vs_budget(
+        task_name, # "slcp", "slcp_distractors" or "two_moons"
+        plot_type, # "c2st" or "runtime"
+        r2omc_c2st, # results from gather_r2omc_results_slcp or gather_r2omc_results_two_moons
+        r2omc_runtime, # results from gather_r2omc_results_slcp or gather_r2omc_results_two_moons
+        add_legend=False, # whether to add legend to the plot
+        savefig=False # whether to save the figure or show it
+):
     fig, ax = plt.subplots()
+    # other methods plotting
     x = [1_000, 10_000, 100_000]
     metrics = other_methods()
 
@@ -170,9 +176,7 @@ def plot_results(task_name, plot_type, r2omc_c2st, r2omc_runtime, add_legend=Fal
         ax.set_ylabel("C2ST", fontsize=14)
         ax.set_xlabel("Budget (Log)", fontsize=13)
         ax.set_xscale('log')
-        ax.set_ylim(0.4, 1.05)
-        if add_legend:
-            ax.legend(fontsize=13, loc="lower center", ncols=3)
+        ax.set_ylim(0.25, 1.05)
     else:
         if task_name == "two_moons":
             y = [current.mean() for current in r2omc_runtime.values()]
@@ -183,8 +187,13 @@ def plot_results(task_name, plot_type, r2omc_c2st, r2omc_runtime, add_legend=Fal
         ax.set_xlabel("Budget (Log)", fontsize=13)
         ax.set_xscale('log')
         ax.set_yscale('log')
-        if add_legend:
-            ax.legend(fontsize=13, loc="upper center", ncols=3)
+    if add_legend:
+        ax.legend(fontsize=13, loc="lower center", ncols=3)
+
+    # add grid
+    ax.grid(visible=True, which='both', linestyle='--', linewidth=0.5)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
 
     if savefig:
         os.makedirs(f"./../../paper/figures/sbibm/{task_name}", exist_ok=True)
@@ -194,13 +203,83 @@ def plot_results(task_name, plot_type, r2omc_c2st, r2omc_runtime, add_legend=Fal
         plt.show(block=False)
 
 
+def plot_c2st_vs_runtime(
+        task_name, # "slcp", "slcp_distractors" or "two_moons"
+        r2omc_c2st, # results from gather_r2omc_results_slcp or gather_r2omc_results_two_moons
+        r2omc_runtime, # results from gather_r2omc_results_slcp or gather_r2omc_results_two_moons
+        add_legend=False, # whether to add legend to the plot
+        savefig=False # whether to save the figure or show it
+):
+    fig, ax = plt.subplots()
+    # other methods plotting
+    metrics = other_methods()
+
+    colormapping = {
+        "REJ-ABC": "green",
+        "NLE": "darkturquoise",
+        "NPE": "dodgerblue",
+        "NRE": "orange",
+        "SMC-ABC": "darkgreen",
+        "SNLE": "cadetblue",
+        "SNPE": "blue",
+        "SNRE": "darkorange"
+    }
+    key = f"{task_name}_c2st"
+    key_runtime = f"{task_name}_runtime"
+    for method in metrics.keys():
+        res = metrics[method][key]
+        res_runtime = np.array(metrics[method][key_runtime])  # convert to minutes
+        ax.plot(res_runtime, res, 'o-', label=method, color=colormapping[method])
+    ax.tick_params(axis='both', which='major', labelsize=13)
+
+    # add R2OMC
+    if task_name == "two_moons":
+        y = [current.mean() for current in r2omc_c2st.values()]
+        x = [current.mean() for current in r2omc_runtime.values()]
+    else:
+        y = [current["selected"].mean() for current in r2omc_c2st.values()]
+        x = [current.mean() for current in r2omc_runtime.values()]
+
+    ax.plot(x, y, "o--", label="R2OMC", color="darkmagenta")
+    ax.set_ylabel("C2ST", fontsize=14)
+    ax.set_xlabel("Runtime (sec) - Log", fontsize=13)
+    ax.set_ylim(0.25, 1.05)
+    ax.set_xscale('log')
+    if task_name == "two_moons":
+        ax.set_xlim(0, 100_000)
+    else:
+        ax.set_xlim(0, 100_000)
+    if add_legend:
+        ax.legend(fontsize=13, loc="lower center", ncols=3)
+
+    ax.grid(visible=True, which='both', linestyle='--', linewidth=0.5)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+    if savefig:
+        os.makedirs(f"./../../paper/figures/sbibm/{task_name}", exist_ok=True)
+        plt.savefig(f"./../../paper/figures/sbibm/{task_name}/c2st_vs_runtime.png", bbox_inches='tight')
+        plt.savefig(f"./../../paper/figures/sbibm/{task_name}/c2st_vs_runtime.pdf", bbox_inches='tight')
+    else:
+        plt.show(block=False)
+
 # ------- Main -------
 # ------- SLCP Part ------- #
+ii = 0
 for task_name in ["slcp", "slcp_distractors"]:
     path = f"./../../results/sbibm/{task_name}"
     r2omc_c2st, r2omc_runtime = gather_r2omc_results_slcp(path)
+    if ii == 0:
+        plot_c2st_vs_runtime(task_name, r2omc_c2st, r2omc_runtime, add_legend=True, savefig=True)
+    else:
+        plot_c2st_vs_runtime(task_name, r2omc_c2st, r2omc_runtime, add_legend=False, savefig=True)
     for plot_type in ["c2st", "runtime"]:
-        plot_results(task_name, plot_type, r2omc_c2st, r2omc_runtime, add_legend=False, savefig=True)
+        if ii == 0:
+            plot_c2st_or_runtime_vs_budget(task_name, plot_type, r2omc_c2st, r2omc_runtime, add_legend=True, savefig=True)
+        else:
+            plot_c2st_or_runtime_vs_budget(task_name, plot_type, r2omc_c2st, r2omc_runtime, add_legend=False, savefig=True)
+        ii += 1
+
 
 # copy pairwise posterior plots to paper folder
 exp_num = 5
@@ -229,8 +308,9 @@ for type in ["accepted", "selected", "total"]:
 task_name = "two_moons"
 path = f"./../../results/sbibm/{task_name}"
 r2omc_c2st, r2omc_runtime = gather_r2omc_results_two_moons(path)
-for plot_type in ["c2st", "runtime"]:
-    plot_results(task_name, plot_type, r2omc_c2st, r2omc_runtime, add_legend=False, savefig=True)
+plot_c2st_vs_runtime(task_name, r2omc_c2st, r2omc_runtime, add_legend=True, savefig=True)
+plot_c2st_or_runtime_vs_budget(task_name, "c2st", r2omc_c2st, r2omc_runtime, add_legend=True, savefig=True)
+plot_c2st_or_runtime_vs_budget(task_name, "runtime", r2omc_c2st, r2omc_runtime, add_legend=False, savefig=True)
 
 # copy pairwise posterior plots to paper folder
 exp_num = 3

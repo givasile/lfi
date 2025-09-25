@@ -147,21 +147,19 @@
 \aistatsaddress{ Institution 1 \And  Institution 2 \And Institution 3 } ]
 
 \begin{abstract}
-Parameter inference for complex stochastic simulators remains challenging due to intractable likelihood functions.
+Bayesian parameter inference for complex stochastic simulators is challenging due to intractable likelihood functions.
 %
-While many simulation-based methods extend Bayesian inference to simulators, they often become particularly slow in challenging settings such as high-dimensional parameter spaces or with partially uninformative outputs, where they require large simulated datasets.
+Existing simulation-based inference methods often require large number of simulations and become inefficient in settings such as high-dimensional parameter spaces or with partially uninformative outputs.
 %
-We introduce a novel method for differentiable simulators that achieves accurate posterior inference in significantly faster runtimes.
+We propose a new method for differentiable simulators that delivers accurate posterior inference with substantially reduced runtimes.
 %
-Our approach builds on the Optimization Monte Carlo framework by transforming the simulator into differentiable optimization problems.
+Building on the Optimization Monte Carlo framework, our approach reformulates stochastic simulation as deterministic optimization problems.
 %
-This enables rapid navigation to high-density posterior regions without wasting `blind' simulations on low-probability areas.
+Gradient-based methods are then applied to efficiently navigate toward high-density posterior regions and avoid wasteful simulations in low-probability areas.
 %
-The method's efficiency is further enhanced through a \texttt{JAX}-based implementation that parallelizes critical components.
+A JAX-based implementation further enhances the performance through parallelization of key method components.
 %
-Extensive experiments show that our method effectively handles challenging scenarios, including high-dimensional parameter spaces, uninformative output dimensions, multiple observations, multimodal posteriors, and real-world applications.
-%
-In these cases, it achieves comparable accuracy to existing methods while requiring substantially reduced computational time.
+Extensive experiments, including high-dimensional parameter inference, uninformative outputs, multiple observations, multimodal posteriors, and real-world applications, show that our method consistently matches the accuracy of state-of-the-art approaches and reduces the runtime by a substantial margin.
 \end{abstract}
 
 \section{Introduction}
@@ -174,21 +172,21 @@ This complexity, in turn, poses significant challenges for parameter inference.
 
 % Backgroung in SBI (existing solutions) with a special focus on neural-based methods
 % TODO: add more references
-A variety of methods, collectively known as Likelihood-Free (LFI) or Simulation-Based (SBI) Inference \citep{lintusaari2017fundamentals, sisson2018handbook, cranmer2020frontier}, have been developed to infer simulator parameters.
-These include sampling-based approaches, like Approximate Bayesian Computation \citep[ABC,][]{Marin2012}, the use of summary statistics \citep{Chen2021a, Chen2023}, parametric modeling \citep{wood2010statistical, price2018bayesian}, and ratio estimation \citep{thomas2022likelihood, durkan2020contrastive}.
-More recently, substancial progress has come from neural-based methods, which use deep neural networks to learn summary statistics \citep{radev2020bayesflow}, or employ neural surrogate models to estimate the posterior \citep{greenberg2019automatic, papamakarios2016fast} or the likelihood function \citep{papamakarios2019sequential}.
+A variety of methods, collectively referred to as Likelihood-Free (LFI) or Simulation-Based (SBI) Inference \citep{lintusaari2017fundamentals, sisson2018handbook, cranmer2020frontier}, have been developed to infer simulator parameters.
+These include sampling-based techniques, like Approximate Bayesian Computation \citep[ABC,][]{Marin2012}, and approaches basedon summary statistics \citep{Chen2021a, Chen2023}, parametric modeling \citep{wood2010statistical, price2018bayesian}, and ratio estimation \citep{thomas2022likelihood, durkan2020contrastive}.
+More recently, substancial progress has been driven by neural methods, which use deep networks to learn informative summary statistics \citep{radev2020bayesflow} and to estimate either the posterior \citep{greenberg2019automatic, papamakarios2016fast} or the likelihood \citep{papamakarios2019sequential} function.
 
 % but unfortunatelly neural-based methods are data-hungry and yet expensive to train
-Neural network–based approaches have greatly expanded the applicability of SBI to complex problem settings.
-However, they remain highly data-intensive; they demand massive simulated datasets to train the neural estimators and achieve satisfactory performance.
-As both data simulation and neural network training are expensive, neural-based methods incur significant runtimes, thereby limiting experimental flexibility and practical deployment.
+Neural-based approaches have greatly broadened the applicability of SBI to complex problems.
+However, they remain highly data-intensive, requiring large volumes of simulated datasets to train their neural estimators.
+Since both data generation, using simulation calls, and neural network training are computationally costly, these methods ofteen incur significant runtimes, which in turn restricts experimental flexibility and hinders practical deployment.
 
 % Two particular challenges: high-dimensional parameters and distractors
-This challenge is particularly pronounced in two scenarios.
-First, in high-dimensional parameter spaces; SBI methods suffer from the curse of dimensionality, as they rely on populating both parameter and data spaces with samples \citep{lintusaari2017fundamentals, sisson2018handbook, cranmer2020frontier}.
-Second, in distractor settings; In complex simulators, parameters and outputs often interact in intricate ways, so certain outputs may only depend weakly, or not at all, on certain parameters \citep{Saltelli2008, MonsalveBravo2022}.
-Such uninformative outputs act as ``distractors'' complicating inference \citep{lueckmann2021benchmarking}.
-As illustrated in Figure~\ref{fig:concept_example}, under these scenarios existing neural-based approaches struggle when operating under a limited simulation budget.
+These challenges are particularly pronounced in two scenarios.
+First, in high-dimensional parameter spaces, SBI methods face the curse of dimensionality, as they rely on densely populating both parameter and data spaces with samples \citep{lintusaari2017fundamentals, sisson2018handbook, cranmer2020frontier}.
+Second, in distractor settings, where complex simulators exhibit intricate interactions between parameters and outputs, some outputs may depend only weakly, or not at all, on certain parameters \citep{Saltelli2008, MonsalveBravo2022}.
+Such uninformative outputs act as ``distractors'', complicating inference \citep{lueckmann2021benchmarking}.
+As shown in Figure~\ref{fig:concept_example}, exhisting neural-based approaches struggle under these scenarios, particularly when operating under a limited simulation budget.
 
 \begin{figure*}
   \centering
@@ -235,19 +233,18 @@ As illustrated in Figure~\ref{fig:concept_example}, under these scenarios existi
 \end{figure*}
 
 % Key idea of our method: optimization + gradients
-We here propose a new LFI method that uses gradient information to address these challenges.
+We propose a new LFI method that uses gradient information to overcome these challenges.
 Building on the Robust Optimization Monte Carlo framework \citep[ROMC,][]{ikonomov2020robust},
-we reformulate the stochastic simulator as a collection of deterministic optimization problems and apply gradient-descent to obtain posterior samples.
-As in standard optimization, gradients are crucial for efficiently navigating in high-dimensional parameter spaces.
-In addition, they enable sensitivity analyses which allows us to identify and filter out distractor dimensions, thereby improving the quality of the inference.
+we reformulate the stochastic simulation as a set of deterministic optimization problems and use gradient descent to obtain posterior samples.
+Gradients, as in standard optimization, provide efficient navigation in high-dimensional parameter spaces, so they rapidly guide us toward high-density posterior regions.
+Moreover, they enable sensitivity analyses which allows us to identify and filter out distractor dimensions, thereby improving inference quality.
 
 % Our contributions
-The ROMC framework provides the theory for casting inference as deterministic optimization, but, with two crucial limitations:
-it lacks a strategy for defining an appropriate distance function in problems with distractors or multiple iid observations (Section~\ref{sec:romc-limitations}),
+The ROMC framework provides the theory for casting inference as deterministic optimization, but, it has two key limitations;
+it lacks a strategy for defining an appropriate distance function in problems with distractors or multiple iid observations,
 and
-its latest implementation~\citep{gkolemis2023extendable} does not exploit gradients or other computational accelerations limiting its applicability to low-dimensional problems.
-%
-We address these challenges with \rromc, an SBI method within the ROMC family, which, when the simulator is differentiable,
+its latest implementation~\citep{gkolemis2023extendable} does not exploit gradients or other computational accelerations, which limits its applicability to low-dimensional problems.
+We address these challenges with \rromc, an SBI method that when the simulator is differentiable,
 
 \begin{itemize}
  \item enables posterior sampling in high-dimensional parameter spaces under a limited simulation budget,
@@ -260,11 +257,7 @@ We address these challenges with \rromc, an SBI method within the ROMC family, w
 
  \section{Background and Motivation}
  
- % We here briefly introduce Robust Optimization Monte Carlo (ROMC), which forms the theoretical basis of our method, and discuss its limitations.
-
- \subsection{Neural-based methods are data-intensive}
-
- Neural–based SBI have demonstrated strong performance on complex simulators.
+ Neural–based SBI have demonstrated strong performance on complex simulators, but at the same time they are data-intensive.
  However, their effectiveness typically depends on access to extensive simulated datasets (see Appendix~\ref{app-sec:compute-budget} for details on computational budgets), which makes them slow for two reasons:
  First, generating data from complex simulators is often costly.
  Second, training deep neural networks on high-volume datasets is itself time-consuming.
@@ -453,6 +446,7 @@ Figure~\ref{fig:concept_image}, steps (ii-iii), illustrates the proposed procedu
 \end{figure*}
 
 
+
 \subsection{\texttt{JAX} implementation}
 \label{subsec:implementation}
 
@@ -484,6 +478,7 @@ The simulator is only used for computing $\prod_n^N \sum_i^S \mathbb{1}_{C_{\eps
 
 The code is available at \LinkToCode.
 
+\subsection{Discussion - Limitations}
 
 \section{Experiments}
 \label{sec:experiments}
@@ -503,7 +498,7 @@ Appendix~\ref{app-sec:experiments} contains further details on the setup and met
 \paragraph{Metrics.}
 
 All methods are evaluated with the \CtwoST~score~\citep{gutmann2018likelihood, lueckmann2021benchmarking}, which uses classification to measure the similarity between two sets; the first set are the samples from the approximate posterior and the second set from the ground truth. The best score is $0.5$, indicating that the two sets are indistinguishable, while the worst score is $1.0$, indicating perfect separation.
-% As classifier, we use a fully-connected neural network trained on $1,000$ samples from each set and report the mean \CtwoST~score over $5$ independent runs.
+As classifier, we use a fully-connected neural network trained on $1,000$ samples from each set and report the mean \CtwoST~score over $5$ independent runs.
 
 \subsection{MoG benchmark}
 \label{subsec:gaussian}
@@ -539,129 +534,102 @@ We select two characteristic experiments from the benchmark that cover different
 
 \begin{figure}
     \centering
-    \begin{subfigure}[b]{0.49\linewidth}
-        \includegraphics[width=\linewidth]{./figures/sbibm/slcp/c2st}
-        \caption{SLCP: C2ST}
-        \label{subfig:sbi_slcp_c2st}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.49\linewidth}
-        \includegraphics[width=\linewidth]{./figures/sbibm/slcp/runtime}
-        \caption{SLCP: Log runtime}
-        \label{subfig:sbi_slcp_runtime}
-    \end{subfigure}\\
-    \begin{subfigure}[b]{0.49\linewidth}
-        \includegraphics[width=\linewidth]{./figures/sbibm/slcp_distractors/c2st}
-        \caption{SLCP-dist: C2ST}
-        \label{subfig:sbi_slcp_dist_c2st}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.49\linewidth}
-        \includegraphics[width=\linewidth]{./figures/sbibm/slcp_distractors/runtime}
-        \caption{SLCP-dist: Log runtime}
-        \label{subfig:sbi_slcp_dist_runtime}
-    \end{subfigure}
-    \caption{SLCP and SLCP with distractors benchmark results.}
-    \label{fig:sbi_experiments_slcp_c2st}
+    \includegraphics[width=.49\linewidth]{./figures/sbibm/slcp/c2st_vs_runtime}
+    \includegraphics[width=.49\linewidth]{./figures/sbibm/slcp_distractors/c2st_vs_runtime}
+    \caption{SLCP (left) and SLCP with distractors (right): C2ST score vs. runtime.}
+    \label{fig:slcp_c2st_runtime}
 \end{figure}
 
 \begin{figure}
     \centering
-    \begin{subfigure}[b]{0.49\linewidth}
-        \includegraphics[width=\linewidth]{figures/sbibm/slcp/pairwise_posterior_total.png}
-        \caption{SLCP total}
-        \label{subfig:sbi_slcp_total}
-    \end{subfigure}
-    % \begin{subfigure}[b]{0.32\linewidth}
-    %     \includegraphics[width=\linewidth]{figures/sbibm/slcp/pairwise_posterior_accepted.png}
-    %     \caption{SLCP accepted}
-    %     \label{subfig:sbi_slcp_accepted}
-    % \end{subfigure}
-    \begin{subfigure}[b]{0.49\linewidth}
-        \includegraphics[width=\linewidth]{figures/sbibm/slcp/pairwise_posterior_selected.png}
-        \caption{SLCP selected}
-        \label{subfig:sbi_slcp_selected}
-    \end{subfigure}
-    \caption{SLCP pairwise posteriors}
-    \label{fig:sbi_experiments_slcp}
+    \includegraphics[width=.49\linewidth]{figures/sbibm/slcp/pairwise_posterior_total}
+    \includegraphics[width=.49\linewidth]{figures/sbibm/slcp/pairwise_posterior_selected}
+    \caption{SLCP pairwise posteriors: using all proposal samples (left) and only the selected ones (right).}
+    \label{fig:slcp_posterior}
 \end{figure}
 
-As its name suggests, the SLCP task is designed to have a Simple Likelihood but a Complex Posterior~\citep{papamakarios2019sequential, greenberg2019automatic}.
+The SLCP (Simple Likelihood, Complex Posterior) task has a uniform prior over five parameters $\thb \in \mathcal{U}(-\mathbf{3}, \mathbf{3})^5$ and
+four two-dimensional observations drawn from a Gaussian distribution whose mean and variance are nonlinear functions of~$\theta$.
+This creates a posterior with four symmetric modes and sharp vertical cut-offs.
+SLCP with distractors augments the original SLCP task, adding 92 non-informative dimensions for a total of a $100$D output.
 
-The prior is uniform over five parameters $\thb \in \mathcal{U}(-\mathbf{3}, \mathbf{3})^5$ and the observations consist of four two-dimensional points drawn from a Gaussian distribution whose mean and variance are nonlinear functions of~$\theta$.
-This setup yields a posterior with four symmetric modes and sharp vertical cut-offs.
-SLCP with distractors augments the original SLCP task by adding 92 additional non-informative outputs, resulting in a total of 100 output dimensions.
+Figure~\ref{fig:slcp_c2st_runtime} shows \CtwoST score versus runtime for \rromc and methods from \citet{lueckmann2021benchmarking} on both SLCP variants.
+\rromc~achieves accurate posterior approximation (\CtwoST~score $0.7$--$0.8$) in seconds using a budget of $10^3$ samples.
+Other methods require significantly longer runtimes (up to hours) and budgets of at least $10^4$ (often $10^5$) samples for similar performance.
+Results are more pronounced with distractors, where most methods fail to reach \CtwoST~scores below $0.8$ regardless of budget.
 
-Figure~\ref{fig:sbi_experiments_slcp_c2st} illustrates the \CtwoST~score and runtime of \rromc~and all methods reported by \citet{lueckmann2021benchmarking} for SLCP (top row) and SLCP with distractors (bottom row).
-\rromc~achieves an accurate posterior approximation (\CtwoST~score between $0.7$ and $0.8$) with a small simulation budget of $10^3$ samples and a runtime of a few seconds.
-All other methods require a budget of at least $10^4$ (and often $10^5$) samples to reach a similar score, leading to runtimes of several minutes or even hours.
-The results are more pronounced in the distractor version, where most methods fail to reach a \CtwoST~score below $0.8$ even with a budget of $10^5$ samples.
-
-Figure~\ref{fig:sbi_experiments_slcp} illustrates the rationale behind the multiple observation weighting scheme in \rromc (Eq.\ref{eq:rromc_weight}).
-Figure~\ref{subfig:sbi_slcp_total} shows the pairwise posteriors using all proposal samples generated by \rromc, while Figure~\ref{subfig:sbi_slcp_selected} using only the ones that are finally selected.
-The proposal samples are the ones that are in $\epsilon$-distance to at least one observation, while the selected samples are the ones that are in $\epsilon$-distance to all observations and thus represent the posterior.
+Figure~\ref{fig:slcp_posterior} illustrates \rromc ability to handle multiple observations by using the weighting scheme in \rromc (Eq.\ref{eq:rromc_weight}).
+The left panel shows pairwise posteriors using all proposal samples, i.e., the ones that are in $\epsilon$-distance per observation, and represent a much broader distribution.
+Out of them, only the ones that are in $\epsilon$-distance to all observations are given a positive weight and become posterior samples, as shown in the right panel.
 
 \subsubsection{Two-moons (T.8)}
 
 \begin{figure}
     \centering
-    \begin{subfigure}[b]{0.49\linewidth}
-        \includegraphics[width=\linewidth]{figures/sbibm/two_moons/c2st}
-        \caption{2-moons total}
-        \label{subfig:sbi_two_moons_c2st}
-    \end{subfigure}
-    % \begin{subfigure}[b]{0.32\linewidth}
-    %     \includegraphics[width=\linewidth]{figures/sbibm/two_moons/runtime}
-    %     \caption{2-moons accepted}
-    %     \label{subfig:sbi_two_moons_accepted}
-    % \end{subfigure}
-    \begin{subfigure}[b]{0.49\linewidth}
-        \includegraphics[width=\linewidth]{figures/sbibm/two_moons/pairwise_posterior.png}
-        \caption{2-moons selected}
-        \label{subfig:sbi_two_moons_posterior}
-    \end{subfigure}
-    \caption{2-moons pairwise posteriors}
+    \includegraphics[width=.49\linewidth]{figures/sbibm/two_moons/c2st_vs_runtime}
+    \includegraphics[width=.49\linewidth]{figures/sbibm/two_moons/pairwise_posterior}
+    \caption{
+      Two-moons results: C2ST score vs. runtime (Left) and pairwise posterior (Right).
+    }
     \label{fig:sbi_two_moons}
 \end{figure}
 
-\begin{figure*}
+\begin{figure}
   \centering
-  \setlength{\tabcolsep}{1pt}
-  \renewcommand{\arraystretch}{2}
-  \begin{tabular}{*{10}{c} >{\centering\arraybackslash}m{0.1\textwidth}}
-    \imagerow{images/image_pixelwise}{image_clean}{Clean: $\thb^*$}
-    \hline
-    \imagerow{images/image_pixelwise}{image_observation}{Observed: $\data$}
-    \imagerow{images/image_pixelwise}{posterior_mean}{Posterior mean}
-    \imagerow{images/image_pixelwise}{posterior_std}{Posterior std}
-    \hline
-    \imagerow{images/image_checkerboard}{image_observation}{Observed: $\data$}
-    \imagerow{images/image_checkerboard}{posterior_mean}{Posterior mean}
-    \imagerow{images/image_checkerboard}{posterior_std}{Posterior std}
-  \end{tabular}
-  \caption{Your figure caption here.}
+  \resizebox{\linewidth}{!}{%
+      \setlength{\tabcolsep}{1pt}
+      \renewcommand{\arraystretch}{2}
+      \begin{tabular}{*{10}{c} >{\centering\arraybackslash}m{0.1\textwidth}}
+          \imagerow{images/image_pixelwise}{image_clean}{Clean: $\thb^*$}
+          \hline
+          \imagerow{images/image_pixelwise}{image_observation}{Observed: $\data$}
+          \imagerow{images/image_pixelwise}{posterior_mean}{Posterior mean}
+          \imagerow{images/image_pixelwise}{posterior_std}{Posterior std}
+          \hline
+          \imagerow{images/image_checkerboard}{image_observation}{Observed: $\data$}
+          \imagerow{images/image_checkerboard}{posterior_mean}{Posterior mean}
+          \imagerow{images/image_checkerboard}{posterior_std}{Posterior std}
+      \end{tabular}
+    }
+  \caption{
+    Image-based inference results.
+    Top row shows the clean ground truth image $\thb^*$. 
+    Rows 2--4 display the distorted observation, posterior mean, and posterior standard deviation 
+    obtained by~\rromc for pixel-wise distortion.
+    Rows 5--7 show the same results for the edge-detection filter distortion.
+  }
   \label{fig:pixelwise}
-\end{figure*}
+\end{figure}
 
-The 2-moons task tests whether the methods can accurately estimate a posterior with both global (bimodality) and local (crescent shape) structure.
-The simulator is $\yb|\thb \sim  (r\cos(\alpha) + 0.25, r \sin(\alpha)) + (-|\theta_1 + \theta_2| / \sqrt{2}, (-\theta_1 + \theta_2) / \sqrt{2})$, $\alpha \sim \mathcal{U}(-\pi/2, \pi/2)$, $r \sim \mathcal{N}(0.1, 0.01^2)$.
-The parameters $\thb=(\theta_1, \theta_2)$ are two-dimensional and the prior is $\thb \sim \mathcal{U}(\mathbf{-1}, \mathbf{1})$. This creates a posterior with two half-moon shape modes.
+The 2-moons task tests whether the methods can estimate posteriors with bimodal and crescent shape structure.
+The simulator is $\yb|\thb \sim  (r\cos(\alpha) + 0.25, r \sin(\alpha)) + (-|\theta_1 + \theta_2| / \sqrt{2}, (-\theta_1 + \theta_2) / \sqrt{2})$ with $\alpha \sim \mathcal{U}(-\pi/2, \pi/2)$ and $r \sim \mathcal{N}(0.1, 0.01^2)$.
+The dimensionality is $D=2$ and the prior is $\thb \sim \mathcal{U}(\mathbf{-1}, \mathbf{1})$,
+creating a posterior with two half-moon shape modes.
 
-Figure~\ref{fig:sbi_two_moons} shows the \CtwoST~score (left) and the pairwise posterior (right) of \rromc~and all methods reported by \citet{lueckmann2021benchmarking}.
-\rromc~has a \CtwoST~score close to $0.5$ even with a simulation budget of $10^3$ samples, while the rest of the methods need a budget of $10^5$ or more to achieve a similar score and perform much worse for smaller budgets.
-The pairwise posterior in Figure~\ref{subfig:sbi_two_moons_posterior} shows that \rromc~accurately captures the two crescent-shaped modes of the posterior.
+Figure~\ref{fig:sbi_two_moons} shows the \CtwoST~score and the pairwise posterior of \rromc~and all methods from \citet{lueckmann2021benchmarking}.
+\rromc~achieves a \CtwoST close to $0.5$ with a runtime of a few seconds (budget of $10^3$ samples),
+whereas other methods require much longer runtimes (minutes to hours) to reach a similar score (budget of $10^5$ samples).
+Additional results showing the scores vs. budget are in Appendix~\ref{app-sec:experiments}.
+The pairwise posterior shows that \rromc~accurately captures the two crescent-shaped modes of the posterior.
 
 \subsection{Image-based inference}
 \label{subsec:image-based}
 
-We consider a high-dimensional image-based inference problem, where the goal is to infer the parameters of a random simulator that distorts and adds Gaussian noise to an input image.
-The problem tests the ability of \rromc to handle very high-dimensional data ($D_y = 28 \times 28 = 784$), even beyond the dimensionality of conventional SBI problems.
-The simulator is $\mathbf{y} = \text{transform}(\thb) + \boldsymbol{\epsilon}$, where $\boldsymbol{\epsilon} \sim \mathcal{N}(\mathbf{0}, 0.1^2 \mathbf{I})$ and $\text{transform}(\thb)$ applies a transformations to the base image.
-We test two types of transformations: (a) pixel-wise intensity changes, where $\thb \in \mathbb{R}^{28 \times 28}$ and each parameter controls the intensity of one pixel; (b) a checkerboard filter, where an edge-detection filter is applied to the base image.
+We evaluate \rromc~on (very) high-dimensional parameter spaces through image inference in noisy camera models.
+Two simulators are tested on MNIST dataset observations~\citep{lecun1998gradient}.
+The first applies pixel-wise intensity changes, $y_{ij} = a\theta_{ij} + b + \boldsymbol{\epsilon}$,
+where $\theta_{ij}$ is pixel intensity and $a$ and $b$ control contrast and brightness.
+The second applies edge-detection filtering, $\yb = \text{filter}(\thb) + \boldsymbol{\epsilon}$,
+using convolution with $\text{filter}(\cdot)$.
+Both use Gaussian noise $\boldsymbol{\epsilon} \sim \mathcal{N}(\mathbf{0}, 0.1^2 \mathbf{I})$ and
+uninformative prior $\thb \sim \mathcal{U}(0,1)^{28 \times 28}$.
 
-Figure~\ref{fig:pixelwise} summarizes the results.
-In the top row, we show the initial clean image.
-In the second row the pixel-wise distorted observation and in the third and fourth rows the posterior mean and standard deviation obtained by \rromc (case (a)).
-In the last three rows, we show the observation, posterior mean and standard deviation for the checkerboard filter (case (b)).
-In both cases, \rromc~obtains a posterior mean that is relatively close to the clean image, in terms of optical similarity, which means that the posterior mode is close to parameter $\thb^*$ that generated the observation.
+Figure~\ref{fig:pixelwise} shows that for both simulators,
+the posterior mean obtained by~\rromc visually resembles to the original clean image,
+indicating that the posterior mode is close to the true generating parameter $\thb^*$.
+SBI inference on images is highly difficult due to the curse of dimensionality.
+Few methods like GATSBI~\citep{ramesh2022gatsbi} succeed but require complex generative models with long, and often unstable, training.
+In contrast, \rromc~achieves accurate inference with only $100$ simulations and a runtime of a few seconds.
 
 
 \section{Conclusion}

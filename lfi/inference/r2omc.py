@@ -216,15 +216,21 @@ class R2OMC(InferenceBase):
         self.th_star = self.th_star_inside_prior[accepted_indices]
         self.d_star = self.d_star_inside_prior[accepted_indices]
 
-    def get_directions(self, from_hessian: bool = True):
+    def get_directions(self, method: str = "hessian"):
         self.hessians = np.zeros((self.nof_seeds_accept, self.nof_th0, self.D, self.D))
         self.eig_val = np.zeros((self.nof_seeds_accept, self.nof_th0, self.D))
         self.eig_vec = np.zeros((self.nof_seeds_accept, self.nof_th0, self.D, self.D))
-        if from_hessian:
+        if method == "hessian":
             for i, ss in enumerate(self.seeds):
                 self.hessians[i] = np.array(self.dist_hessian_1(self.th_star[i], ss, self.y_0))
                 self.eig_val[i], self.eig_vec[i] = np.linalg.eig(self.hessians[i])
-        else:
+        elif method == "jacobian":
+            for i, ss in enumerate(self.seeds):
+                grads = self.dist_grad_1(self.th_star[i], ss, self.y_0)[1] # (N_th0, D)
+                jac = grads[:, :, np.newaxis] @ grads[:, np.newaxis, :] # (N_th0, D, D)
+                self.hessians[i] = np.array(jac)
+                self.eig_val[i], self.eig_vec[i] = np.linalg.eig(self.hessians[i])
+        elif method == "blind":
             for i in range(self.nof_seeds_accept):
                 for j in range(self.nof_th0):
                     self.eig_vec[i, j] = np.eye(self.D)
@@ -514,16 +520,18 @@ class R2OMC(InferenceBase):
         print("\nStep 5: get directions")
         print("---------------------------------")
         if fit_kwargs.get("box_algorithm") in ["blind", "eye"]:
-            self.get_directions(False)
+            self.get_directions("blind")
+        elif fit_kwargs.get("box_algorithm") == "standard_jacobian":
+            self.get_directions("jacobian")
         else:
-            self.get_directions(True)
+            self.get_directions("hessian")
         print("Done!")
 
         # Step 6: build the bounding boxes
         print(f"\nStep 6: Build bounding boxes - Algorithm: {fit_kwargs['box_algorithm']}")
         print("---------------------------------")
 
-        if fit_kwargs["box_algorithm"] in ["standard", "eye"]:
+        if fit_kwargs["box_algorithm"] in ["standard", "eye", "standard_jacobian"]:
             print(
                 f"Input: \n"
                 f"- eps_2={fit_kwargs['eps_2']} \n"
@@ -630,7 +638,7 @@ class R2OMCMultiObs(InferenceBase):
             "pcg_to_keep": .8,
             "eps_1": None,  # will be checked
             # get_boxes
-            "box_algorithm": "standard", # "standard" or "blind"
+            "box_algorithm": "standard", # ["standard", "standard_jacobian", "blind", "eye"]
             "dx": 0.1,
             "eps_2": None,
             "nof_ls_steps": 100,
