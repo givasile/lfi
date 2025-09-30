@@ -81,11 +81,28 @@ config = {
             "nof_samples_per_obs": 1000,
             "eps_4": 1.
         }
+    },
+    30000: {
+        "fit_kwargs": {
+            "epochs": 20,
+            "nof_gd_steps": 10,
+            "alpha": 0.01,
+            "pcg_to_keep": .035,
+            "box_algorithm": "standard",
+            "dx": 0.1,
+        },
+        "nof_samples": 200,
+        "sample_kwargs": {
+            "samples_per_region": 1,
+            "eps_3": 5.0,
+            "nof_samples_per_obs": 1000,
+            "eps_4": 1.
+        },
     }
 }
 
 
-for budget in [1_000, 1_500, 5_000, 10_000]:
+for budget in [30_000]: # [1_000, 1_500, 5_000, 10_000]:
     for exp_num in range(1, 10):
         # create dir
         exp_path = os.path.join(figure_path, f"budget_{budget}", f"exp_{exp_num}")
@@ -129,7 +146,7 @@ for budget in [1_000, 1_500, 5_000, 10_000]:
             budget=budget,
             fit_kwargs=config[budget]["fit_kwargs"]
         )
-        # idea 0.01
+
         inference.sample(
             nof_samples=config[budget]["nof_samples"],
             sample_kwargs=config[budget]["sample_kwargs"]
@@ -157,6 +174,19 @@ for budget in [1_000, 1_500, 5_000, 10_000]:
         for i, samples in enumerate([samples_total, samples_accepted, samples_selected]):
             print(f"--- Sample set {i} ---")
             names = ["total", "accepted", "selected"]
+
+            if i == 0:
+                # plot samples per observation
+                nof_per_obs = config[budget]["sample_kwargs"].get("nof_samples_per_obs")
+                for jj in range(observation.shape[0]):
+                    samples_cur = samples_total[jj * nof_per_obs:(jj + 1) * nof_per_obs]
+                    g = lfi.visualization.plot_pairwise_posterior(
+                        samples_cur,
+                        limits=[-3., 3.],
+                        samples_gt=samples_gt,
+                        savefig=os.path.join(exp_path, f"pairwise_posterior_obs_{jj}.png")
+                    )
+                    plt.show(block=False)
 
             # Visualization
             g = lfi.visualization.plot_pairwise_posterior(

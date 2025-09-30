@@ -82,11 +82,28 @@ config = {
             "nof_samples_per_obs": 1000,
             "eps_4": 1.
         }
+    },
+    30000: {
+        "fit_kwargs": {
+            "epochs": 20,
+            "nof_gd_steps": 10,
+            "alpha": 0.01,
+            "pcg_to_keep": .035,
+            "box_algorithm": "standard",
+            "dx": 0.1,
+        },
+        "nof_samples": 200,
+        "sample_kwargs": {
+            "samples_per_region": 1,
+            "eps_3": 5.0,
+            "nof_samples_per_obs": 1000,
+            "eps_4": 1.
+        },
     }
 }
 
 
-for budget in [1_000, 1_500, 5_000, 10_000]:
+for budget in [30_000]: # [1_000, 1_500, 5_000, 10_000]:
     for exp_num in range(1, 10):
         # create dir
         exp_path = os.path.join(figure_path, f"budget_{budget}", f"exp_{exp_num}")
