@@ -248,8 +248,9 @@ def plot_runtime_success_frontier(loadpath, methods, threshold=0.75, agg="mean",
             df_runtime_50k * 2,
             df_runtime_10k * 10,
             df_runtime_5k * 20,
-            df_runtime_1k * 100
+            df_runtime_1k * 100,
         )
+        df_max_runtime *= 1.1  # add 10% margin
         frontier_runtime = {}
         for dim in df_c2st.columns:
             ok_budgets = df_c2st.index[df_c2st[dim] <= threshold]
@@ -292,15 +293,42 @@ def plot_runtime_success_frontier(loadpath, methods, threshold=0.75, agg="mean",
             color=colors[ii % len(colors)]
             )
 
+    # # r2omc inset plot
+    # df_runtime = load_table(loadpath, "runtime", method="r2omc", agg=agg)
+    # r2omc_runtimes = df_runtime.loc[1_000].to_numpy()
+    # r2omc_dim = [2, 5, 10, 15, 20]
+    # inset_ax = fig.add_axes((0.1, 0.55, 0.3, 0.3))  # [x0, y0, width, height]
+    # inset_ax.plot(
+    #     r2omc_dim,
+    #     r2omc_runtimes / 60.,
+    #     marker='o',
+    #     linestyle='-',
+    #     markersize=6,
+    #     linewidth=2,
+    #     markeredgecolor='black',
+    #     color="#d62728"
+    # )
+    # inset_ax.set_xlim(1, 21)
+    # inset_ax.set_ylim(0, .2)
+    # inset_ax.set_xticks([])
+    # inset_ax.set_yticks([])
+    # inset_ax.set_xlabel("")
+    # inset_ax.set_ylabel("")
+    # inset_ax.set_title("Inset")
+
     plt.xlabel("Dimensions (D)", fontsize=20)
     plt.ylabel("Runtime (min)", fontsize=20)
     # plt.title(f"Runtime Success Frontier", fontsize=20)
     plt.xlim(left=1, right=21)
+    plt.ylim(bottom=0, top=65)
     plt.xticks([2, 5, 10, 15, 20], fontsize=16)
     # use <xx>k for yticks
-    plt.yticks(fontsize=16)
+    plt.yticks(fontsize=18)
     if loadpath.endswith("single_mode"):
-        plt.legend(fontsize=16)
+        plt.legend(fontsize=20)
+    plt.hlines(y=60, xmin=0, xmax=22, colors='gray', linewidth=4, linestyles='dotted')
+    plt.text(6, 60, 'Over 1 hour', color='gray', fontsize=20, verticalalignment='bottom', horizontalalignment='right')
+
     plt.grid(True, linestyle="--", alpha=0.6)
     # remove top and right spines
     plt.gca().spines['top'].set_visible(False)
@@ -333,24 +361,24 @@ for experiment in experimets:
     df = load_table(loadpath, metric="c2st", method="r2omc", agg="mean")
     savepath = os.path.join("./../../paper/figures", "mog_benchmark", experiment)
 
-    print("Mean scores:\n", df)
-    print("Best scores:\n", df)
-
-    plot_c2st_vs_dim(df, "NPE-C")
-    plot_c2st_vs_budget(df, "NPE-C")
-    for method in ["npec", "bayes_flow", "flow_matching", "r2omc"]:
-        df = load_table(loadpath, metric="c2st", method=method, agg="mean")
-        plot_c2st_vs_dim(df, method)
-        plot_c2st_vs_budget(df, method)
-        plot_c2st_heatmap(df, method_names.get(method, method), savepath=savepath)
-
-    plot_c2st_success_frontier(
-        loadpath,
-        methods=["npec", "bayes_flow", "flow_matching", "r2omc"],
-        threshold=0.75,
-        agg="mean",
-        savepath=savepath
-    )
+    # print("Mean scores:\n", df)
+    # print("Best scores:\n", df)
+    #
+    # plot_c2st_vs_dim(df, "NPE-C")
+    # plot_c2st_vs_budget(df, "NPE-C")
+    # for method in ["npec", "bayes_flow", "flow_matching", "r2omc"]:
+    #     df = load_table(loadpath, metric="c2st", method=method, agg="mean")
+    #     plot_c2st_vs_dim(df, method)
+    #     plot_c2st_vs_budget(df, method)
+    #     plot_c2st_heatmap(df, method_names.get(method, method), savepath=savepath)
+    #
+    # plot_c2st_success_frontier(
+    #     loadpath,
+    #     methods=["npec", "bayes_flow", "flow_matching", "r2omc"],
+    #     threshold=0.75,
+    #     agg="mean",
+    #     savepath=savepath
+    # )
 
     plot_runtime_success_frontier(
         loadpath,

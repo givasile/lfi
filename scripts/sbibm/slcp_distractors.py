@@ -8,7 +8,7 @@ import time
 # set seed
 np.random.seed(42)
 
-figure_path = "./../../results/sbibm/slcp_distractors_1/"
+figure_path = "./../../results/sbibm/slcp_distractors/"
 if not os.path.exists(figure_path):
     os.makedirs(figure_path)
 
