@@ -140,7 +140,7 @@
 
 \twocolumn[
 
-\aistatstitle{Scalable Simulation-Based Inference With Optimization Monte Carlo}
+\aistatstitle{Fast and Robust Simulation-Based Inference With Optimization Monte Carlo}
 
 \aistatsauthor{ Author 1 \And Author 2 \And  Author 3 }
 
@@ -149,7 +149,7 @@
 \begin{abstract}
 Bayesian parameter inference for complex stochastic simulators is challenging due to intractable likelihood functions.
 %
-Existing simulation-based inference methods often require large number of simulations and become inefficient in settings such as high-dimensional parameter spaces or with partially uninformative outputs.
+Existing simulation-based inference methods often require large number of simulations and become costly to use in high-dimensional parameter spaces or in problems with partially uninformative outputs.
 %
 We propose a new method for differentiable simulators that delivers accurate posterior inference with substantially reduced runtimes.
 %
@@ -157,7 +157,7 @@ Building on the Optimization Monte Carlo framework, our approach reformulates st
 %
 Gradient-based methods are then applied to efficiently navigate toward high-density posterior regions and avoid wasteful simulations in low-probability areas.
 %
-A JAX-based implementation further enhances the performance through parallelization of key method components.
+A JAX-based implementation further enhances the performance through vectorization of key method components.
 %
 Extensive experiments, including high-dimensional parameter inference, uninformative outputs, multiple observations, multimodal posteriors, and real-world applications, show that our method consistently matches the accuracy of state-of-the-art approaches and reduces the runtime by a substantial margin.
 \end{abstract}
