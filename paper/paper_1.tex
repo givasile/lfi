@@ -159,7 +159,7 @@ Gradient-based methods are then applied to efficiently navigate toward high-dens
 %
 A JAX-based implementation further enhances the performance through vectorization of key method components.
 %
-Extensive experiments, including high-dimensional parameter inference, uninformative outputs, multiple observations, multimodal posteriors, and real-world applications, show that our method consistently matches the accuracy of state-of-the-art approaches and reduces the runtime by a substantial margin.
+Extensive experiments, including high-dimensional parameter spaces, uninformative outputs, multiple observations and multimodal posteriors show that our method consistenly matches, and often exceeds, the accuracy of state-of-the-art approaches, while reducing the runtime by a substantial margin.
 \end{abstract}
 
 \section{Introduction}
@@ -167,26 +167,27 @@ Extensive experiments, including high-dimensional parameter inference, uninforma
 % DONE: (i) General intro to LFI (ii) SBI is challenging when model becomes complex
 Parametric stochastic simulators are widely used to model complex processes across biology, physics, health sciences, and many other disciplines.
 As simulators become more accurate, they also become more predictive.
-However, achieving this accuracy demands greater complexity, such as a large numbers of free parameters or a high-dimensional output.
+However, accuracy comes with greater complexity, such as a large numbers of free parameters or a high-dimensional output.
 This complexity, in turn, poses significant challenges for parameter inference.
 
 % Backgroung in SBI (existing solutions) with a special focus on neural-based methods
 % TODO: add more references
 A variety of methods, collectively referred to as Likelihood-Free (LFI) or Simulation-Based (SBI) Inference \citep{lintusaari2017fundamentals, sisson2018handbook, cranmer2020frontier}, have been developed to infer simulator parameters.
-These include sampling-based techniques, like Approximate Bayesian Computation \citep[ABC,][]{Marin2012}, and approaches basedon summary statistics \citep{Chen2021a, Chen2023}, parametric modeling \citep{wood2010statistical, price2018bayesian}, and ratio estimation \citep{thomas2022likelihood, durkan2020contrastive}.
+These include sampling-based techniques, like Approximate Bayesian Computation \citep[ABC,][]{Marin2012}, and approaches based on summary statistics \citep{Chen2021a, Chen2023}, parametric modeling \citep{wood2010statistical, price2018bayesian}, and ratio estimation \citep{thomas2022likelihood, durkan2020contrastive}.
 More recently, substancial progress has been driven by neural methods, which use deep networks to learn informative summary statistics \citep{radev2020bayesflow} and to estimate either the posterior \citep{greenberg2019automatic, papamakarios2016fast} or the likelihood \citep{papamakarios2019sequential} function.
 
 % but unfortunatelly neural-based methods are data-hungry and yet expensive to train
 Neural-based approaches have greatly broadened the applicability of SBI to complex problems.
 However, they remain highly data-intensive, requiring large volumes of simulated datasets to train their neural estimators.
-Since both data generation, using simulation calls, and neural network training are computationally costly, these methods ofteen incur significant runtimes, which in turn restricts experimental flexibility and hinders practical deployment.
+Since both data generation, using simulation calls, and neural network training are computationally costly, these methods often incur significant runtimes, which in turn restricts experimental flexibility and hinders practical deployment.
 
 % Two particular challenges: high-dimensional parameters and distractors
 These challenges are particularly pronounced in two scenarios.
 First, in high-dimensional parameter spaces, SBI methods face the curse of dimensionality, as they rely on densely populating both parameter and data spaces with samples \citep{lintusaari2017fundamentals, sisson2018handbook, cranmer2020frontier}.
 Second, in distractor settings, where complex simulators exhibit intricate interactions between parameters and outputs, some outputs may depend only weakly, or not at all, on certain parameters \citep{Saltelli2008, MonsalveBravo2022}.
 Such uninformative outputs act as ``distractors'', complicating inference \citep{lueckmann2021benchmarking}.
-As shown in Figure~\ref{fig:concept_example}, exhisting neural-based approaches struggle under these scenarios, particularly when operating under a limited simulation budget.
+As shown in Figure~\ref{fig:concept_example}, accurate inference with existing neural-based approaches comes only at the cost of many simulations and substantial runtimes.
+
 
 \begin{figure*}
   \centering
@@ -244,7 +245,7 @@ The ROMC framework provides the theory for casting inference as deterministic op
 it lacks a strategy for defining an appropriate distance function in problems with distractors or multiple iid observations,
 and
 its latest implementation~\citep{gkolemis2023extendable} does not exploit gradients or other computational accelerations, which limits its applicability to low-dimensional problems.
-We address these challenges with \rromc, an SBI method that when the simulator is differentiable,
+We overcome these challenges and present \rromc, an SBI method that when the simulator is differentiable,
 
 \begin{itemize}
  \item enables posterior sampling in high-dimensional parameter spaces under a limited simulation budget,
@@ -253,17 +254,19 @@ We address these challenges with \rromc, an SBI method that when the simulator i
  \item runs efficiently through a \texttt{JAX} implementation that uses automatic differentiation, vectorization, and just-in-time compilation.
  \end{itemize}
 
- \rromc~is systematically compared to state-of-the-art SBI methods, demonstrating accurate posterior inference at a fraction of the computational cost in challenging scenarios.
+ \rromc~is systematically compared to state-of-the-art SBI methods, demonstrating accurate posterior inference at a fraction of the computational cost in a wide range of scenarios.
 
  \section{Background and Motivation}
- 
- Neural–based SBI have demonstrated strong performance on complex simulators, but at the same time they are data-intensive.
- However, their effectiveness typically depends on access to extensive simulated datasets (see Appendix~\ref{app-sec:compute-budget} for details on computational budgets), which makes them slow for two reasons:
- First, generating data from complex simulators is often costly.
- Second, training deep neural networks on high-volume datasets is itself time-consuming.
- % Frequently, it is the latter that constitutes the primary runtime bottleneck \citep{lueckmann2021benchmarking}.
- These long runtimes are a critical limitation, as neural-based methods often require extensive hyperparameter tuning and slow runtimes limit experimental flexibility and practical deployment.
 
+ Neural-based SBI methods are data-intensive, with their accuracy depending on access to large simulated datasets.
+ This leads to two main sources of computational cost:
+ (a) generating datasets from complex simulators, and
+ (b) training deep neural estimators on high-volume data.
+ Prior work~\citep{lueckmann2021benchmarking} has noted that training is often the more time-consuming step.
+ Further details are provided in Appendix~\ref{app-sec:compute-budget}.
+Moreover, with modern frameworks, such as JAX, which enable extensive vectorization, simulation can be accelerated, further shifting the bottleneck toward training.
+This motivates us to search for a method that sidesteps the bottleneck of separate neural estimator training.
+ 
 \subsection{ROMC framework}
 \label{subsec:ROMC}
 ROMC has been introduced by \citet{ikonomov2020robust}, extending and addressing robustness issues of the Optimization Monte Carlo method by \citet{meeds2015optimization}. It belongs to the larger family of ABC methods that approximate the likelihood function as the probability of simulating an output $\epsilon$-close to the observation,
@@ -347,13 +350,11 @@ Note that for squared Euclidean distances, the averaging and concatenation appro
 \paragraph{Computational efficiency.}
 
 Current ROMC implementations \citep{gkolemis2023extendable} suffer from significant computational bottlenecks that restrict their applicability to low-dimensional problems.
-First, optimization relies on gradient-free methods, e.g., Bayesian optimization \citep{snoek2012practical}, which scale poorly with the number of parameters and require many simulator evaluations.
+First, optimization relies on gradient-free methods, e.g., Bayesian optimization, which scale poorly with the number of parameters and require many simulator evaluations.
 Second, the construction of the acceptance regions $\accregioni$ with a line-search algorithm (see Appendix \ref{app-sec:methods}), require repeated simulator evaluations per seed and per dimension, which also scales poorly with the parameter dimension.
 
 \section{Proposed method: \rromc}
 \label{sec:rromc}
-
-
 
 We here present our new method for Bayesian parameter inference in simulator models. The method uses gradients to obtain posterior samples even in high-dimensional parameter spaces. The method belongs to the ROMC framework so that we start with discussing how we deal with iid observations and distractors before discussing its implementation.
 
@@ -480,6 +481,10 @@ The code is available at \LinkToCode.
 
 \subsection{Discussion - Limitations}
 
+While R2OMC provides efficient inference in many scenarios, it has several inherent limitations. First, it can only be applied to differentiable simulators, making it a gray-box approach rather than fully black-box. Second, its performance depends critically on the success of the underlying optimization: if the optimization fails, the resulting proposal samples may poorly approximate the posterior. Additionally, increasing the simulation budget does not necessarily translate into improved accuracy, highlighting that R2OMC’s efficiency gains do not guarantee monotonic improvements with more resources.
+
+Other limitations arise in specific inference scenarios. In the multiple observations setting, R2OMC optimizes with respect to each observation independently; if the resulting per-observation posteriors have little overlap, there is no guarantee that the combined samples accurately reflect the joint posterior. Finally, because the method’s optimization does not explicitly account for the prior, proposal regions may occasionally fall in regions with low or no prior support, which can reduce inference quality. These limitations should be considered when applying R2OMC to complex or constrained SBI tasks.
+
 \section{Experiments}
 \label{sec:experiments}
 
@@ -540,13 +545,16 @@ We select two characteristic experiments from the benchmark that cover different
     \label{fig:slcp_c2st_runtime}
 \end{figure}
 
-\begin{figure}
+\begin{figure*}
     \centering
-    \includegraphics[width=.49\linewidth]{figures/sbibm/slcp/pairwise_posterior_total}
-    \includegraphics[width=.49\linewidth]{figures/sbibm/slcp/pairwise_posterior_selected}
+    \includegraphics[width=.19\linewidth]{figures/sbibm/slcp/pairwise_posterior_obs_0}
+    \includegraphics[width=.19\linewidth]{figures/sbibm/slcp/pairwise_posterior_obs_1}
+    \includegraphics[width=.19\linewidth]{figures/sbibm/slcp/pairwise_posterior_obs_2}
+    \includegraphics[width=.19\linewidth]{figures/sbibm/slcp/pairwise_posterior_obs_3}
+    \includegraphics[width=.19\linewidth]{figures/sbibm/slcp/pairwise_posterior_selected}
     \caption{SLCP pairwise posteriors: using all proposal samples (left) and only the selected ones (right).}
     \label{fig:slcp_posterior}
-\end{figure}
+\end{figure*}
 
 The SLCP (Simple Likelihood, Complex Posterior) task has a uniform prior over five parameters $\thb \in \mathcal{U}(-\mathbf{3}, \mathbf{3})^5$ and
 four two-dimensional observations drawn from a Gaussian distribution whose mean and variance are nonlinear functions of~$\theta$.
@@ -573,6 +581,21 @@ Out of them, only the ones that are in $\epsilon$-distance to all observations a
     }
     \label{fig:sbi_two_moons}
 \end{figure}
+
+
+The 2-moons task tests whether the methods can estimate posteriors with bimodal and crescent shape structure.
+The simulator is $\yb|\thb \sim  (r\cos(\alpha) + 0.25, r \sin(\alpha)) + (-|\theta_1 + \theta_2| / \sqrt{2}, (-\theta_1 + \theta_2) / \sqrt{2})$ with $\alpha \sim \mathcal{U}(-\pi/2, \pi/2)$ and $r \sim \mathcal{N}(0.1, 0.01^2)$.
+The dimensionality is $D=2$ and the prior is $\thb \sim \mathcal{U}(\mathbf{-1}, \mathbf{1})$,
+creating a posterior with two half-moon shape modes.
+
+Figure~\ref{fig:sbi_two_moons} shows the \CtwoST~score and the pairwise posterior of \rromc~and all methods from \citet{lueckmann2021benchmarking}.
+\rromc~achieves a \CtwoST close to $0.5$ with a runtime of a few seconds (budget of $10^3$ samples),
+whereas other methods require much longer runtimes (minutes to hours) to reach a similar score (budget of $10^5$ samples).
+Additional results showing the scores vs. budget are in Appendix~\ref{app-sec:experiments}.
+The pairwise posterior shows that \rromc~accurately captures the two crescent-shaped modes of the posterior.
+
+\subsection{Image-based inference}
+\label{subsec:image-based}
 
 \begin{figure}
   \centering
@@ -601,19 +624,6 @@ Out of them, only the ones that are in $\epsilon$-distance to all observations a
   \label{fig:pixelwise}
 \end{figure}
 
-The 2-moons task tests whether the methods can estimate posteriors with bimodal and crescent shape structure.
-The simulator is $\yb|\thb \sim  (r\cos(\alpha) + 0.25, r \sin(\alpha)) + (-|\theta_1 + \theta_2| / \sqrt{2}, (-\theta_1 + \theta_2) / \sqrt{2})$ with $\alpha \sim \mathcal{U}(-\pi/2, \pi/2)$ and $r \sim \mathcal{N}(0.1, 0.01^2)$.
-The dimensionality is $D=2$ and the prior is $\thb \sim \mathcal{U}(\mathbf{-1}, \mathbf{1})$,
-creating a posterior with two half-moon shape modes.
-
-Figure~\ref{fig:sbi_two_moons} shows the \CtwoST~score and the pairwise posterior of \rromc~and all methods from \citet{lueckmann2021benchmarking}.
-\rromc~achieves a \CtwoST close to $0.5$ with a runtime of a few seconds (budget of $10^3$ samples),
-whereas other methods require much longer runtimes (minutes to hours) to reach a similar score (budget of $10^5$ samples).
-Additional results showing the scores vs. budget are in Appendix~\ref{app-sec:experiments}.
-The pairwise posterior shows that \rromc~accurately captures the two crescent-shaped modes of the posterior.
-
-\subsection{Image-based inference}
-\label{subsec:image-based}
 
 We evaluate \rromc~on (very) high-dimensional parameter spaces through image inference in noisy camera models.
 Two simulators are tested on MNIST dataset observations~\citep{lecun1998gradient}.
