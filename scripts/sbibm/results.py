@@ -173,8 +173,8 @@ def plot_c2st_or_runtime_vs_budget(
             y = [current["selected"].mean() for current in r2omc_c2st.values()]
 
         ax.plot(x, y, "--x", label="R2OMC", color="darkmagenta")
-        ax.set_ylabel("C2ST", fontsize=14)
-        ax.set_xlabel("Budget (Log)", fontsize=13)
+        ax.set_ylabel("C2ST", fontsize=28)
+        ax.set_xlabel("Budget (Log)", fontsize=28)
         ax.set_xscale('log')
         ax.set_ylim(0.25, 1.05)
     else:
@@ -183,12 +183,12 @@ def plot_c2st_or_runtime_vs_budget(
         else:
             y = [current.mean() for current in r2omc_runtime.values()]
         ax.plot(x, y, "--x", label="R2OMC", color="darkmagenta")
-        ax.set_ylabel("Runtime (seconds)", fontsize=14)
-        ax.set_xlabel("Budget (Log)", fontsize=13)
+        ax.set_ylabel("Runtime (seconds)", fontsize=24)
+        ax.set_xlabel("Budget (Log)", fontsize=24)
         ax.set_xscale('log')
         ax.set_yscale('log')
     if add_legend:
-        ax.legend(fontsize=13, loc="lower center", ncols=3)
+        ax.legend(fontsize=15, loc="lower center", ncols=3)
 
     # add grid
     ax.grid(visible=True, which='both', linestyle='--', linewidth=0.5)
@@ -230,7 +230,7 @@ def plot_c2st_vs_runtime(
         res = metrics[method][key]
         res_runtime = np.array(metrics[method][key_runtime])  # convert to minutes
         ax.plot(res_runtime, res, 'o-', label=method, color=colormapping[method])
-    ax.tick_params(axis='both', which='major', labelsize=13)
+    ax.tick_params(axis='both', which='major', labelsize=24)
 
     # add R2OMC
     if task_name == "two_moons":
@@ -241,16 +241,18 @@ def plot_c2st_vs_runtime(
         x = [current.mean() for current in r2omc_runtime.values()]
 
     ax.plot(x, y, "o--", label="R2OMC", color="darkmagenta")
-    ax.set_ylabel("C2ST", fontsize=14)
-    ax.set_xlabel("Runtime (sec) - Log", fontsize=13)
+    ax.set_ylabel("C2ST", fontsize=28)
+    ax.set_xlabel("Runtime (sec) - Log", fontsize=28)
     ax.set_ylim(0.25, 1.05)
     ax.set_xscale('log')
     if task_name == "two_moons":
         ax.set_xlim(0, 100_000)
     else:
         ax.set_xlim(0, 100_000)
+        ax.set_xticks([10, 1_000, 100_000])
+        ax.set_xticklabels(['10', '$10^3$', '$10^5$'])
     if add_legend:
-        ax.legend(fontsize=13, loc="lower center", ncols=3)
+        ax.legend(fontsize=14, loc="lower center", ncols=3)
 
     ax.grid(visible=True, which='both', linestyle='--', linewidth=0.5)
     ax.spines['top'].set_visible(False)
@@ -282,19 +284,19 @@ for task_name in ["slcp", "slcp_distractors"]:
 
 
 # copy pairwise posterior plots to paper folder
-exp_num = 5
-budget = 10_000
+exp_num = 2
+budget = 30_000
 path_from = f"./../../results/sbibm/slcp/budget_{budget}/exp_{exp_num}"
 path_to = f"../../paper/figures/sbibm/slcp"
-for type in ["accepted", "selected", "total"]:
+for type in ["accepted", "selected", "total", "obs_0", "obs_1", "obs_2", "obs_3"]:
     os.makedirs(f"../../paper/figures/sbibm/slcp/", exist_ok=True)
     shutil.copyfile(
         os.path.join(path_from, f"pairwise_posterior_{type}.png"),
         os.path.join(path_to, f"pairwise_posterior_{type}.png")
     )
 
-exp_num = 5
-budget = 10_000
+exp_num = 2
+budget = 30_000
 path_from = f"./../../results/sbibm/slcp_distractors/budget_{budget}/exp_{exp_num}"
 path_to = f"../../paper/figures/sbibm/slcp_distractors"
 for type in ["accepted", "selected", "total"]:
@@ -304,7 +306,7 @@ for type in ["accepted", "selected", "total"]:
         os.path.join(path_to, f"pairwise_posterior_{type}.png")
     )
 
-# ------- Two Moons Part ------- #
+# # ------- Two Moons Part ------- #
 task_name = "two_moons"
 path = f"./../../results/sbibm/{task_name}"
 r2omc_c2st, r2omc_runtime = gather_r2omc_results_two_moons(path)
