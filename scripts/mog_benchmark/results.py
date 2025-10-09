@@ -198,7 +198,7 @@ def plot_c2st_success_frontier(loadpath, methods, threshold=0.75, agg="mean", sa
     plt.ylabel("Budget", fontsize=30)
     # plt.title(f"C2ST Success Frontier", fontsize=20)
     plt.xlim(left=1, right=21)
-    plt.ylim(bottom=0, top=120_000)
+    plt.ylim(bottom=-2, top=120_000)
     plt.xticks([2, 5, 10, 15, 20], fontsize=24)
     plt.yticks(
         [1_000, 10_000, 50_000, 100_000],
@@ -300,7 +300,7 @@ def plot_runtime_success_frontier(loadpath, methods, threshold=0.75, agg="mean",
     plt.ylabel("Runtime (min)", fontsize=30)
     # plt.title(f"Runtime Success Frontier", fontsize=20)
     plt.xlim(left=1, right=21)
-    plt.ylim(bottom=0, top=65)
+    plt.ylim(bottom=-2, top=65)
     plt.xticks([2, 5, 10, 15, 20], fontsize=24)
     # use <xx>k for yticks
     plt.yticks(fontsize=26)
@@ -365,11 +365,11 @@ for experiment in experimets:
         savepath=savepath
     )
 
-    # plot_runtime_success_frontier(
-    #     loadpath,
-    #     methods=["npec", "bayes_flow", "flow_matching", "r2omc"],
-    #     threshold=0.75,
-    #     agg="mean",
-    #     savepath=savepath
-    # )
+    plot_runtime_success_frontier(
+        loadpath,
+        methods=["npec", "bayes_flow", "flow_matching", "r2omc"],
+        threshold=0.75,
+        agg="mean",
+        savepath=savepath
+    )
 

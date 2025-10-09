@@ -3,46 +3,44 @@ Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
 The top-level auxiliary file: paper.aux
 The style file: unsrtnat.bst
 Database file #1: paper.bib
-Warning--empty journal in MonsalveBravo2022
-You've used 22 entries,
+You've used 28 entries,
             2481 wiz_defined-function locations,
-            707 strings with 9625 characters,
-and the built_in function-call counts, 10470 in all, are:
-= -- 857
-> -- 660
+            742 strings with 11080 characters,
+and the built_in function-call counts, 13223 in all, are:
+= -- 1046
+> -- 900
 < -- 11
-+ -- 242
-- -- 198
-* -- 878
-:= -- 1670
-add.period$ -- 81
-call.type$ -- 22
-change.case$ -- 42
-chr.to.int$ -- 22
-cite$ -- 23
-duplicate$ -- 499
-empty$ -- 878
-format.name$ -- 226
-if$ -- 2233
++ -- 328
+- -- 272
+* -- 1137
+:= -- 2153
+add.period$ -- 99
+call.type$ -- 28
+change.case$ -- 54
+chr.to.int$ -- 28
+cite$ -- 28
+duplicate$ -- 610
+empty$ -- 1083
+format.name$ -- 306
+if$ -- 2781
 int.to.chr$ -- 1
-int.to.str$ -- 23
-missing$ -- 24
-newline$ -- 127
-num.names$ -- 68
-pop$ -- 193
+int.to.str$ -- 29
+missing$ -- 30
+newline$ -- 157
+num.names$ -- 86
+pop$ -- 239
 preamble$ -- 1
-purify$ -- 22
+purify$ -- 28
 quote$ -- 0
-skip$ -- 306
+skip$ -- 366
 stack$ -- 0
-substring$ -- 498
-swap$ -- 115
+substring$ -- 609
+swap$ -- 128
 text.length$ -- 7
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 148
-warning$ -- 1
-while$ -- 81
+type$ -- 190
+warning$ -- 0
+while$ -- 99
 width$ -- 0
-write$ -- 313
-(There was 1 warning)
+write$ -- 389

@@ -1,0 +1,534 @@
+#- name: "linear_gaussian"
+#  D_list: [2, 5, 10, 15, 20, 25, 30]
+#  nof_repetitions: 2
+#  load: True
+#  save: True
+#  plot: True
+#  plot_title: "Linear Gaussian"
+#  plot_save: True
+
+  # config_romc:
+  #   fit_seed: 21
+  #   inf_dims_nof_th: 100
+  #   inf_dims_nof_seeds: 50
+  #   nof_th0: 1
+  #   nof_seeds_total: 1_000
+  #   nof_seeds_accept: 1_000
+  #   nof_gd_steps: 50
+  #   alpha: 1.
+  #   epochs: 8
+  #   dx: .1
+  #   eps_3: .1
+  #   nof_ls_steps: 100
+  #   step_size: .2
+  #   sample_seed: 71
+  #   nof_samples: 5_000
+  #   apply_importance_resampling: True
+  #   nof_samples_final: 1_000
+
+#   config_r2omc:
+#     fit_seed: 21
+#     inf_dims_nof_th: 100
+#     inf_dims_nof_seeds: 50
+#     nof_th0: 1
+#     nof_seeds_total: 1_000
+#     nof_seeds_accept: 1_000
+#     nof_gd_steps: 50
+#     alpha: 1.
+#     epochs: 8
+#     dx: 1.
+#     eps_3: 10.
+#     nof_ls_steps: 100
+#     step_size: .2
+#     sample_seed: 71
+#     nof_samples: 5_000
+#     apply_importance_resampling: True
+#     nof_samples_final: 1_000
+
+  # config_npe:
+  #   nof_samples_final: 1_000
+  #   training_samples: 10_000
+
+  # config_nle:
+  #   tr_batch_size: 1_000
+  #   nof_samples_final: 1_000
+  #   training_samples: 10_000
+
+#   config_snpe:
+#     nof_samples_final: 1_000
+#     training_samples: 40_000
+#     epochs: 4
+
+#- name: "linear_gaussian_distractors"
+#  D_list: [5, 10, 15, 20, 25, 30]
+#  nof_repetitions: 2
+#  load: True
+#  save: True
+#  plot: True
+#  plot_title: "Linear Gaussian (Distractors)"
+#  plot_save: True
+
+#   config_romc:
+#     fit_seed: 21
+#     inf_dims_nof_th: 100
+#     inf_dims_nof_seeds: 50
+#     nof_th0: 1
+#     nof_seeds_total: 1_000
+#     nof_seeds_accept: 1_000
+#     nof_gd_steps: 50
+#     alpha: 1.
+#     epochs: 8
+#     dx: 1.
+#     eps_3: 100000000.
+#     nof_ls_steps: 100
+#     step_size: .2
+#     sample_seed: 71
+#     nof_samples: 5_000
+#     apply_importance_resampling: True
+#     nof_samples_final: 1_000
+
+#   config_r2omc:
+#     fit_seed: 21
+#     inf_dims_nof_th: 100
+#     inf_dims_nof_seeds: 50
+#     nof_th0: 1
+#     nof_seeds_total: 1_000
+#     nof_seeds_accept: 1_000
+#     nof_gd_steps: 50
+#     alpha: 1.
+#     epochs: 8
+#     dx: 1.
+#     eps_3: 10.
+#     nof_ls_steps: 100
+#     step_size: .2
+#     sample_seed: 71
+#     nof_samples: 5_000
+#     apply_importance_resampling: True
+#     nof_samples_final: 1_000
+
+#   config_npe:
+#     nof_samples_final: 1_000
+#     training_samples: 40_000
+
+#   config_snpe:
+#     nof_samples_final: 1_000
+#     training_samples: 40_000
+#     epochs: 4
+
+#   config_nle:
+#     tr_batch_size: 1_000
+#     nof_samples_final: 1_000
+#     training_samples: 10_000
+
+# - name: "MoG_same_sigma"
+#   D_list: [5, 10, 15, 20, 25, 30]
+#   nof_repetitions: 2
+#   load: True
+#   save: True
+#   plot: True
+#   plot_title: "MoG: S_1 = S_2"
+#   plot_save: True
+
+  # config_romc:
+  #   fit_seed : 21
+  #   inf_dims_nof_th: 100
+  #   inf_dims_nof_seeds: 50
+  #   nof_th0: 1
+  #   nof_seeds_total: 1_000
+  #   nof_seeds_accept: 1_000
+  #   nof_gd_steps: 50
+  #   alpha: 1.
+  #   epochs: 8
+  #   dx: .1
+  #   eps_3: 100000000.
+  #   nof_ls_steps: 100
+  #   step_size: .04
+  #   sample_seed: 71
+  #   nof_samples: 5_000
+  #   apply_importance_resampling: True
+  #   nof_samples_final: 1_000
+
+#   config_r2omc:
+#       fit_seed : 21
+#       inf_dims_nof_th: 100
+#       inf_dims_nof_seeds: 50
+#       nof_th0: 1
+#       nof_seeds_total: 1_000
+#       nof_seeds_accept: 1_000
+#       nof_gd_steps: 50
+#       alpha: 1.
+#       epochs: 8
+#       dx: .1
+#       eps_3: 10.
+#       nof_ls_steps: 100
+#       step_size: .04
+#       sample_seed: 71
+#       nof_samples: 5_000
+#       apply_importance_resampling: True
+#       nof_samples_final: 1_000
+
+#   config_npe:
+#     nof_samples_final: 1_000
+#     training_samples: 40_000
+
+#   config_snpe:
+#     nof_samples_final: 1_000
+#     training_samples: 40_000
+#     epochs: 4
+
+#   config_nle:
+#     tr_batch_size: 1_000
+#     nof_samples_final: 1_000
+#     training_samples: 10_000
+
+# - name: "MoG_same_sigma_distractors"
+#   D_list: [5, 10, 15, 20, 25, 30]
+#   nof_repetitions: 2
+#   load: True
+#   save: True
+#   plot: True
+#   plot_title: "MoG: S_1 = S_2 (Distractors)"
+#   plot_save: True
+
+#   config_romc:
+#     fit_seed : 21
+#     inf_dims_nof_th: 100
+#     inf_dims_nof_seeds: 50
+#     nof_th0: 1
+#     nof_seeds_total: 1_000
+#     nof_seeds_accept: 1_000
+#     nof_gd_steps: 50
+#     alpha: 1.
+#     epochs: 8
+#     dx: .1
+#     eps_3: 100000000.
+#     nof_ls_steps: 100
+#     step_size: .02
+#     sample_seed: 71
+#     nof_samples: 5_000
+#     apply_importance_resampling: True
+#     nof_samples_final: 1_000
+
+#   config_r2omc:
+#       fit_seed : 21
+#       inf_dims_nof_th: 100
+#       inf_dims_nof_seeds: 50
+#       nof_th0: 1
+#       nof_seeds_total: 1_000
+#       nof_seeds_accept: 1_000
+#       nof_gd_steps: 50
+#       alpha: 1.
+#       epochs: 8
+#       dx: .1
+#       eps_3: 10.
+#       nof_ls_steps: 100
+#       step_size: .02
+#       sample_seed: 71
+#       nof_samples: 5_000
+#       apply_importance_resampling: True
+#       nof_samples_final: 1_000
+
+#   config_npe:
+#     nof_samples_final: 1_000
+#     training_samples: 40_000
+
+#   config_snpe:
+#     nof_samples_final: 1_000
+#     training_samples: 40_000
+#     epochs: 4
+
+#   config_nle:
+#     tr_batch_size: 1_000
+#     nof_samples_final: 1_000
+#     training_samples: 10_000
+
+- name: "MoG_diff_sigma"
+  D_list: [5, 10, 15, 20, 25, 30]
+  nof_repetitions: 2
+  load: True
+  save: True
+  plot: True
+  plot_title: "MoG: S_1 != S_2"
+  plot_save: True
+
+#   config_romc:
+#     fit_seed : 21
+#     inf_dims_nof_th: 100
+#     inf_dims_nof_seeds: 50
+#     nof_th0: 1
+#     nof_seeds_total: 1_000
+#     nof_seeds_accept: 1_000
+#     nof_gd_steps: 50
+#     alpha: 1.
+#     epochs: 8
+#     dx: .1
+#     eps_3: 10.
+#     nof_ls_steps: 200
+#     step_size: .04
+#     sample_seed: 71
+#     nof_samples: 10_000
+#     apply_importance_resampling: True
+#     nof_samples_final: 1_000
+
+#   config_r2omc:
+#       fit_seed : 21
+#       inf_dims_nof_th: 100
+#       inf_dims_nof_seeds: 50
+#       nof_th0: 1
+#       nof_seeds_total: 1_000
+#       nof_seeds_accept: 1_000
+#       nof_gd_steps: 50
+#       alpha: 1.
+#       epochs: 8
+#       dx: .1
+#       eps_3: 10.
+#       nof_ls_steps: 200
+#       step_size: .04
+#       sample_seed: 71
+#       nof_samples: 5_000
+#       apply_importance_resampling: True
+#       nof_samples_final: 1_000
+
+#   config_npe:
+#     nof_samples_final: 1_000
+#     training_samples: 40_000
+
+#   config_snpe:
+#     nof_samples_final: 1_000
+#     training_samples: 40_000
+#     epochs: 4
+
+  config_nle:
+    tr_batch_size: 1_000
+    nof_samples_final: 1_000
+    training_samples: 10_000
+
+
+- name: "MoG_diff_sigma_distractors"
+  D_list: [5, 10, 15, 20, 25, 30]
+  nof_repetitions: 2
+  load: True
+  save: True
+  plot: True
+  plot_title: "MoG: S_1 != S_2 (Distractors)"
+  plot_save: True
+
+#   config_romc:
+#     fit_seed : 21
+#     inf_dims_nof_th: 100
+#     inf_dims_nof_seeds: 50
+#     nof_th0: 1
+#     nof_seeds_total: 1_000
+#     nof_seeds_accept: 1_000
+#     nof_gd_steps: 50
+#     alpha: 1.
+#     epochs: 8
+#     dx: .1
+#     eps_3: 10.
+#     nof_ls_steps: 200
+#     step_size: .04
+#     sample_seed: 71
+#     nof_samples: 50_000
+#     apply_importance_resampling: True
+#     nof_samples_final: 1_000
+
+#   config_r2omc:
+#       fit_seed : 21
+#       inf_dims_nof_th: 100
+#       inf_dims_nof_seeds: 50
+#       nof_th0: 1
+#       nof_seeds_total: 1_000
+#       nof_seeds_accept: 1_000
+#       nof_gd_steps: 50
+#       alpha: 1.
+#       epochs: 8
+#       dx: .1
+#       eps_3: 10.
+#       nof_ls_steps: 200
+#       step_size: .04
+#       sample_seed: 71
+#       nof_samples: 5_000
+#       apply_importance_resampling: True
+#       nof_samples_final: 1_000
+
+#   config_npe:
+#     nof_samples_final: 1_000
+#     training_samples: 40_000
+
+#   config_snpe:
+#     nof_samples_final: 1_000
+#     training_samples: 40_000
+#     epochs: 4
+
+  config_nle:
+    tr_batch_size: 1_000
+    nof_samples_final: 1_000
+    training_samples: 10_000
+
+# - name: "square_gaussian"
+#   D_list: [2, 5, 10]
+#   nof_repetitions: 2
+#   load: True
+#   save: True
+#   plot: True
+#   plot_title: "Square Gaussian"
+#   plot_save: True
+
+#   config_romc:
+#     fit_seed : 21
+#     inf_dims_nof_th: 100
+#     inf_dims_nof_seeds: 50
+#     nof_th0: 1
+#     nof_seeds_total: 1_000
+#     nof_seeds_accept: 1_000
+#     nof_gd_steps: 50
+#     alpha: .1
+#     epochs: 10
+#     dx: .1
+#     eps_3: 10.
+#     nof_ls_steps: 200
+#     step_size: .1
+#     sample_seed: 71
+#     nof_samples: 5_000
+#     apply_importance_resampling: True
+#     nof_samples_final: 1_000
+
+  # config_r2omc:
+  #     fit_seed : 21
+  #     inf_dims_nof_th: 100
+  #     inf_dims_nof_seeds: 50
+  #     nof_th0: 1
+  #     nof_seeds_total: 1_000
+  #     nof_seeds_accept: 1_000
+  #     nof_gd_steps: 50
+  #     alpha: 1.
+  #     epochs: 8
+  #     dx: .8
+  #     eps_3: 10.
+  #     nof_ls_steps: 200
+  #     step_size: .1
+  #     sample_seed: 71
+  #     nof_samples: 5_000
+  #     apply_importance_resampling: True
+  #     nof_samples_final: 1_000
+
+  # config_npe:
+  #   nof_samples_final: 1_000
+  #   training_samples: 40_000
+
+  # config_snpe:
+  #   nof_samples_final: 1_000
+  #   training_samples: 40_000
+  #   epochs: 4
+
+# - name: "square_gaussian_distractors"
+#   D_list: [2, 5, 8]
+#   nof_repetitions: 2
+#   load: False
+#   save: True
+#   plot: True
+#   plot_title: "Square Gaussian Distractors"
+#   plot_save: True
+
+#   config_romc:
+#     fit_seed : 21
+#     inf_dims_nof_th: 100
+#     inf_dims_nof_seeds: 50
+#     nof_th0: 1
+#     nof_seeds_total: 1_000
+#     nof_seeds_accept: 1_000
+#     nof_gd_steps: 50
+#     alpha: 1.
+#     epochs: 8
+#     dx: .8
+#     eps_3: 10.
+#     nof_ls_steps: 200
+#     step_size: .1
+#     sample_seed: 71
+#     nof_samples: 50_000
+#     apply_importance_resampling: True
+#     nof_samples_final: 1_000
+
+#   config_r2omc:
+#       fit_seed : 21
+#       inf_dims_nof_th: 100
+#       inf_dims_nof_seeds: 50
+#       nof_th0: 1
+#       nof_seeds_total: 1_000
+#       nof_seeds_accept: 1_000
+#       nof_gd_steps: 50
+#       alpha: 1.
+#       epochs: 8
+#       dx: .8
+#       eps_3: 10.
+#       nof_ls_steps: 200
+#       step_size: .1
+#       sample_seed: 71
+#       nof_samples: 5_000
+#       apply_importance_resampling: True
+#       nof_samples_final: 1_000
+
+#   config_npe:
+#     nof_samples_final: 1_000
+#     training_samples: 40_000
+
+#   config_snpe:
+#     nof_samples_final: 1_000
+#     training_samples: 40_000
+#     epochs: 4
+
+# - name: "square_gaussian_iid"
+#   D_list: [2, 5, 8]
+#   nof_repetitions: 2
+#   load: False
+#   save: True
+#   plot: True
+#   plot_title: "Square Gaussian IID"
+#   plot_save: True
+
+#   config_romc:
+#     fit_seed : 21
+#     inf_dims_nof_th: 100
+#     inf_dims_nof_seeds: 50
+#     nof_th0: 1
+#     nof_seeds_total: 1_000
+#     nof_seeds_accept: 1_000
+#     nof_gd_steps: 50
+#     alpha: 1.
+#     epochs: 4
+#     dx: .8
+#     eps_3: 10.
+#     nof_ls_steps: 200
+#     step_size: .1
+#     sample_seed: 71
+#     nof_samples: 50_000
+#     apply_importance_resampling: True
+#     nof_samples_final: 1_000
+
+#   config_r2omc:
+#     fit_seed : 21
+#     inf_dims_nof_th: 100
+#     inf_dims_nof_seeds: 50
+#     nof_th0: 1
+#     nof_seeds_total: 1_000
+#     nof_seeds_accept: 1_000
+#     nof_gd_steps: 50
+#     alpha: 1.
+#     epochs: 4
+#     dx: .8
+#     eps_3: 10.
+#     nof_ls_steps: 200
+#     step_size: .1
+#     sample_seed: 71
+#     nof_samples: 2_000
+#     apply_importance_resampling: True
+#     nof_samples_final: 1_000
+
+#   config_npe:
+#     nof_samples_final: 1_000
+#     training_samples: 40_000
+
+#   config_snpe:
+#     nof_samples_final: 1_000
+#     training_samples: 40_000
+#     epochs: 4

@@ -1,0 +1,81 @@
+- name: "linear_gaussian"
+  D_list: [5, 10, 15, 20, 25, 30]
+  nof_repetitions: 4
+  load: True
+  save: False
+  plot: True
+  plot_title: "Linear Gaussian"
+  plot_save: True
+
+- name: "linear_gaussian_distractors"
+  D_list: [5, 10, 15, 20, 25, 30]
+  nof_repetitions: 4
+  load: True
+  save: False
+  plot: True
+  plot_title: "Linear Gaussian + Distractors"
+  plot_save: True
+
+- name: "MoG_diff_sigma"
+  D_list: [5, 10, 15, 20, 25, 30]
+  nof_repetitions: 4
+  load: True
+  save: False
+  plot: True
+  plot_title: 'MoG \Sigma_1 not \Sigma_2'
+  plot_save: True
+
+- name: "MoG_diff_sigma_distractors"
+  D_list: [5, 10, 15, 20, 25, 30]
+  nof_repetitions: 4
+  load: True
+  save: False
+  plot: True
+  plot_title: 'MoG ($\Sigma_1 \neq \Sigma_2$) (Distractors)'
+  plot_save: True
+
+#- name: "MoG_same_sigma"
+#  D_list: [5, 10, 15, 20, 25, 30]
+#  nof_repetitions: 4
+#  load: True
+#  save: False
+#  plot: True
+#  plot_title: 'MoG ($\Sigma_1 = \Sigma_2$)'
+#  plot_save: True
+#
+#- name: "MoG_same_sigma_distractors"
+#  D_list: [5, 10, 15, 20, 25, 30]
+#  nof_repetitions: 4
+#  load: True
+#  save: False
+#  plot: True
+#  plot_title: 'MoG ($\Sigma_1 = \Sigma_2$) (Distractors)'
+#  plot_save: True
+
+
+#- name: "square_gaussian"
+#  D_list: [2, 5, 8]
+#  nof_repetitions: 4
+#  load: True
+#  save: False
+#  plot: True
+#  plot_title: "Square Gaussian"
+#  plot_save: True
+#
+#- name: "square_gaussian_distractors"
+#  D_list: [2, 5, 8]
+#  nof_repetitions: 4
+#  load: True
+#  save: False
+#  plot: True
+#  plot_title: "Square Gaussian (Distractors))"
+#  plot_save: True
+#
+#- name: "square_gaussian_iid"
+#  D_list: [2, 5, 8]
+#  nof_repetitions: 4
+#  load: True
+#  save: False
+#  plot: True
+#  plot_title: "Square Gaussian (IID)"
+#  plot_save: True

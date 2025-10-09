@@ -1,4 +1,4 @@
-\begin{thebibliography}{22}
+\begin{thebibliography}{28}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -23,6 +23,15 @@ Kyle Cranmer, Johann Brehmer, and Gilles Louppe.
 \newblock The frontier of simulation-based inference.
 \newblock \emph{Proceedings of the National Academy of Sciences}, 117\penalty0
   (48):\penalty0 30055--30062, 2020.
+
+\bibitem[Deistler et~al.(2025)Deistler, Boelts, Steinbach, Moss, Moreau,
+  Gloeckler, Rodrigues, Linhart, Lappalainen, Miller,
+  et~al.]{deistler2025simulation}
+Michael Deistler, Jan Boelts, Peter Steinbach, Guy Moss, Thomas Moreau, Manuel
+  Gloeckler, Pedro~LC Rodrigues, Julia Linhart, Janne~K Lappalainen,
+  Benjamin~Kurt Miller, et~al.
+\newblock Simulation-based inference: A practical guide.
+\newblock \emph{arXiv preprint arXiv:2508.12939}, 2025.
 
 \bibitem[Marin et~al.(2012)Marin, Pudlo, Robert, and Ryder]{Marin2012}
 Jean-Michel Marin, Pierre Pudlo, Christian~P. Robert, and Robin~J. Ryder.
@@ -76,14 +85,6 @@ Conor Durkan, Iain Murray, and George Papamakarios.
 \newblock In \emph{International conference on machine learning}, pages
   2771--2781. PMLR, 2020.
 
-\bibitem[Papamakarios et~al.(2019)Papamakarios, Sterratt, and
-  Murray]{papamakarios2019sequential}
-George Papamakarios, David Sterratt, and Iain Murray.
-\newblock Sequential neural likelihood: Fast likelihood-free inference with
-  autoregressive flows.
-\newblock In \emph{The 22nd international conference on artificial intelligence
-  and statistics}, pages 837--848. PMLR, 2019.
-
 \bibitem[Greenberg et~al.(2019)Greenberg, Nonnenmacher, and
   Macke]{greenberg2019automatic}
 David Greenberg, Marcel Nonnenmacher, and Jakob Macke.
@@ -96,6 +97,31 @@ George Papamakarios and Iain Murray.
 \newblock Fast $\varepsilon$-free inference of simulation models with bayesian
   conditional density estimation.
 \newblock \emph{Advances in neural information processing systems}, 29, 2016.
+
+\bibitem[Radev et~al.(2020)Radev, Mertens, Voss, Ardizzone, and
+  K{\"o}the]{radev2020bayesflow}
+Stefan~T Radev, Ulf~K Mertens, Andreas Voss, Lynton Ardizzone, and Ullrich
+  K{\"o}the.
+\newblock Bayesflow: Learning complex stochastic models with invertible neural
+  networks.
+\newblock \emph{IEEE transactions on neural networks and learning systems},
+  33\penalty0 (4):\penalty0 1452--1466, 2020.
+
+\bibitem[Wildberger et~al.(2023)Wildberger, Dax, Buchholz, Green, Macke, and
+  Sch{\"o}lkopf]{wildberger2023flow}
+Jonas Wildberger, Maximilian Dax, Simon Buchholz, Stephen Green, Jakob~H Macke,
+  and Bernhard Sch{\"o}lkopf.
+\newblock Flow matching for scalable simulation-based inference.
+\newblock \emph{Advances in Neural Information Processing Systems},
+  36:\penalty0 16837--16864, 2023.
+
+\bibitem[Papamakarios et~al.(2019)Papamakarios, Sterratt, and
+  Murray]{papamakarios2019sequential}
+George Papamakarios, David Sterratt, and Iain Murray.
+\newblock Sequential neural likelihood: Fast likelihood-free inference with
+  autoregressive flows.
+\newblock In \emph{The 22nd international conference on artificial intelligence
+  and statistics}, pages 837--848. PMLR, 2019.
 
 \bibitem[Saltelli et~al.(2008)Saltelli, Ratto, Andres, Campolongo, Cariboni,
   Gatelli, Saisana, and Tarantola]{Saltelli2008}
@@ -112,7 +138,7 @@ Gloria~M. Monsalve-Bravo, Brodie A.~J. Lawson, Christopher Drovandi, Kevin
   Mengersen, Eve McDonald-Madden, and Matthew~P. Adams.
 \newblock Analysis of sloppiness in model simulations: Unveiling parameter
   uncertainty when mathematical models are fitted to data.
-\newblock 8\penalty0 (38):\penalty0 eabm5952, 2022.
+\newblock \emph{Science Advances}, 8\penalty0 (38):\penalty0 eabm5952, 2022.
 \newblock \doi{10.1126/sciadv.abm5952}.
 \newblock URL \url{https://www.science.org/doi/abs/10.1126/sciadv.abm5952}.
 
@@ -123,12 +149,6 @@ Jan-Matthis Lueckmann, Jan Boelts, David Greenberg, Pedro Goncalves, and Jakob
 \newblock Benchmarking simulation-based inference.
 \newblock In \emph{International conference on artificial intelligence and
   statistics}, pages 343--351. PMLR, 2021.
-
-\bibitem[Meeds and Welling(2015)]{meeds2015optimization}
-Ted Meeds and Max Welling.
-\newblock Optimization monte carlo: Efficient and embarrassingly parallel
-  likelihood-free inference.
-\newblock \emph{Advances in Neural Information Processing Systems}, 28, 2015.
 
 \bibitem[Ikonomov and Gutmann(2020)]{ikonomov2020robust}
 Borislav Ikonomov and Michael~U Gutmann.
@@ -142,6 +162,18 @@ Vasilis Gkolemis, Michael Gutmann, and Henri Pesonen.
 \newblock An extendable python implementation of robust optimisation monte
   carlo.
 \newblock \emph{arXiv preprint arXiv:2309.10612}, 2023.
+
+\bibitem[Dirmeier et~al.(2024)Dirmeier, Ulzega, Mira, and
+  Albert]{dirmeier2024simulation}
+Simon Dirmeier, Simone Ulzega, Antonietta Mira, and Carlo Albert.
+\newblock Simulation-based inference with the python package sbijax.
+\newblock \emph{arXiv preprint arXiv:2409.19435}, 2024.
+
+\bibitem[Meeds and Welling(2015)]{meeds2015optimization}
+Ted Meeds and Max Welling.
+\newblock Optimization monte carlo: Efficient and embarrassingly parallel
+  likelihood-free inference.
+\newblock \emph{Advances in Neural Information Processing Systems}, 28, 2015.
 
 \bibitem[Tejero-Cantero et~al.(2020)Tejero-Cantero, Boelts, Deistler,
   Lueckmann, Durkan, Gonçalves, Greenberg, and Macke]{tejero-cantero2020sbi}
@@ -158,6 +190,21 @@ Alvaro Tejero-Cantero, Jan Boelts, Michael Deistler, Jan-Matthis Lueckmann,
 Michael~U Gutmann, Ritabrata Dutta, Samuel Kaski, and Jukka Corander.
 \newblock Likelihood-free inference via classification.
 \newblock \emph{Statistics and Computing}, 28:\penalty0 411--425, 2018.
+
+\bibitem[LeCun et~al.(1998)LeCun, Bottou, Bengio, and
+  Haffner]{lecun1998gradient}
+Yann LeCun, L{\'e}on Bottou, Yoshua Bengio, and Patrick Haffner.
+\newblock Gradient-based learning applied to document recognition.
+\newblock \emph{Proceedings of the IEEE}, 86\penalty0 (11):\penalty0
+  2278--2324, 1998.
+
+\bibitem[Ramesh et~al.(2022)Ramesh, Lueckmann, Boelts, Tejero-Cantero,
+  Greenberg, Gon{\c{c}}alves, and Macke]{ramesh2022gatsbi}
+Poornima Ramesh, Jan-Matthis Lueckmann, Jan Boelts, {\'A}lvaro Tejero-Cantero,
+  David~S Greenberg, Pedro~J Gon{\c{c}}alves, and Jakob~H Macke.
+\newblock Gatsbi: Generative adversarial training for simulation-based
+  inference.
+\newblock \emph{arXiv preprint arXiv:2203.06481}, 2022.
 
 \bibitem[Lintusaari et~al.(2018)Lintusaari, Vuollekoski, Kangasraasio,
   Skyt{\'e}n, Jarvenpaa, Marttinen, Gutmann, Vehtari, Corander, and
