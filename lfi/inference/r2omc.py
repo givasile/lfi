@@ -541,8 +541,10 @@ class R2OMC(InferenceBase):
             )
             if fit_kwargs.get("dx") is not None:
                 eps_2 = self._get_distances(1, fit_kwargs["dx"]).mean()
+                print(f"Computed eps_2={eps_2:.5f} from dx={fit_kwargs['dx']:.5f}")
             elif fit_kwargs.get("eps_2") is not None:
                 eps_2 = fit_kwargs["eps_2"]
+                print(f"Using provided eps_2={eps_2:.5f}")
             else:
                 raise ValueError("Either 'dx' or 'eps_2' must be provided in fit_kwargs.")
 
@@ -695,6 +697,8 @@ class R2OMCMultiObs(InferenceBase):
         # find the weights of the accepted samples
         weight_inside = is_inside.sum(-1).prod(0) # (N_th_total,)
         weight_prior = np.exp(self.r2omc_list[0].prior.logpdf(self.th_total)) # (N_th_total,)
+        self.weight_inside = weight_inside
+        self.weight_prior = weight_prior
         w_unnorm = weight_prior * weight_inside
         self.w_unnorm = w_unnorm
         w_norm = w_unnorm / w_unnorm.sum()
