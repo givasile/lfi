@@ -5,7 +5,7 @@ build-backend = "flit_core.buildapi"
 [project]
 name = "lfi"
 version = "0.0.1"
-description = "LFI examples"
+description = "Likelihood-free inference methods and simulators"
 authors = [
   { name = "Theodora Chrysoula" },
   { name = "Vasilis Gkolemis"},
@@ -16,16 +16,55 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License"
 ]
-requires-python = "~=3.10"
+requires-python = ">=3.10"
 dependencies = [
   "numpy",
-  "sbi",
-  "jax",
+  "scipy",
   "matplotlib",
   "pandas",
   "seaborn",
-  "PyYAML",
-  "torchdiffeq",
+  "loguru",
+  "tqdm",
+  "typer",
+  "python-dotenv",
+  "jax",
+  "optax",
+  "scikit-learn",
+]
+
+[project.optional-dependencies]
+# CPU-only torch (pre-install torch first):
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+#   pip install lfi[torch-cpu]
+torch-cpu = [
+  "torch",
+  "sbi",
+]
+# GPU torch:
+#   pip install lfi[torch-gpu]
+torch-gpu = [
+  "torch",
+  "sbi",
+]
+# ELFI-based inference:
+#   pip install lfi[elfi]
+elfi = [
+  "elfi",
+]
+# Full install with CPU torch:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+#   pip install lfi[full-cpu]
+full-cpu = [
+  "torch",
+  "sbi",
+  "elfi",
+]
+# Full install with GPU torch:
+#   pip install lfi[full-gpu]
+full-gpu = [
+  "torch",
+  "sbi",
+  "elfi",
 ]
 
 [tool.black]
@@ -37,6 +76,13 @@ exclude = '''
   | \.venv
 )/
 '''
+
+[tool.ruff]
+line-length = 99
+exclude = [".git", ".venv", "notebooks", "references", "models", "data"]
+
+[tool.ruff.lint]
+ignore = ["E731", "E266", "E501", "C901"]
 
 [tool.ruff.lint.isort]
 known_first_party = ["lfi"]

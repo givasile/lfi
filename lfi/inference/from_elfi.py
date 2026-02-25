@@ -1,8 +1,18 @@
-import elfi
 from .base import InferenceBase
+
+try:
+    import elfi
+    _HAS_ELFI = True
+except ImportError:
+    _HAS_ELFI = False
+
+_ELFI_MSG = "elfi not installed. Install with: pip install 'lfi[elfi]'"
+
 
 class RejectionSampling(InferenceBase):
     def __init__(self, prior, simulator, observation):
+        if not _HAS_ELFI:
+            raise ImportError(_ELFI_MSG)
         # set a new "clean" model as the default
         elfi.new_model() # # This sets a new default model and returns it
         
@@ -30,6 +40,8 @@ class RejectionSampling(InferenceBase):
 
 class SMCRejection(InferenceBase):
     def __init__(self, prior, simulator, observation):
+        if not _HAS_ELFI:
+            raise ImportError(_ELFI_MSG)
         # set a new "clean" model as the default
         elfi.new_model() # # This sets a new default model and returns it
 

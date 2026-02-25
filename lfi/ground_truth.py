@@ -1,6 +1,14 @@
-import torch
-import sbibm
+from __future__ import annotations
 import pandas as pd
+import numpy as np
+
+try:
+    import torch
+    _HAS_TORCH = True
+except ImportError:
+    _HAS_TORCH = False
+
+_TORCH_MSG = "torch not installed. Install with: pip install 'lfi[torch-cpu]' or 'lfi[torch-gpu]'"
 from typing import List
 import numpy as np
 
@@ -23,24 +31,8 @@ class Gaussian(BaseGroundTruth):
         return np.random.normal(self.mu, self.sigma, (nof_samples, self.dim))
 
 
-class FromSBIBM(BaseGroundTruth):
-    def __init__(self, task_name, exp_num):
-        assert task_name in sbibm.get_available_tasks(), f"Task {task_name} is not available in SBIBM."
-        assert exp_num >= 1, "Experiment number must be greater than or equal to 1."
-        self.task = sbibm.get_task(task_name)
-        self.exp_num = exp_num
-        super().__init__(name="from_sbi", dim=self.task.dim_data)
-
-    def sample(self, nof_samples):
-        samples = self.task.get_reference_posterior_samples(self.exp_num).numpy()
-        samples = samples[np.random.permutation(samples.shape[0]), :]
-        if nof_samples < samples.shape[0]:
-            samples = samples[:nof_samples]
-        return samples
-    
-
 class GaussianMixture(BaseGroundTruth):
-    def __init__(self, dim: int, mu: List[float], sigma: List[float], weights: List[float]):
+    def __init__(self, dim: int, mu: list[float], sigma: list[float], weights: list[float]):
         """
         Initializes a Gaussian Mixture with sepcified parameters.
         
@@ -54,6 +46,8 @@ class GaussianMixture(BaseGroundTruth):
             ValueError: if the lengths of mu and sigma or weights are inconsistent.
         """
 
+        if not _HAS_TORCH:
+            raise ImportError(_TORCH_MSG)
         super().__init__("gaussian_mixture", dim=dim)
 
         # Validate inputs

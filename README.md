@@ -2,6 +2,51 @@
 
 *A Python package for likelihood-free inference (LFI) methods*
 
+## Installation
+
+Requires **Python 3.11** (recommended for compatibility with all optional dependencies).
+
+The package has a lightweight base install (JAX + R2OMC) with optional extras for torch-based and ELFI-based inference:
+
+| Variant | Command | Includes |
+|---|---|---|
+| Base (R2OMC / JAX) | `pip install lfi` | jax, optax, scipy, sklearn, ... |
+| ELFI-based inference | `pip install lfi[elfi]` | + elfi |
+| Torch CPU | see below | + torch (cpu), sbi |
+| Torch GPU | `pip install lfi[torch-gpu]` | + torch (gpu), sbi |
+| Full CPU | see below | + torch (cpu), sbi, elfi |
+| Full GPU | `pip install lfi[full-gpu]` | + torch (gpu), sbi, elfi |
+
+For **CPU-only torch** variants, pre-install torch from the CPU wheel before installing `lfi`:
+
+```bash
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+pip install lfi[torch-cpu]   # or lfi[full-cpu]
+```
+
+**Create fresh conda environments for each variant:**
+
+```bash
+# base (R2OMC / JAX CPU)
+conda create -n lfi-base python=3.11 -y
+conda run -n lfi-base pip install -e .
+
+# elfi
+conda create -n lfi-elfi python=3.11 -y
+conda run -n lfi-elfi pip install -e ".[elfi]"
+
+# torch-cpu
+conda create -n lfi-torch-cpu python=3.11 -y
+conda run -n lfi-torch-cpu pip install torch --index-url https://download.pytorch.org/whl/cpu
+conda run -n lfi-torch-cpu pip install -e ".[torch-cpu]"
+
+# full-cpu
+conda create -n lfi-full-cpu python=3.11 -y
+conda run -n lfi-full-cpu pip install torch --index-url https://download.pytorch.org/whl/cpu
+conda run -n lfi-full-cpu pip install -e ".[full-cpu]"
+```
+
+> **Note on GPU JAX:** the base install uses CPU JAX. To enable GPU acceleration for R2OMC, run `pip install jax[cuda12]` after installing `lfi`.
 
 ## How It Works
 
@@ -183,14 +228,6 @@ observation.sample(nof_obs=1, dim_y=2)
  |----------------|-------------------|---------|------------------|----------------
  | `NPE_A_SingleRound`  | [NPE_A](https://sbi-dev.github.io/sbi/latest/reference/inference/#sbi.inference.trainers.npe.npe_a.NPE_A)   | `npe_a`   | `num_components`, `training_batch_size`, `max_num_epochs`
 
-#### Install 
-```python
-make conda-init ENV=dev REQUIREMENTS=requirements-dev.txt
-conda activate lfi-dev
-pip install --upgrade sbi
-pip install future
-```
-
 #### Implemented Examples
 
 **Example 1 - Gaussian Noise Simulator**
@@ -323,62 +360,4 @@ Method|1000  | 10000  | 50000
 |NPE_C| 0.66| 0.85 | 0.85
 |FMPE | 0.845| 0.795| 0.795
 
-<a target="_blank" href="https://cookiecutter-data-science.drivendata.org/">
-    <img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" />
-</a>
-
-lfi examples
-
-## Project Organization
-
-```
-├── LICENSE            <- Open-source license if one is chosen
-├── Makefile           <- Makefile with convenience commands like `make data` or `make train`
-├── README.md          <- The top-level README for developers using this project.
-├── data
-│   ├── external       <- Data from third party sources.
-│   ├── interim        <- Intermediate data that has been transformed.
-│   ├── processed      <- The final, canonical data sets for modeling.
-│   └── raw            <- The original, immutable data dump.
-│
-├── docs               <- A default mkdocs project; see www.mkdocs.org for details
-│
-├── models             <- Trained and serialized models, model predictions, or model summaries
-│
-├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-│                         the creator's initials, and a short `-` delimited description, e.g.
-│                         `1.0-jqp-initial-data-exploration`.
-│
-├── pyproject.toml     <- Project configuration file with package metadata for 
-│                         lfi and configuration for tools like black
-│
-├── references         <- Data dictionaries, manuals, and all other explanatory materials.
-│
-├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-│   └── figures        <- Generated graphics and figures to be used in reporting
-│
-├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-│                         generated with `pip freeze > requirements.txt`
-│
-├── setup.cfg          <- Configuration file for flake8
-│
-└── lfi   <- Source code for use in this project.
-    │
-    ├── __init__.py             <- Makes lfi a Python module
-    │
-    ├── config.py               <- Store useful variables and configuration
-    │
-    ├── dataset.py              <- Scripts to download or generate data
-    │
-    ├── features.py             <- Code to create features for modeling
-    │
-    ├── modeling                
-    │   ├── __init__.py 
-    │   ├── predict.py          <- Code to run model inference with trained models          
-    │   └── train.py            <- Code to train models
-    │
-    └── plots.py                <- Code to create visualizations
-```
-
---------
 

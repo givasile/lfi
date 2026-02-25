@@ -2,12 +2,15 @@ import numpy as np
 import pandas as pd
 import time
 import random
-import torch
+try:
+    import torch
+    _HAS_TORCH = True
+except ImportError:
+    _HAS_TORCH = False
 import os
 import json
 import hashlib
 import logging
-import mlflow
 import lfi.utils
 import lfi
 
@@ -21,7 +24,6 @@ class SingleRun:
             analyze=True,
             evaluate=True,
             store=True,
-            use_mlflow=False,
             experiment_name=None
     ):
         logger.info(f"Initializing experiment with config:")
@@ -31,7 +33,6 @@ class SingleRun:
         self.analyze = analyze
         self.evaluate = evaluate
         self.store = store
-        self.use_mlflow = use_mlflow
         self.experiment_name = experiment_name
 
         # init prior
@@ -82,17 +83,12 @@ class SingleRun:
         if self.store:
             self.store_dir = self._create_experiment_path()
 
-        if self.use_mlflow:
-            if self.experiment_name is not None:
-                mlflow.set_experiment(self.experiment_name)
-            mlflow.start_run()
-            mlflow.log_params(lfi.utils.flatten_config(self.config))
-
         # set seed
         seed = self.config['experiment_run']["seed"]
         np.random.seed(seed)
-        torch.manual_seed(seed)
-        torch.cuda.manual_seed(seed)
+        if _HAS_TORCH:
+            torch.manual_seed(seed)
+            torch.cuda.manual_seed(seed)
         random.seed(seed)
 
         logger.info(f"Experiment initialized")
@@ -127,8 +123,6 @@ class SingleRun:
                 budget=self.config['inference']['train_and_sample']['budget'],
                 savefig=savefig
             )
-            if self.use_mlflow:
-                mlflow.log_artifact(os.path.join(self.path, "training_summary.png"))
 
         dim = self.config['prior']['params']['dim']
         savefig = os.path.join(self.path, "posterior_samples.png") if self.store else None
@@ -139,8 +133,6 @@ class SingleRun:
             limits=None,
             savefig=savefig,
         )
-        if self.use_mlflow:
-            mlflow.log_artifact(os.path.join(self.path, "posterior_samples.png"))
 
     def evaluation(self):
         self.c2st = lfi.evaluation.c2st(self.samples, self.gt_samples)
@@ -150,9 +142,6 @@ class SingleRun:
             with open(os.path.join(self.path, "metrics.json"), "w") as f:
                 json.dump(self.c2st, f)
         logger.info(f"C2ST: {self.c2st}")
-
-        if self.use_mlflow:
-            mlflow.log_metric("c2st", self.c2st)
 
         # plot
         dim = self.config['prior']['params']['dim']
@@ -164,12 +153,9 @@ class SingleRun:
             limits=None,
             savefig=savefig,
         )
-        if self.use_mlflow:
-            mlflow.log_artifact(os.path.join(self.path, "posterior_samples.png"))
 
     def end_experiment(self):
-        if self.use_mlflow:
-            mlflow.end_run()
+        pass
 
     def run(self):
         # start experiment

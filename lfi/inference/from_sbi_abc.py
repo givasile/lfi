@@ -1,15 +1,23 @@
-import sbi 
-from sbi.utils.user_input_checks import check_sbi_inputs, process_prior, process_simulator
-from sbi.inference import MCABC, SMCABC
+from __future__ import annotations
 import matplotlib.pyplot as plt
-import torch
-import sbi.analysis
 import numpy as np
 import typing
 from .base import InferenceBase
 from lfi.priors import BasePrior
 from lfi.simulators import BaseSimulator
-from torch.distributions import Distribution
+
+try:
+    import torch
+    import sbi
+    import sbi.analysis
+    from sbi.utils.user_input_checks import check_sbi_inputs, process_prior, process_simulator
+    from sbi.inference import MCABC, SMCABC
+    from torch.distributions import Distribution
+    _HAS_TORCH = True
+except ImportError:
+    _HAS_TORCH = False
+
+_TORCH_MSG = "torch/sbi not installed. Install with: pip install 'lfi[torch-cpu]' or 'lfi[torch-gpu]'"
 
 
 class SBI_MCABC(InferenceBase):
@@ -19,6 +27,8 @@ class SBI_MCABC(InferenceBase):
             simulator: BaseSimulator,
             observation: np.ndarray, # (1, Dy)
     ):
+        if not _HAS_TORCH:
+            raise ImportError(_TORCH_MSG)
         # prepare prior and simulator
         sbi_prior, num_parameters, prior_returns_numpy = process_prior(prior.return_sbi_object())
         sim = process_simulator(simulator.sample_pytorch, sbi_prior, prior_returns_numpy)
@@ -65,6 +75,8 @@ class SBI_SMCABC(InferenceBase):
             simulator:BaseSimulator,
             observation: np.ndarray, # (1, Dy)
     ):
+        if not _HAS_TORCH:
+            raise ImportError(_TORCH_MSG)
         # prepare prior and simulator
         sbi_prior, num_parameters, prior_returns_numpy = process_prior(prior.return_sbi_object())
         sim = process_simulator(simulator.sample_pytorch, sbi_prior, prior_returns_numpy)

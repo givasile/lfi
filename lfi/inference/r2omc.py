@@ -4,8 +4,6 @@ from typing import Optional, Tuple
 import jax.numpy as jnp
 import optax
 import matplotlib.pyplot as plt
-from pyabc.distance.util import log_weights
-
 from .base import InferenceBase
 
 import lfi.simulators

@@ -1,18 +1,25 @@
-import sbi
-from sbi.utils.user_input_checks import check_sbi_inputs, process_prior, process_simulator
-from sbi.inference import simulate_for_sbi, NPE_C, FMPE, NPE_A
+from __future__ import annotations
 import matplotlib.pyplot as plt
-import torch
-import sbi.neural_nets
-import sbi.neural_nets.embedding_nets
 import numpy as np
 from .base import InferenceBase
 from lfi.priors import BasePrior
 from lfi.simulators import BaseSimulator
 from typing import Optional
-import torch.nn as nn
-from sbi.inference import NPE
-from sbi.utils import RestrictedPrior, get_density_thresholder
+
+try:
+    import torch
+    import torch.nn as nn
+    import sbi
+    import sbi.neural_nets
+    import sbi.neural_nets.embedding_nets
+    from sbi.utils.user_input_checks import check_sbi_inputs, process_prior, process_simulator
+    from sbi.inference import simulate_for_sbi, NPE_C, FMPE, NPE_A, NPE
+    from sbi.utils import RestrictedPrior, get_density_thresholder
+    _HAS_TORCH = True
+except ImportError:
+    _HAS_TORCH = False
+
+_TORCH_MSG = "torch/sbi not installed. Install with: pip install 'lfi[torch-cpu]' or 'lfi[torch-gpu]'"
 
 
 # Implemented methods:
@@ -31,13 +38,15 @@ from sbi.utils import RestrictedPrior, get_density_thresholder
 
 class NPEBase(InferenceBase):
     def __init__(
-            self, 
+            self,
             name: str,
             prior: BasePrior,
-            simulator: BaseSimulator, 
+            simulator: BaseSimulator,
             observation: np.ndarray, # (1, Dy).
             embedding_net: Optional[nn.Module] = None
     ):
+        if not _HAS_TORCH:
+            raise ImportError(_TORCH_MSG)
         self.name = name
         self.embedding_net = embedding_net
 

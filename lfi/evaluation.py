@@ -1,5 +1,4 @@
 import numpy as np
-import torch
 from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import cross_val_score, KFold
 from typing import Optional

@@ -1,5 +1,4 @@
 import numpy as np
-import sbibm
 
 
 class BaseObservation:
@@ -28,15 +27,4 @@ class Ones(BaseObservation):
         return np.ones((self.nof_observations, self.dim_y))
 
 
-class FromSBIBM(BaseObservation):
-    def __init__(self, task_name, exp_num):
-        assert task_name in sbibm.get_available_tasks(), f"Task {task_name} is not available in SBIBM."
-        assert exp_num >= 1, "Experiment number must be greater than or equal to 1."
-        self.task = sbibm.get_task(task_name)
-        self.exp_num = exp_num
-        super().__init__(name="from_sbi", dim_y=self.task.dim_data, nof_observations=1)
-
-    def sample(self):
-        return np.array(self.task.get_observation(self.exp_num))
-        # return self.task.get_reference_posterior_samples(self.exp_num)
 

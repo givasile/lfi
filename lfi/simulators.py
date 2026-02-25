@@ -1,7 +1,15 @@
+from __future__ import annotations
 import numpy as np
 import typing
-import torch
 import jax
+
+try:
+    import torch
+    _HAS_TORCH = True
+except ImportError:
+    _HAS_TORCH = False
+
+_TORCH_MSG = "torch not installed. Install with: pip install 'lfi[torch-cpu]' or 'lfi[torch-gpu]'"
 from typing import Callable
 import jax.numpy as jnp
 import scipy.stats as ss
@@ -186,6 +194,8 @@ class GaussianNoise(BaseSimulator):
         return y
 
     def sample_pytorch(self, theta):
+        if not _HAS_TORCH:
+            raise ImportError(_TORCH_MSG)
         return theta + self.shift + torch.randn_like(theta)*self.sigma_noise
 
 
@@ -226,6 +236,8 @@ class GaussianNoiseDistractors(BaseSimulator):
         return y
 
     def sample_pytorch(self, theta):
+        if not _HAS_TORCH:
+            raise ImportError(_TORCH_MSG)
         yy = theta + self.shift + torch.randn_like(theta) * self.sigma_noise
 
         # add dim_distractor samples from a uniform distribution
@@ -258,6 +270,8 @@ class BimodalGaussian(BaseSimulator):
         return yy
 
     def sample_pytorch(self, theta):
+        if not _HAS_TORCH:
+            raise ImportError(_TORCH_MSG)
         mode = torch.randint(0, 2, (theta.shape[0],))
         mean = theta + self.shift
         mean[mode == 1] = theta[mode == 1] - self.shift
@@ -318,6 +332,8 @@ class BimodalGaussianDistractors(BaseSimulator):
         return y
 
     def sample_pytorch(self, theta):
+        if not _HAS_TORCH:
+            raise ImportError(_TORCH_MSG)
         mode = torch.randint(0, 2, (theta.shape[0],))
         mean = theta + self.shift
         mean[mode == 1] = theta[mode == 1] - self.shift
@@ -388,8 +404,9 @@ class TwoMoons(BaseSimulator):
 
 
     def sample_pytorch(self, theta):
-
-        # Step 1: Sample intermediate variables 
+        if not _HAS_TORCH:
+            raise ImportError(_TORCH_MSG)
+        # Step 1: Sample intermediate variables
         a = torch.rand(theta.shape[0]) * (np.pi) - np.pi / 2 # Uniform distribution
         r = torch.randn(theta.shape[0]) * 0.01 + 0.1 # Gausian noise for radius
 
@@ -695,7 +712,7 @@ class ImagePixelWiseTransform(BaseSimulator):
 
         return noisy_image.flatten()
 
-    def sample_pytorch(self, theta: torch.Tensor):
+    def sample_pytorch(self, theta: torch.Tensor):  # noqa: F821
         """
         Simulates sensor output from a clean image by applying blur and noise.
         Args:
