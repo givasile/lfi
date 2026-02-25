@@ -1,7 +1,9 @@
-# LFI
+# Fast and Robust Simulation-Based Inference With Optimization Monte Carlo
 
-*A Python package for likelihood-free inference (LFI) methods*
+This repo contains the code for the paper "Fast and Robust Simulation-Based Inference With Optimization Monte Carlo" (https://arxiv.org/abs/2511.13394 ) by Vasilis Gkolemis, Christos Diou and Michael U. Gutmann.
 
+
+To reproduce the results of the paper, follow the instructions below.
 
 ## How It Works
 
