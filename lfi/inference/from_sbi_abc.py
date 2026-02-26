@@ -64,7 +64,8 @@ class SBI_MCABC(InferenceBase):
             num_simulations = self.budget,
             quantile=quantile
         )
-        return self.posterior.numpy()
+        self.samples = self.posterior.numpy()
+        return self.samples
 
     
 
@@ -122,4 +123,5 @@ class SBI_SMCABC(InferenceBase):
             epsilon_decay = default_kwargs["epsilon_decay"],
             distance_based_decay = default_kwargs["distance_based_decay"]
         )
-        return self.posterior.numpy()
+        self.samples = self.posterior.numpy()
+        return self.samples

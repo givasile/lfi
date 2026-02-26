@@ -72,9 +72,9 @@ class ABCRejection(InferenceBase):
         if nof_samples > available_samples:
             print(f"Only {available_samples} accepted samples available. Returning all")
             samples = self.posterior
-            return samples
         else:
             # Sample from the posterior
             samples = self.posterior[:nof_samples]
-            return samples
+        self.samples = samples
+        return samples
         

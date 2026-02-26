@@ -81,6 +81,7 @@ def plot_pairwise_posterior(
     # Add the title if provided
     if title:
         g.fig.suptitle(title)
+        g.fig.subplots_adjust(top=0.93)
 
     # Set the limits if provided
     if limits is not None:

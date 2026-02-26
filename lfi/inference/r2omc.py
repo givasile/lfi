@@ -591,10 +591,13 @@ class R2OMC(InferenceBase):
         samples_r2omc = self.importance_resampling(samples, weights, nof_samples, False)
 
         print(f"Output:\n- Returned {samples_r2omc.shape[0]} weighted samples (after resampling)")
+        self.samples = samples_r2omc
         return samples_r2omc
 
 
 class R2OMCMultiObs(InferenceBase):
+    supports_multiple_observations: bool = True
+
     def __init__(
             self,
             prior: lfi.priors.BasePrior,
@@ -719,6 +722,7 @@ class R2OMCMultiObs(InferenceBase):
         # # self.w_after = w_norm
         self.th_accepted = self.th_total[is_accepted]
         self.th_selected = th_selected
+        self.samples = th_selected
         return th_selected
 
 

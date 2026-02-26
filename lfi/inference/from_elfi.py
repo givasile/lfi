@@ -35,7 +35,8 @@ class RejectionSampling(InferenceBase):
     def sample(self, nof_samples: int=100, sample_kwargs: dict = None):
         quantile = nof_samples / self.budget
         samples_res = self.inference_method.sample(nof_samples, quantile=quantile)
-        return samples_res.samples_array
+        self.samples = samples_res.samples_array
+        return self.samples
 
 
 class SMCRejection(InferenceBase):
@@ -71,4 +72,5 @@ class SMCRejection(InferenceBase):
 
         default_kwargs.update((sample_kwargs or {}))
         samples_res = self.inference_method.sample(nof_samples, quantiles=quantiles)
-        return samples_res.samples_array
+        self.samples = samples_res.samples_array
+        return self.samples

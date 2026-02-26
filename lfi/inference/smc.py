@@ -100,12 +100,12 @@ class SMCInference(InferenceBase):
         if nof_samples > len(self.posterior):
             print(f"Only {len(self.posterior)} accepted samples available. Return all")
             samples = self.posterior
-            return samples
         else:
             # Sample from the posterior
             samples = self.posterior[:nof_samples]
             print(f"Final posterior: {samples.shape}")
-            return samples
+        self.samples = samples
+        return samples
         
 
 

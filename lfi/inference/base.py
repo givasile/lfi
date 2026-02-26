@@ -4,22 +4,24 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from lfi.priors import BasePrior
 from lfi.simulators import BaseSimulator
-import lfi
+from lfi.visualization import plot_pairwise_posterior
 
 class InferenceBase:
+    supports_multiple_observations: bool = False
+
     def __init__(
             self,
             name: str,
             prior: BasePrior,
             simulator: BaseSimulator,
-            observation: np.ndarray, # (1, Dy)
+            observation: np.ndarray, # (1, Dy) or (N_obs, Dy)
             dim: int,
             dim_y: int,
         ):
         self.name = name
         self.prior = prior
         self.simulator = simulator
-        self.observation = observation # (1, Dy)
+        self.observation = observation
 
         self.dim_y = dim_y
         self.dim = dim
@@ -34,6 +36,11 @@ class InferenceBase:
         y = self.simulator.sample_numpy(th)
         assert th.shape[1] == self.dim, f"Expected {self.dim} dimensions in the prior, got {th.shape[1]}."
         assert y.shape[1] == self.dim_y, f"Expected {self.dim_y} dimensions in the output, got {y.shape[1]}."
+        N_obs = self.observation.shape[0]
+        if not self.supports_multiple_observations:
+            assert N_obs == 1, (
+                f"{self.name} only supports a single observation (shape (1, D_y)), got {N_obs}."
+            )
 
     def fit(self, budget: int = 1_000, fit_kwargs: typing.Optional[dict] = None):
         """Fit the posterior distribution to data.
@@ -41,7 +48,10 @@ class InferenceBase:
         Otherwise, it sets the self.posterior attribute with the fitted posterior distribution.
 
         Args:
-            budget: Number of training samples to generate for fitting.
+            budget: Number of (a) unique calls to simulator or (b) number of training samples to generate for fitting,
+                whatever is more costly depending on the inference method.
+                If the method does not require fitting, it is (a).
+                If the method requires fitting, it is (b).
             fit_kwargs: Method-specific arguments for modeling and fitting the posterior distribution.
         """
         raise NotImplementedError
@@ -74,22 +84,30 @@ class InferenceBase:
         self.fit(budget, (fit_kwargs or {}))
         return self.sample(nof_samples, (sample_kwargs or {}))
 
-    @staticmethod
     def plot_posterior_samples(
-            samples: np.ndarray, # (N, Dy)
+            self,
+            samples: typing.Union[None, np.ndarray] = None, # (N, Dy)
             samples_gt: typing.Union[None, np.ndarray] = None, # (N, Dy)
             subset_dims: typing.Union[None, list] = None,
             limits: typing.Union[None, list] = None,
             savefig: typing.Union[None, str] = None,
+            show: bool = True,
+            title: typing.Union[None, str] = None,
     ):
-        g = lfi.visualization.plot_pairwise_posterior(
+        if samples is None:
+            samples = self.samples
+        if title is None:
+            title = f"Posterior samples — {self.name}"
+        g = plot_pairwise_posterior(
             samples=samples,
             subset_dims=subset_dims,
             limits=limits,
             savefig=savefig,
-            samples_gt=samples_gt
+            samples_gt=samples_gt,
+            title=title,
         )
-        plt.show()
+        if show:
+            plt.show(block=False)
         return g
 
     @staticmethod
