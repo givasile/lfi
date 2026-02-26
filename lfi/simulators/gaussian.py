@@ -38,6 +38,18 @@ class GaussianNoise(BaseSimulator):
             raise ImportError(_TORCH_MSG)
         return theta + self.shift + torch.randn_like(theta)*self.sigma_noise
 
+    def return_elfi_callable(self):
+        def elfi_simulator(*th_params, batch_size=1, random_state=None):
+            theta = np.stack(th_params, axis=1)  # (batch_size, dim)
+            samples = ss.norm.rvs(
+                loc=theta + self.shift,
+                scale=self.sigma_noise,
+                size=(batch_size, self.dim_y),
+                random_state=random_state
+            )
+            return samples
+        return elfi_simulator
+
 
 class GaussianNoiseDistractors(BaseSimulator):
     def __init__(self, dim, dim_y, dim_distractors, sigma_noise=0.1, shift=0):

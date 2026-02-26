@@ -19,11 +19,11 @@ OBSERVATION_TO_CLASS = {
 }
 
 INFERENCE_TO_CLASS = {
-    'sbi_mcabc': lfi.inference.from_sbi_abc.SBI_MCABC,
-    'npe_a_single_round': lfi.inference.from_sbi.NPEASingleRound,
-    'npe_c_single_round': lfi.inference.from_sbi.NPECSingleRound,
-    'fmpe_single_round': lfi.inference.from_sbi.FMPESingleRound,
-    'elfi_rejection_sampling': lfi.inference.from_elfi.RejectionSampling,
+    'sbi_mcabc': lfi.inference.sbi.SBI_MCABC,
+    'npe_a_single_round': lfi.inference.sbi.NPEASingleRound,
+    'npe_c_single_round': lfi.inference.sbi.NPECSingleRound,
+    'fmpe_single_round': lfi.inference.sbi.FMPESingleRound,
+    'elfi_rejection_sampling': lfi.inference.elfi.RejectionSampling,
     #'mdn': lfi.inference.custom.MixtureDensityNetwork,
 }
 
