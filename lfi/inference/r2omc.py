@@ -112,21 +112,48 @@ class R2OMC(InferenceBase):
             self,
             key: jnp.ndarray = jax.random.PRNGKey(21),
             inf_dims_nof_th: int = 100,
-            inf_dims_nof_seeds: int = 5,
-            inf_dims_threshold: float = 1e-5
+            inf_dims_nof_seeds: int = 50,
+            inf_dims_threshold: float = 0.01,
     ):
+        """Identify which output dimensions carry information about theta.
+
+        Computes the mean absolute Jacobian |dy/dtheta| over a grid of (theta, seed)
+        pairs.  A dimension is kept if its mean abs Jacobian is at least
+        `inf_dims_threshold` times the largest value across all output dimensions
+        (relative threshold, scale-invariant).
+
+        Args:
+            key: JAX PRNG key for sampling thetas and seeds.
+            inf_dims_nof_th: Number of theta samples drawn to estimate the Jacobian.
+                Higher → more reliable detection at the cost of compute.
+            inf_dims_nof_seeds: Number of CRN seeds drawn to estimate the Jacobian.
+                Higher → averages out seed-specific variability.
+            inf_dims_threshold: Relative sensitivity threshold in (0, 1).
+                A dim is informative if its mean abs Jacobian >=
+                threshold * max(mean abs Jacobian across all dims).
+                0.01 keeps any dim with at least 1% of the most sensitive dim's
+                sensitivity.  Increase (e.g. 0.1) to drop weakly-informative dims
+                more aggressively.
+
+        Returns:
+            key: Updated JAX PRNG key.
+        """
         key, subkey = jax.random.split(key)
-        thetas = self.prior.sample_jax(subkey, inf_dims_nof_th) # (inf_dims_nof_th, D)
+        thetas = self.prior.sample_jax(subkey, inf_dims_nof_th)  # (inf_dims_nof_th, D)
         key, subkey = jax.random.split(key)
-        seeds = jax.random.randint(subkey, (inf_dims_nof_seeds,), 0, 2**31-1) # (inf_dims_nof_seeds,)
-        dy_dth = jnp.abs(self.sim_jac_2(thetas, seeds)) # (inf_dims_nof_seeds, inf_dims_nof_th, Dy, D)
-        inf_dims = dy_dth.mean(axis=[0, 1, 3])
-        inf_dims = inf_dims > inf_dims_threshold  # (Dy,)
+        seeds = jax.random.randint(subkey, (inf_dims_nof_seeds,), 0, 2**31-1)  # (inf_dims_nof_seeds,)
+        dy_dth = jnp.abs(self.sim_jac_2(thetas, seeds))  # (BS_s, BS_th, Dy, D)
+        aggregated = dy_dth.mean(axis=[0, 1, 3])  # (Dy,) — mean abs Jacobian per output dim
+
+        max_val = aggregated.max()
+        if max_val < 1e-12:  # degenerate: simulator fully insensitive to theta — keep all
+            inf_dims = jnp.ones(self.Dy, dtype=bool)
+        else:
+            inf_dims = aggregated > inf_dims_threshold * max_val  # (Dy,)
         assert inf_dims.shape == (self.Dy,)
 
-        # set informative dimensions
         self.informative_dims = inf_dims
-        self.sim.informative_dims = inf_dims # very important; set that to the simulator object
+        self.sim.informative_dims = inf_dims  # distance functions close over the simulator
         return key
 
     def sample_objective_functions(
@@ -427,29 +454,109 @@ class R2OMC(InferenceBase):
         plt.show(block=False)
 
     def fit(self, budget: int = 1000, fit_kwargs: Optional[dict] = None):
+        """Fit the R2OMC posterior approximation.
+
+        Runs six sequential steps: detect informative output dims, optimise CRN
+        objectives, filter solutions, find local directions, build bounding boxes.
+        All hyperparameters have sensible defaults; override via fit_kwargs only
+        when the default behaviour is insufficient for your problem.
+
+        Args:
+            budget: Total number of CRN seeds to optimise (proxy for compute budget).
+            fit_kwargs: Optional dict overriding any of the parameters below.
+
+        fit_kwargs reference
+        --------------------
+        General
+            fit_seed (int, default 21)
+                Master random seed for reproducibility.
+
+        Step 1 — informative dimension detection
+            find_informative_dims (bool, default True)
+                Whether to auto-detect which output dims carry signal about theta.
+                Set False if all dims are known to be informative (saves compute).
+            inf_dims_nof_th (int, default 100)
+                Theta samples used to estimate the mean abs Jacobian.
+                Higher → more reliable detection, more compute.
+            inf_dims_nof_seeds (int, default 50)
+                CRN seeds used to estimate the mean abs Jacobian.
+                Higher → less seed-specific noise, more compute.
+            inf_dims_threshold (float, default 0.01)
+                Relative sensitivity threshold. A dim is kept if its mean abs
+                Jacobian >= threshold * max(mean abs Jacobian). 0.01 keeps any
+                dim with ≥1% of the most sensitive dim's sensitivity.
+                Increase to drop weakly-informative dims more aggressively.
+
+        Step 2 — objective sampling and optimisation
+            nof_seeds_total (int, default budget)
+                Total CRN seeds optimised. More seeds → better posterior coverage.
+            nof_th0 (int, default 1)
+                Random starting points per seed for gradient descent. Higher →
+                less likely to miss a solution, more compute. 1 is usually enough
+                for unimodal simulators.
+            epochs (int, default 4)
+                Optimisation passes over all seeds. Each pass runs nof_gd_steps
+                Adam steps. More epochs → finer convergence.
+            alpha (float, default 0.1)
+                Adam learning rate. 0.1 works well when the prior is ~[-3, 3].
+                Reduce if the optimiser diverges; increase if convergence is slow.
+            nof_gd_steps (int, default 50)
+                Adam steps per epoch per seed.
+                Total steps per seed = epochs × nof_gd_steps (default: 200).
+
+        Step 3/4 — solution filtering
+            pcg_to_keep (float in (0,1], default 0.8)
+                Fraction of seeds kept after ranking by d(theta*, s). 0.8 keeps
+                the 80% closest solutions. Use this OR eps_1, not both.
+            eps_1 (float or None, default None)
+                Absolute distance threshold for filtering (alternative to
+                pcg_to_keep). Seeds with best d(theta*, s) > eps_1 are dropped.
+                Leave None to use pcg_to_keep instead.
+
+        Step 5/6 — bounding box construction
+            box_algorithm (str, default "standard")
+                "standard"         — Hessian-eigenvector boxes, size from eps_2.
+                "standard_jacobian" — same but eigenvectors from Jacobian.
+                "blind"            — axis-aligned boxes of fixed half-width dx.
+                "eye"              — axis-aligned boxes, size from eps_2.
+            dx (float, default 0.1)
+                Step size used to auto-compute eps_2 when eps_2=None. eps_2 is
+                set to the mean d(theta* + dx·eigvec, s). Increase for wider
+                boxes; decrease for tighter ones.
+            eps_2 (float or None, default None)
+                Direct distance threshold controlling box size (alternative to
+                dx). A point is inside a box if d(theta, s) < eps_2.
+                Leave None to derive eps_2 automatically from dx.
+            nof_ls_steps (int, default 100)
+                Line-search steps along each eigenvector to find box edges.
+                More steps → more accurate limits.
+            step_size (float, default 0.01)
+                Physical step size per line-search step in theta space.
+                Max box half-width = nof_ls_steps × step_size = 1.0 by default.
+                Reduce if theta lives in a small range.
+        """
         default_kwargs = {
             "fit_seed": 21,
-            # informative dimensions
+            # ── Step 1 ────────────────────────────────────────────────────────
             "find_informative_dims": True,
             "inf_dims_nof_th": 100,
             "inf_dims_nof_seeds": 50,
-            "inf_dims_threshold": 1e-5,
-            # sample objective functions
+            "inf_dims_threshold": 0.01,
+            # ── Step 2 ────────────────────────────────────────────────────────
             "nof_seeds_total": budget,
             "nof_th0": 1,
-            # optimize
             "epochs": 4,
             "alpha": 0.1,
             "nof_gd_steps": 50,
-            # filter_solutions
-            "pcg_to_keep": .8,
-            "eps_1": None,  # will be checked
-            # get_boxes
-            "box_algorithm": "standard", # "standard" or "blind"
+            # ── Step 3/4 ──────────────────────────────────────────────────────
+            "pcg_to_keep": 0.8,
+            "eps_1": None,
+            # ── Step 5/6 ──────────────────────────────────────────────────────
+            "box_algorithm": "standard",
             "dx": 0.1,
             "eps_2": None,
             "nof_ls_steps": 100,
-            "step_size": .01,
+            "step_size": 0.01,
         }
 
         fit_kwargs = {**default_kwargs, **(fit_kwargs or {})}
@@ -623,29 +730,38 @@ class R2OMCMultiObs(InferenceBase):
         self.th_selected: Optional[np.ndarray] = None  # (N_th_select, D)
 
     def fit(self, budget: int = 1000, fit_kwargs: Optional[dict] = None):
+        """Fit R2OMC independently for each observation, then combine.
+
+        Delegates to R2OMC.fit() for each observation.  All fit_kwargs are
+        forwarded unchanged — see R2OMC.fit() docstring for the full parameter
+        reference.
+
+        Args:
+            budget: CRN seeds per observation.
+            fit_kwargs: Optional dict overriding any R2OMC.fit() parameter.
+        """
         default_kwargs = {
             "fit_seed": 21,
-            # informative dimensions
+            # ── Step 1 ────────────────────────────────────────────────────────
             "find_informative_dims": True,
             "inf_dims_nof_th": 100,
             "inf_dims_nof_seeds": 50,
-            "inf_dims_threshold": 1e-5,
-            # sample objective functions
+            "inf_dims_threshold": 0.01,
+            # ── Step 2 ────────────────────────────────────────────────────────
             "nof_seeds_total": budget,
             "nof_th0": 1,
-            # optimize
             "epochs": 4,
             "alpha": 0.1,
             "nof_gd_steps": 50,
-            # filter_solutions
-            "pcg_to_keep": .8,
-            "eps_1": None,  # will be checked
-            # get_boxes
-            "box_algorithm": "standard", # ["standard", "standard_jacobian", "blind", "eye"]
+            # ── Step 3/4 ──────────────────────────────────────────────────────
+            "pcg_to_keep": 0.8,
+            "eps_1": None,
+            # ── Step 5/6 ──────────────────────────────────────────────────────
+            "box_algorithm": "standard",
             "dx": 0.1,
             "eps_2": None,
             "nof_ls_steps": 100,
-            "step_size": .01,
+            "step_size": 0.01,
         }
 
         fit_kwargs = {**default_kwargs, **(fit_kwargs or {})}
