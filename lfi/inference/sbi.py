@@ -65,10 +65,10 @@ class NPEBase(InferenceBase):
         self.posterior = None
         super().__init__(name, prior, simulator, observation, dim, dim_y)
 
-    def fit(self, budget: int = 1000, fit_kwargs: dict = None):
+    def fit(self, budget: int = 1000, fit_kwargs: dict = None, verbose: int = 1):
         raise NotImplementedError("This method should be implemented in subclasses.")
 
-    def sample(self, nof_samples: int = 100, sample_kwargs: dict = None):
+    def sample(self, nof_samples: int = 100, sample_kwargs: dict = None, verbose: int = 1):
         if self.posterior is None:
             raise ValueError("Posterior is not trained yet.")
         y = self.posterior.sample((nof_samples,), x=torch.Tensor(self.observation))
@@ -101,7 +101,7 @@ class NPEASingleRound(NPEBase):
     def __init__(self, prior, simulator, observation, embedding_net=None):
         super().__init__("npe_a_single_round", prior, simulator, observation, embedding_net)
 
-    def fit(self, budget: int = 1_000, fit_kwargs: dict = None):
+    def fit(self, budget: int = 1_000, fit_kwargs: dict = None, verbose: int = 1):
         default_kwargs = {
             "num_components": 10,
             "training_batch_size": 500,
@@ -134,7 +134,7 @@ class NPECSingleRound(NPEBase):
     def __init__(self, prior, simulator, observation, embedding_net: Optional[nn.Module] = None):
         super().__init__("npe_c_single_round", prior, simulator, observation, embedding_net)
 
-    def fit(self, budget: int = 1_000, fit_kwargs: dict = None):
+    def fit(self, budget: int = 1_000, fit_kwargs: dict = None, verbose: int = 1):
         default_kwargs = {
             "model": "nsf",
             "hidden_features": 100,
@@ -182,7 +182,7 @@ class NPECMultiRound(NPEBase):
     def __init__(self, prior, simulator, observation, embedding_net: Optional[nn.Module] = None):
         super().__init__("npe_c_multi_round", prior, simulator, observation, embedding_net)
 
-    def fit(self, budget: int = 1000, fit_kwargs: dict = None):
+    def fit(self, budget: int = 1000, fit_kwargs: dict = None, verbose: int = 1):
         default_kwargs = {
             "model": "nsf",
             "hidden_features": 100,
@@ -228,7 +228,7 @@ class FMPESingleRound(NPEBase):
     def __init__(self, prior, simulator, observation):
         super().__init__("fmpe_single_round", prior, simulator, observation)
 
-    def fit(self, budget: int = 1000, fit_kwargs: dict = None):
+    def fit(self, budget: int = 1000, fit_kwargs: dict = None, verbose: int = 1):
         default_kwargs = {
             "vf_estimator": "mlp",
             "training_batch_size": 500,
@@ -263,7 +263,7 @@ class BayesFlow(NPEBase):
     def __init__(self, prior, simulator, observation):
         super().__init__("bayes_flow", prior, simulator, observation)
 
-    def fit(self, budget: int = 1000, fit_kwargs: dict = None):
+    def fit(self, budget: int = 1000, fit_kwargs: dict = None, verbose: int = 1):
         default_kwargs = {
             "embedding_net_output_dim": 20,
             "embedding_net_num_layers": 2,
@@ -326,7 +326,7 @@ class SBI_MCABC(InferenceBase):
         self.posterior = None
         super().__init__("sbi_mcabc", prior, simulator, observation, dim, dim_y)
 
-    def fit(self, budget: int = 1000, fit_kwargs: dict = None):
+    def fit(self, budget: int = 1000, fit_kwargs: dict = None, verbose: int = 1):
         self.budget = budget
         default_kwargs = {"distance": "l2"}
         default_kwargs.update(fit_kwargs or {})
@@ -336,7 +336,7 @@ class SBI_MCABC(InferenceBase):
             distance=default_kwargs["distance"]
         )
 
-    def sample(self, nof_samples: int = 100, sample_kwargs: dict = None):
+    def sample(self, nof_samples: int = 100, sample_kwargs: dict = None, verbose: int = 1):
         quantile = nof_samples / self.budget
         self.posterior = self.inference_method(
             x_o=torch.as_tensor(self.observation),
@@ -362,7 +362,7 @@ class SBI_SMCABC(InferenceBase):
         self.posterior = None
         super().__init__("sbi_smcabc", prior, simulator, observation, dim, dim_y)
 
-    def fit(self, budget: int = 1000, fit_kwargs: dict = None):
+    def fit(self, budget: int = 1000, fit_kwargs: dict = None, verbose: int = 1):
         self.budget = budget
         default_kwargs = {"distance": "l2"}
         default_kwargs.update(fit_kwargs or {})
@@ -372,7 +372,7 @@ class SBI_SMCABC(InferenceBase):
             distance=default_kwargs["distance"]
         )
 
-    def sample(self, nof_samples: int = 100, sample_kwargs: dict = None):
+    def sample(self, nof_samples: int = 100, sample_kwargs: dict = None, verbose: int = 1):
         default_kwargs = {
             "num_initial_pop": int(0.1 * self.budget),
             "epsilon_decay": 0.7,

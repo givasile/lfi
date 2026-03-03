@@ -24,7 +24,7 @@ class RejectionSampling(InferenceBase):
         dim_y = observation.shape[1]
         super().__init__('elfi_rejection_sampling', prior, simulator, observation, dim, dim_y)
 
-    def fit(self, budget: int=1000, fit_kwargs: dict = None):
+    def fit(self, budget: int=1000, fit_kwargs: dict = None, verbose: int = 1):
         self.budget = budget
         default_kwargs = {
             "batch_size": 1_000
@@ -32,7 +32,7 @@ class RejectionSampling(InferenceBase):
         default_kwargs.update((fit_kwargs or {}))
         self.inference_method = elfi.Rejection(self.d, batch_size=default_kwargs["batch_size"])
 
-    def sample(self, nof_samples: int=100, sample_kwargs: dict = None):
+    def sample(self, nof_samples: int=100, sample_kwargs: dict = None, verbose: int = 1):
         quantile = nof_samples / self.budget
         samples_res = self.inference_method.sample(nof_samples, quantile=quantile)
         self.samples = samples_res.samples_array
@@ -54,7 +54,7 @@ class SMCRejection(InferenceBase):
         dim_y = observation.shape[0]
         super().__init__('elfi_smc_rejection', prior, simulator, observation, dim, dim_y)
 
-    def fit(self, budget: int=1000, fit_kwargs: dict=None):
+    def fit(self, budget: int=1000, fit_kwargs: dict=None, verbose: int = 1):
         self.budget = budget
         default_kwargs = {
             "batch_size": 1_000
@@ -62,7 +62,7 @@ class SMCRejection(InferenceBase):
         default_kwargs.update((fit_kwargs or {}))
         self.inference_method = elfi.SMC(self.d, batch_size=default_kwargs["batch_size"])
 
-    def sample(self, nof_samples: int=100, sample_kwargs: dict=None):
+    def sample(self, nof_samples: int=100, sample_kwargs: dict=None, verbose: int = 1):
         default_kwargs = {
             "nof_iterations": 4
             }

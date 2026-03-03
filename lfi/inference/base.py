@@ -42,7 +42,7 @@ class InferenceBase:
                 f"{self.name} only supports a single observation (shape (1, D_y)), got {N_obs}."
             )
 
-    def fit(self, budget: int = 1_000, fit_kwargs: typing.Optional[dict] = None):
+    def fit(self, budget: int = 1_000, fit_kwargs: typing.Optional[dict] = None, verbose: int = 1):
         """Fit the posterior distribution to data.
         This step may do nothing if the inference method does not require fitting, e.g. ABC methods.
         Otherwise, it sets the self.posterior attribute with the fitted posterior distribution.
@@ -53,16 +53,18 @@ class InferenceBase:
                 If the method does not require fitting, it is (a).
                 If the method requires fitting, it is (b).
             fit_kwargs: Method-specific arguments for modeling and fitting the posterior distribution.
+            verbose: Verbosity level. 0 = silent, 1 = one line per step, 2 = detailed output.
         """
         raise NotImplementedError
 
-    def sample(self, nof_samples: int = 100, sample_kwargs: typing.Optional[dict] = None):
+    def sample(self, nof_samples: int = 100, sample_kwargs: typing.Optional[dict] = None, verbose: int = 1):
         """Sample from the posterior distribution.
         This step sets the self.samples attribute with the sampled posterior distribution.
 
         Args:
             nof_samples: The number of samples to draw from the posterior
             sample_kwargs: Method-specific arguments for sampling from the posterior distribution.
+            verbose: Verbosity level. 0 = silent, 1 = one line per step, 2 = detailed output.
         """
         raise NotImplementedError
 
@@ -71,7 +73,8 @@ class InferenceBase:
             budget: int,
             nof_samples: int,
             fit_kwargs: dict = None,
-            sample_kwargs: dict = None
+            sample_kwargs: dict = None,
+            verbose: int = 1,
     ):
         """Fit the posterior distribution and sample from it.
 
@@ -80,9 +83,10 @@ class InferenceBase:
             nof_samples: The number of samples to draw from the posterior
             fit_kwargs: Method-specific arguments for modeling and fitting the posterior distribution.
             sample_kwargs: Method-specific arguments for sampling from the posterior distribution.
+            verbose: Verbosity level. 0 = silent, 1 = one line per step, 2 = detailed output.
         """
-        self.fit(budget, (fit_kwargs or {}))
-        return self.sample(nof_samples, (sample_kwargs or {}))
+        self.fit(budget, (fit_kwargs or {}), verbose=verbose)
+        return self.sample(nof_samples, (sample_kwargs or {}), verbose=verbose)
 
     def plot_posterior_samples(
             self,

@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 import jax
 from typing import Optional, Tuple
@@ -110,17 +111,18 @@ class R2OMC(InferenceBase):
 
     def find_informative_dims(
             self,
-            key: jnp.ndarray = jax.random.PRNGKey(21),
+            key: jax.Array,
             inf_dims_nof_th: int = 100,
             inf_dims_nof_seeds: int = 50,
             inf_dims_threshold: float = 0.01,
+            inf_dims_aggregation: str = "mean",
     ):
         """Identify which output dimensions carry information about theta.
 
-        Computes the mean absolute Jacobian |dy/dtheta| over a grid of (theta, seed)
-        pairs.  A dimension is kept if its mean abs Jacobian is at least
-        `inf_dims_threshold` times the largest value across all output dimensions
-        (relative threshold, scale-invariant).
+        Computes the aggregated absolute Jacobian |dy/dtheta| over a grid of
+        (theta, seed) pairs.  A dimension is kept if its aggregated abs Jacobian
+        is at least `inf_dims_threshold` times the largest value across all output
+        dimensions (relative threshold, scale-invariant).
 
         Args:
             key: JAX PRNG key for sampling thetas and seeds.
@@ -129,11 +131,16 @@ class R2OMC(InferenceBase):
             inf_dims_nof_seeds: Number of CRN seeds drawn to estimate the Jacobian.
                 Higher → averages out seed-specific variability.
             inf_dims_threshold: Relative sensitivity threshold in (0, 1).
-                A dim is informative if its mean abs Jacobian >=
-                threshold * max(mean abs Jacobian across all dims).
+                A dim is informative if its aggregated abs Jacobian >=
+                threshold * max(aggregated abs Jacobian across all dims).
                 0.01 keeps any dim with at least 1% of the most sensitive dim's
                 sensitivity.  Increase (e.g. 0.1) to drop weakly-informative dims
                 more aggressively.
+            inf_dims_aggregation: How to reduce the abs Jacobian over the
+                (seeds, thetas, input_dims) axes into a single scalar per output
+                dim.  One of "mean" (default), "median", or "max".
+                "max" is more conservative: keeps a dim if *any* (theta, seed,
+                input direction) moves it.  "median" is more robust to outliers.
 
         Returns:
             key: Updated JAX PRNG key.
@@ -142,15 +149,27 @@ class R2OMC(InferenceBase):
         thetas = self.prior.sample_jax(subkey, inf_dims_nof_th)  # (inf_dims_nof_th, D)
         key, subkey = jax.random.split(key)
         seeds = jax.random.randint(subkey, (inf_dims_nof_seeds,), 0, 2**31-1)  # (inf_dims_nof_seeds,)
-        dy_dth = jnp.abs(self.sim_jac_2(thetas, seeds))  # (BS_s, BS_th, Dy, D)
-        aggregated = dy_dth.mean(axis=[0, 1, 3])  # (Dy,) — mean abs Jacobian per output dim
+        dy_dth = jnp.abs(self.sim_jac_2(thetas, seeds))  # (n_seeds, n_th, Dy, D)
+
+        # Flatten (n_seeds, n_th, D) into one axis, keeping Dy separate → (Dy, n_seeds*n_th*D)
+        flat = dy_dth.transpose(2, 0, 1, 3).reshape(self.Dy, -1)
+        if inf_dims_aggregation == "mean":
+            aggregated = flat.mean(axis=1)
+        elif inf_dims_aggregation == "median":
+            aggregated = jnp.median(flat, axis=1)
+        elif inf_dims_aggregation == "max":
+            aggregated = flat.max(axis=1)
+        else:
+            raise ValueError(
+                f"inf_dims_aggregation must be 'mean', 'median', or 'max', "
+                f"got '{inf_dims_aggregation}'"
+            )
 
         max_val = aggregated.max()
-        if max_val < 1e-12:  # degenerate: simulator fully insensitive to theta — keep all
+        if max_val < 1e-6:  # degenerate: simulator fully insensitive to theta — keep all
             inf_dims = jnp.ones(self.Dy, dtype=bool)
         else:
             inf_dims = aggregated > inf_dims_threshold * max_val  # (Dy,)
-        assert inf_dims.shape == (self.Dy,)
 
         self.informative_dims = inf_dims
         self.sim.informative_dims = inf_dims  # distance functions close over the simulator
@@ -158,10 +177,10 @@ class R2OMC(InferenceBase):
 
     def sample_objective_functions(
             self,
-            key,
+            key: jax.Array,
             nof_seeds_total: int = 500,
-            nof_th0: int = 10
-    ):
+            nof_th0: int = 1,
+    ) -> jax.Array:
         self.nof_seeds_total = nof_seeds_total
         self.nof_th0 = nof_th0
 
@@ -189,10 +208,10 @@ class R2OMC(InferenceBase):
             d, dth = self.dist_grad_1(th0, seed, y_0)
             updates, optimizer_state = optimizer.update(dth, optimizer_state)
             th0 = optax.apply_updates(th0, updates)
-        d, dth = self.dist_grad_1(th0, seed, y_0)
+        d = self.dist_1(th0, seed, y_0)
         return th0, d
 
-    def optimize(self, nof_gd_steps=100, alpha=0.01):
+    def optimize(self, nof_gd_steps: int = 100, alpha: float = 0.01) -> None:
         th_star_init = self.th_star_init
         d_star_init = self.d_star_init
         for i, ss in enumerate(self.seeds_init):
@@ -225,7 +244,13 @@ class R2OMC(InferenceBase):
 
         if pcg_to_keep is not None:
             nof_seeds_accept = int(np.ceil(self.nof_seeds_total * pcg_to_keep))
-            assert nof_seeds_accept <= self.nof_seeds_inside_prior, "Not enough seeds inside prior for pcg_to_keep."
+            if nof_seeds_accept > self.nof_seeds_inside_prior:
+                raise ValueError(
+                    f"pcg_to_keep={pcg_to_keep} requires {nof_seeds_accept} seeds but only "
+                    f"{self.nof_seeds_inside_prior}/{self.nof_seeds_total} seeds landed inside the prior. "
+                    f"Try lowering pcg_to_keep (e.g. <= {self.nof_seeds_inside_prior / self.nof_seeds_total:.2f}) "
+                    f"or increasing nof_seeds_total."
+                )
             sorted_indices = np.argsort(best_dist_per_seed)  # indices of the best solutions
             accepted_indices = sorted_indices[:nof_seeds_accept]  # indices of the best solutions
             eps_1 = best_dist_per_seed[accepted_indices][-1]  # eps_1 is the distance of the worst accepted solution
@@ -241,38 +266,40 @@ class R2OMC(InferenceBase):
         self.th_star = self.th_star_inside_prior[accepted_indices]
         self.d_star = self.d_star_inside_prior[accepted_indices]
 
-    def get_directions(self, method: str = "hessian"):
+    def get_directions(self, method: str = "hessian") -> None:
         self.hessians = np.zeros((self.nof_seeds_accept, self.nof_th0, self.D, self.D))
         self.eig_val = np.zeros((self.nof_seeds_accept, self.nof_th0, self.D))
         self.eig_vec = np.zeros((self.nof_seeds_accept, self.nof_th0, self.D, self.D))
         if method == "hessian":
             for i, ss in enumerate(self.seeds):
                 self.hessians[i] = np.array(self.dist_hessian_1(self.th_star[i], ss, self.y_0))
-                self.eig_val[i], self.eig_vec[i] = np.linalg.eig(self.hessians[i])
+                self.eig_val[i], self.eig_vec[i] = np.linalg.eigh(self.hessians[i])
         elif method == "jacobian":
             for i, ss in enumerate(self.seeds):
-                grads = self.dist_grad_1(self.th_star[i], ss, self.y_0)[1] # (N_th0, D)
-                jac = grads[:, :, np.newaxis] @ grads[:, np.newaxis, :] # (N_th0, D, D)
+                grads = self.dist_grad_1(self.th_star[i], ss, self.y_0)[1]  # (N_th0, D)
+                jac = grads[:, :, np.newaxis] @ grads[:, np.newaxis, :]     # (N_th0, D, D)
                 self.hessians[i] = np.array(jac)
-                self.eig_val[i], self.eig_vec[i] = np.linalg.eig(self.hessians[i])
+                self.eig_val[i], self.eig_vec[i] = np.linalg.eigh(self.hessians[i])
         elif method == "blind":
-            for i in range(self.nof_seeds_accept):
-                for j in range(self.nof_th0):
-                    self.eig_vec[i, j] = np.eye(self.D)
-                    self.eig_val[i, j] = np.ones(self.D)
+            self.eig_vec[:] = np.eye(self.D)
+            self.eig_val[:] = 1.0
+        else:
+            raise ValueError(
+                f"method must be 'hessian', 'jacobian', or 'blind', got '{method}'"
+            )
 
-    def _process_limit(self, is_inside_eps, step_size):
+    def _process_limit(self, is_inside_eps: np.ndarray, step_size: float) -> np.ndarray:
         L = is_inside_eps.shape[-1] - 1
         is_outside = is_inside_eps == 0
         all_inside = np.sum(is_outside, -1) == 0
 
         last_inside = (np.argmax(is_outside, axis=-1) - 1).astype(float)
-        last_inside[all_inside] = L # if all are inside, then the max is L
-        last_inside[last_inside == 0] = 0.5  # if th_0 + step is false, then the max is 0.5
-        last_inside[last_inside == -1] = 0.5  # if th_0 is false, then the max is 0.5
+        last_inside[all_inside] = L    # all points inside → box reaches the last step
+        last_inside[last_inside == 0] = 0.5   # th_0 inside but first step already outside → half-step fallback
+        last_inside[last_inside == -1] = 0.5  # th_0 itself outside eps_2 → minimal half-step fallback
         return last_inside * step_size
 
-    def _get_distances(self, nof_ls_steps: int = 1, step_size: float = 0.1):
+    def _get_distances(self, nof_ls_steps: int = 1, step_size: float = 0.1) -> np.ndarray:
         """Get distances for each seed and theta_0, for nof_ls_steps steps in each direction
         with step_size each
 
@@ -283,30 +310,24 @@ class R2OMC(InferenceBase):
         Returns:
             distances: np.ndarray of shape (N_seed, N_th0, D, 2 * nof_ls_steps + 1)
         """
-        distances = np.zeros((self.nof_seeds_accept, self.nof_th0, self.D, 2 * nof_ls_steps + 1))
+        n_pts = 2 * nof_ls_steps + 1
+        distances = np.zeros((self.nof_seeds_accept, self.nof_th0, self.D, n_pts))
         for i in range(self.nof_seeds_accept):
-            # find query points
-            query_points = np.zeros((self.nof_th0, self.D, 2 * nof_ls_steps + 1, self.D))
-            th_star = self.th_star[i]
+            th_star = self.th_star[i]  # (T, D)
+            query_points = np.zeros((self.nof_th0, self.D, n_pts, self.D))
             for dim in range(self.D):
-                steps = np.zeros((2 * nof_ls_steps + 1, self.D))
-                steps[:, dim] = np.linspace(-nof_ls_steps, nof_ls_steps, 2 * nof_ls_steps + 1) * step_size
-                steps_vec = []
-                for bs_th in range(self.nof_th0):
-                    rotated = np.dot(steps, self.eig_vec[i, bs_th])
-                    translation = np.expand_dims(th_star[bs_th, :], 0)
-                    affine = rotated + translation
-                    steps_vec.append(affine)
-                query_points[:, dim, :, :] = np.array(steps_vec)
-            query_points_flat = query_points.reshape(self.nof_th0 * self.D * (2 * nof_ls_steps + 1), self.D)
+                steps = np.zeros((n_pts, self.D))
+                steps[:, dim] = np.linspace(-nof_ls_steps, nof_ls_steps, n_pts) * step_size
+                rotated = steps[np.newaxis] @ self.eig_vec[i]   # (T, n_pts, D)
+                affine = rotated + th_star[:, np.newaxis, :]    # (T, n_pts, D)
+                query_points[:, dim, :, :] = affine
 
-            # find distances
+            query_points_flat = query_points.reshape(self.nof_th0 * self.D * n_pts, self.D)
             distances_seed = self.dist_1(query_points_flat, self.seeds[i], self.y_0)
-            distances_seed = distances_seed.reshape(self.nof_th0, self.D, 2 * nof_ls_steps + 1)
-            distances[i] = distances_seed
+            distances[i] = distances_seed.reshape(self.nof_th0, self.D, n_pts)
         return distances
 
-    def get_boxes(self, eps_2: float, nof_ls_steps: int = 10, step_size: float = 0.1):
+    def get_boxes(self, eps_2: float, nof_ls_steps: int = 10, step_size: float = 0.1) -> None:
         self.step_size = step_size
         self.nof_ls_steps = nof_ls_steps
         self.eps_2 = eps_2
@@ -324,14 +345,14 @@ class R2OMC(InferenceBase):
             self.limits[i, :, :, 1] = self._process_limit(sliced_is_inside_seed, step_size)
         self.log_volumes = np.sum(np.log(self.limits[:, :, :, 1] - self.limits[:, :, :, 0]), axis=2)
 
-    def get_boxes_blind(self, dx):
+    def get_boxes_blind(self, dx: float) -> None:
         # just set limits to be dx away from the th_star
         self.limits = np.zeros((self.nof_seeds_accept, self.nof_th0, self.D, 2))
         self.limits[:, :, :, 0] = - dx
         self.limits[:, :, :, 1] = dx
         self.log_volumes = np.sum(np.log(2 * dx * np.ones((self.nof_seeds_accept, self.nof_th0, self.D))), axis=2)
 
-    def _get_samples_per_region(self, key, nof_samples, i_seed, i_th0, eps_3) -> Tuple[np.ndarray, np.ndarray]:
+    def _get_samples_per_region(self, key: jax.Array, nof_samples: int, i_seed: int, i_th0: int, eps_3: float) -> Tuple[np.ndarray, np.ndarray]:
         """Generates nof_samples from the i_seed and i_th0 region.
         Returns the samples and their log weights.
         """
@@ -347,13 +368,13 @@ class R2OMC(InferenceBase):
         # compute weights
         distances = self.dist_1(samples_rot, self.seeds[i_seed], self.y_0) # (N_per_region,)
         log_prior = self.prior.logpdf(samples_rot) # (N_per_region,)
-        log_volume = self.log_volumes[i_seed, i_th0] # (N_per_region,)
+        log_volume = self.log_volumes[i_seed, i_th0]  # scalar
         is_inside =  distances < eps_3
         log_mask = jnp.where(is_inside, 0.0, -jnp.inf) # (N_per_region,)
         log_weights = log_prior + log_volume + log_mask # (N_per_region,)
         return samples_rot, log_weights
 
-    def weighted_sampling(self, sampling_seed, samples_per_region, eps_3=1.):
+    def weighted_sampling(self, sampling_seed: int, samples_per_region: int, eps_3: float = 1.) -> Tuple[np.ndarray, np.ndarray]:
         key = jax.random.PRNGKey(sampling_seed)
 
         # iteration over seeds and theta_0 to draw samples
@@ -375,10 +396,20 @@ class R2OMC(InferenceBase):
         samples = np.array(samples) # (S_accept, N_th0, N_per_region, D)
         log_weights = np.array(log_weights) # (S_accept, N_th0, N_per_region)
 
-        # Normalize weights in log-space for numerical stability
-        # log_weights -= np.max(log_weights, axis=-1, keepdims=True)  # for numerical stability
-        weights = np.exp(log_weights)
-        weights /= np.sum(weights)
+        # Normalise in log-space for numerical stability: shift by global max so
+        # the largest weight becomes exp(0)=1, preventing underflow to all-zeros.
+        max_lw = log_weights.max()
+        if not np.isfinite(max_lw):
+            # All samples outside eps_3 — fall back to uniform weights with a warning.
+            warnings.warn(
+                "All samples have zero weight (all outside eps_3). "
+                "Returning uniform weights. Consider increasing eps_3."
+            )
+            weights = np.ones_like(log_weights, dtype=float) / log_weights.size
+        else:
+            log_weights -= max_lw
+            weights = np.exp(log_weights)
+            weights /= np.sum(weights)
 
         # store the samples and weights
         self.samples = samples
@@ -389,9 +420,12 @@ class R2OMC(InferenceBase):
         self.samples_weights_flat = weights.reshape((-1,)) # (S_accept * N_th0 * N_per_region,)
         return self.samples_flat, self.samples_weights_flat
 
-    def importance_resampling(self, samples: np.ndarray, weights: np.ndarray, nof_samples: int, replace=False):
+    def importance_resampling(self, samples: np.ndarray, weights: np.ndarray, nof_samples: int, replace: bool = False) -> np.ndarray:
         if np.sum(weights > 0) < nof_samples:
-            print("Not enough samples with positive weight")
+            warnings.warn(
+                f"Only {np.sum(weights > 0)} samples have positive weight, "
+                f"but {nof_samples} were requested. Returning top-k by weight."
+            )
             return samples[np.argsort(weights)[::-1]][:nof_samples]
         indices = np.random.choice(np.arange(samples.shape[0]), size=nof_samples, replace=replace, p=weights)
         self.samples_final = samples[indices]
@@ -453,7 +487,7 @@ class R2OMC(InferenceBase):
         )
         plt.show(block=False)
 
-    def fit(self, budget: int = 1000, fit_kwargs: Optional[dict] = None):
+    def fit(self, budget: int = 1000, fit_kwargs: Optional[dict] = None, verbose: int = 1):
         """Fit the R2OMC posterior approximation.
 
         Runs six sequential steps: detect informative output dims, optimise CRN
@@ -464,6 +498,8 @@ class R2OMC(InferenceBase):
         Args:
             budget: Total number of CRN seeds to optimise (proxy for compute budget).
             fit_kwargs: Optional dict overriding any of the parameters below.
+            verbose: Verbosity level. 0 = silent, 1 = one line per step (default),
+                2 = detailed output including per-epoch stats and input/output blocks.
 
         fit_kwargs reference
         --------------------
@@ -482,10 +518,13 @@ class R2OMC(InferenceBase):
                 CRN seeds used to estimate the mean abs Jacobian.
                 Higher → less seed-specific noise, more compute.
             inf_dims_threshold (float, default 0.01)
-                Relative sensitivity threshold. A dim is kept if its mean abs
-                Jacobian >= threshold * max(mean abs Jacobian). 0.01 keeps any
-                dim with ≥1% of the most sensitive dim's sensitivity.
+                Relative sensitivity threshold. A dim is kept if its aggregated
+                abs Jacobian >= threshold * max(aggregated abs Jacobian). 0.01
+                keeps any dim with ≥1% of the most sensitive dim's sensitivity.
                 Increase to drop weakly-informative dims more aggressively.
+            inf_dims_aggregation (str, default "mean")
+                How to reduce the abs Jacobian over (seeds, thetas, input_dims)
+                into one scalar per output dim. One of "mean", "median", "max".
 
         Step 2 — objective sampling and optimisation
             nof_seeds_total (int, default budget)
@@ -542,6 +581,7 @@ class R2OMC(InferenceBase):
             "inf_dims_nof_th": 100,
             "inf_dims_nof_seeds": 50,
             "inf_dims_threshold": 0.01,
+            "inf_dims_aggregation": "mean",
             # ── Step 2 ────────────────────────────────────────────────────────
             "nof_seeds_total": budget,
             "nof_th0": 1,
@@ -566,128 +606,167 @@ class R2OMC(InferenceBase):
         key = jax.random.PRNGKey(fit_kwargs["fit_seed"])
 
         # Step 1: find informative dimensions
-        print("Step 1: find informative dimensions")
-        print("-----------------------------------")
+        if verbose >= 2:
+            print("Step 1: find informative dimensions")
+            print("-----------------------------------")
         if fit_kwargs["find_informative_dims"]:
-            key, subkey = jax.random.split(key)
             key = self.find_informative_dims(
                 key,
                 fit_kwargs["inf_dims_nof_th"],
                 fit_kwargs["inf_dims_nof_seeds"],
-                fit_kwargs["inf_dims_threshold"]
+                fit_kwargs["inf_dims_threshold"],
+                fit_kwargs["inf_dims_aggregation"],
             )
-        print(f"Informative dimensions: {np.sum(self.informative_dims)} out of {self.Dy}")
+        if verbose >= 1:
+            print(f"Step 1: {int(np.sum(self.informative_dims))}/{self.Dy} informative dims")
 
         # Step 2: optimize objective functions
-        print(f"\nStep 2: Optimization ({fit_kwargs['nof_seeds_total']}x{fit_kwargs['nof_th0']})")
-        print("---------------------------------")
+        if verbose >= 2:
+            print(f"\nStep 2: Optimization ({fit_kwargs['nof_seeds_total']}x{fit_kwargs['nof_th0']})")
+            print("---------------------------------")
         key = self.sample_objective_functions(key, fit_kwargs["nof_seeds_total"], fit_kwargs["nof_th0"])
 
         for epoch in range(fit_kwargs["epochs"]):
-            print(
-                f"Epoch {epoch + 1}/{fit_kwargs['epochs']}: "
-                f"Applying {fit_kwargs['nof_gd_steps']} gradient descent steps with alpha={fit_kwargs['alpha']}"
-            )
+            if verbose >= 2:
+                print(
+                    f"Epoch {epoch + 1}/{fit_kwargs['epochs']}: "
+                    f"{fit_kwargs['nof_gd_steps']} GD steps, alpha={fit_kwargs['alpha']}"
+                )
             self.optimize(fit_kwargs["nof_gd_steps"], fit_kwargs["alpha"])
-            print(f"Some stats after optimization: {self.d_star_init.mean():.5f} ± {self.d_star_init.std():.5f}, [{self.d_star_init.min():.5f}, {self.d_star_init.max():.5f}]")
-
-        print("Statistics:")
-        print(
-            f"min: {self.d_star_init.min():.5f}, "
-            f"max: {self.d_star_init.max():.5f}, "
-            f"mean: {self.d_star_init.mean():.5f}, "
-            f"std: {self.d_star_init.std():.5f}"
-        )
+            if verbose >= 2:
+                print(
+                    f"  dist: {self.d_star_init.mean():.5f} ± {self.d_star_init.std():.5f}"
+                    f"  [{self.d_star_init.min():.5f}, {self.d_star_init.max():.5f}]"
+                )
+        if verbose >= 1:
+            print(
+                f"Step 2: {fit_kwargs['nof_seeds_total']}×{fit_kwargs['nof_th0']} seeds optimised "
+                f"({fit_kwargs['epochs']} epochs) | "
+                f"dist {self.d_star_init.mean():.4f} ± {self.d_star_init.std():.4f}"
+            )
 
         # Step 3: filter_solutions_inside_prior
-        print("\nStep 3: filter solutions inside prior")
-        print("---------------------------------")
+        if verbose >= 2:
+            print("\nStep 3: filter solutions inside prior")
+            print("---------------------------------")
         self.filter_solutions_inside_prior()
-        print(f"Inside prior: {self.seeds_inside_prior.shape[0]}/{self.nof_seeds_total} seeds")
+        if verbose >= 1:
+            print(f"Step 3: {self.nof_seeds_inside_prior}/{self.nof_seeds_total} seeds inside prior")
 
         # Step 4: filter_solutions based on eps_1 or pcg_to_keep
-        if fit_kwargs["pcg_to_keep"] is not None:
-            print(f"\nStep 4: filter solutions ({fit_kwargs['pcg_to_keep'] * 100}% of seeds)")
-        else:
-            print(f"\nStep 4: filter solutions (eps_1={fit_kwargs['eps_1']})")
-        print("---------------------------------")
+        if verbose >= 2:
+            if fit_kwargs["pcg_to_keep"] is not None:
+                print(f"\nStep 4: filter solutions (pcg_to_keep={fit_kwargs['pcg_to_keep']})")
+            else:
+                print(f"\nStep 4: filter solutions (eps_1={fit_kwargs['eps_1']})")
+            print("---------------------------------")
         self.filter_solutions(fit_kwargs["pcg_to_keep"], fit_kwargs["eps_1"])
-        print(f"Keep ({self.nof_seeds_accept}/{self.seeds_inside_prior.shape[0]} seeds), eps_1={self.eps_1:.5f}")
-        print("Statistics:")
-        print(
-            f"min: {self.d_star.min():.5f}, "
-            f"max: {self.d_star.max():.5f}, "
-            f"mean: {self.d_star.mean():.5f}, "
-            f"std: {self.d_star.std():.5f}"
-        )
+        if verbose >= 1:
+            print(f"Step 4: {self.nof_seeds_accept} seeds accepted | eps_1={self.eps_1:.4f}")
+        if verbose >= 2:
+            print(
+                f"  dist: min={self.d_star.min():.5f}, max={self.d_star.max():.5f}, "
+                f"mean={self.d_star.mean():.5f}, std={self.d_star.std():.5f}"
+            )
 
         # Step 5: find the directions for building the boxes
-        print("\nStep 5: get directions")
-        print("---------------------------------")
+        if verbose >= 2:
+            print("\nStep 5: get directions")
+            print("---------------------------------")
         if fit_kwargs.get("box_algorithm") in ["blind", "eye"]:
-            self.get_directions("blind")
+            directions_method = "blind"
         elif fit_kwargs.get("box_algorithm") == "standard_jacobian":
-            self.get_directions("jacobian")
+            directions_method = "jacobian"
         else:
-            self.get_directions("hessian")
-        print("Done!")
+            directions_method = "hessian"
+        self.get_directions(directions_method)
+        if verbose >= 1:
+            print(f"Step 5: directions computed ({directions_method})")
 
         # Step 6: build the bounding boxes
-        print(f"\nStep 6: Build bounding boxes - Algorithm: {fit_kwargs['box_algorithm']}")
-        print("---------------------------------")
+        if verbose >= 2:
+            print(f"\nStep 6: Build bounding boxes - Algorithm: {fit_kwargs['box_algorithm']}")
+            print("---------------------------------")
 
         if fit_kwargs["box_algorithm"] in ["standard", "eye", "standard_jacobian"]:
-            print(
-                f"Input: \n"
-                f"- eps_2={fit_kwargs['eps_2']} \n"
-                f"- dx={fit_kwargs['dx']} \n"
-                f"- nof_ls_steps={fit_kwargs['nof_ls_steps']} \n"
-                f"- step_size={fit_kwargs['step_size']}"
-            )
-            if fit_kwargs.get("dx") is not None:
-                eps_2 = self._get_distances(1, fit_kwargs["dx"]).mean()
-                print(f"Computed eps_2={eps_2:.5f} from dx={fit_kwargs['dx']:.5f}")
-            elif fit_kwargs.get("eps_2") is not None:
+            if verbose >= 2:
+                print(
+                    f"Input: \n"
+                    f"- eps_2={fit_kwargs['eps_2']} \n"
+                    f"- dx={fit_kwargs['dx']} \n"
+                    f"- nof_ls_steps={fit_kwargs['nof_ls_steps']} \n"
+                    f"- step_size={fit_kwargs['step_size']}"
+                )
+            if fit_kwargs.get("eps_2") is not None:
                 eps_2 = fit_kwargs["eps_2"]
-                print(f"Using provided eps_2={eps_2:.5f}")
+                if verbose >= 2:
+                    print(f"Using provided eps_2={eps_2:.5f}")
+            elif fit_kwargs.get("dx") is not None:
+                eps_2 = self._get_distances(1, fit_kwargs["dx"]).mean()
+                if verbose >= 2:
+                    print(f"Computed eps_2={eps_2:.5f} from dx={fit_kwargs['dx']:.5f}")
             else:
                 raise ValueError("Either 'dx' or 'eps_2' must be provided in fit_kwargs.")
 
             self.get_boxes(eps_2, fit_kwargs["nof_ls_steps"], fit_kwargs["step_size"])
+            if verbose >= 1:
+                print(f"Step 6: {self.seeds.shape[0]}×{self.nof_th0} boxes built | eps_2={self.eps_2:.4f}")
 
-            print("Output:")
-            print(
-                f"Built {self.seeds.shape[0]} x {self.nof_th0} boxes: \n"
-                f"- eps_2={self.eps_2:.5f} (criterion)\n"
-                f"- dx={fit_kwargs['dx']:.5f}"
-            )
         elif fit_kwargs["box_algorithm"] == "blind":
-            print(f"Input: \n- dx={fit_kwargs['dx']}")
+            if verbose >= 2:
+                print(f"Input: \n- dx={fit_kwargs['dx']}")
             self.get_boxes_blind(fit_kwargs["dx"])
-            print("Output:")
-            print(
-                f"Built {self.seeds.shape[0]} x {self.nof_th0} boxes: \n"
-                f"- dx={fit_kwargs['dx']:.5f} (criterion)"
-            )
+            if verbose >= 1:
+                print(f"Step 6: {self.seeds.shape[0]}×{self.nof_th0} blind boxes built | dx={fit_kwargs['dx']:.4f}")
 
-    def sample(self, nof_samples: int = 100, sample_kwargs: Optional[dict] = None):
+    def sample(self, nof_samples: int = 100, sample_kwargs: Optional[dict] = None, verbose: int = 1) -> np.ndarray:
+        """Draw posterior samples using weighted sampling + importance resampling.
+
+        Args:
+            nof_samples: Number of posterior samples to return.
+            sample_kwargs: Optional dict overriding any of the parameters below.
+            verbose: Verbosity level. 0 = silent, 1 = one line per step (default),
+                2 = detailed output including input/output blocks.
+
+        sample_kwargs reference
+        -----------------------
+            sample_seed (int, default 71)
+                Random seed for reproducible sampling.
+            eps_3 (float, default 1.0)
+                Distance threshold for the within-box accept/reject mask.
+                Only samples with d(theta, s) < eps_3 receive positive weight.
+                Increase to accept more samples; decrease for tighter filtering.
+            samples_per_region (int, default 10)
+                Candidate samples drawn per (seed, theta*) box before resampling.
+                Total candidates = nof_seeds_accept * nof_th0 * samples_per_region.
+                Increase for better coverage at the cost of memory and compute.
+            replace (bool, default False)
+                Whether importance resampling draws with replacement.
+                False avoids duplicate samples but requires enough positive-weight
+                candidates (>= nof_samples). Set True if the pool is small.
+
+        Returns:
+            samples: np.ndarray of shape (nof_samples, D).
+        """
         default_kwargs = {
             "sample_seed": 71,
             "eps_3": 1.0,
             "samples_per_region": 10,
+            "replace": False,
         }
-        default_kwargs.update((sample_kwargs or {}))
-        sample_kwargs = default_kwargs
+        sample_kwargs = {**default_kwargs, **(sample_kwargs or {})}
         self.sample_kwargs = sample_kwargs
 
-        print("\nStep 7: Sample from the boxes")
-        print("-----------------------------")
-        print(
-            f"Input:\n"
-            f"- sample_seed={sample_kwargs['sample_seed']}\n"
-            f"- samples_per_region={sample_kwargs['samples_per_region']}\n"
-            f"- eps_3={sample_kwargs['eps_3']:.5f}"
-        )
+        if verbose >= 2:
+            print("\nStep 7: Sample from the boxes")
+            print("-----------------------------")
+            print(
+                f"Input:\n"
+                f"- sample_seed={sample_kwargs['sample_seed']}\n"
+                f"- samples_per_region={sample_kwargs['samples_per_region']}\n"
+                f"- eps_3={sample_kwargs['eps_3']:.5f}\n"
+                f"- replace={sample_kwargs['replace']}"
+            )
 
         samples, weights = self.weighted_sampling(
             sample_kwargs["sample_seed"],
@@ -695,9 +774,10 @@ class R2OMC(InferenceBase):
             sample_kwargs["eps_3"]
         )
 
-        samples_r2omc = self.importance_resampling(samples, weights, nof_samples, False)
+        samples_r2omc = self.importance_resampling(samples, weights, nof_samples, sample_kwargs["replace"])
 
-        print(f"Output:\n- Returned {samples_r2omc.shape[0]} weighted samples (after resampling)")
+        if verbose >= 1:
+            print(f"Step 7: {samples_r2omc.shape[0]} samples returned")
         self.samples = samples_r2omc
         return samples_r2omc
 
@@ -729,7 +809,7 @@ class R2OMCMultiObs(InferenceBase):
         self.th_accepted: Optional[np.ndarray] = None  # (N_th_accept, D)
         self.th_selected: Optional[np.ndarray] = None  # (N_th_select, D)
 
-    def fit(self, budget: int = 1000, fit_kwargs: Optional[dict] = None):
+    def fit(self, budget: int = 1000, fit_kwargs: Optional[dict] = None, verbose: int = 1):
         """Fit R2OMC independently for each observation, then combine.
 
         Delegates to R2OMC.fit() for each observation.  All fit_kwargs are
@@ -739,6 +819,8 @@ class R2OMCMultiObs(InferenceBase):
         Args:
             budget: CRN seeds per observation.
             fit_kwargs: Optional dict overriding any R2OMC.fit() parameter.
+            verbose: Verbosity level. 0 = silent, 1 = one line per step (default),
+                2 = detailed output. Passed through to each R2OMC.fit() call.
         """
         default_kwargs = {
             "fit_seed": 21,
@@ -747,6 +829,7 @@ class R2OMCMultiObs(InferenceBase):
             "inf_dims_nof_th": 100,
             "inf_dims_nof_seeds": 50,
             "inf_dims_threshold": 0.01,
+            "inf_dims_aggregation": "mean",
             # ── Step 2 ────────────────────────────────────────────────────────
             "nof_seeds_total": budget,
             "nof_th0": 1,
@@ -771,11 +854,12 @@ class R2OMCMultiObs(InferenceBase):
         np.random.seed(fit_kwargs["fit_seed"])
         seeds = np.random.randint(0, 2**31-1, size=self.N_obs)
         for i, r2omc in enumerate(self.r2omc_list):
-            print(f"\nFitting observation {i+1}/{self.N_obs}")
+            if verbose >= 1:
+                print(f"\nFitting observation {i+1}/{self.N_obs}")
             fit_kwargs["fit_seed"] = int(seeds[i])
-            r2omc.fit(budget, fit_kwargs)
+            r2omc.fit(budget, fit_kwargs, verbose=verbose)
 
-    def sample(self, nof_samples: int = 100, sample_kwargs: Optional[dict] = None):
+    def sample(self, nof_samples: int = 100, sample_kwargs: Optional[dict] = None, verbose: int = 1):
         # tidy up parameters
         default_kwargs = {
             "sample_seed": 71,
@@ -790,7 +874,7 @@ class R2OMCMultiObs(InferenceBase):
         # gather samples from each R2OMC instance and stack them
         th_list = []
         for i, r2omc_cur in enumerate(self.r2omc_list):
-            th_i = r2omc_cur.sample(nof_samples=sample_kwargs["nof_samples_per_obs"], sample_kwargs=sample_kwargs)
+            th_i = r2omc_cur.sample(nof_samples=sample_kwargs["nof_samples_per_obs"], sample_kwargs=sample_kwargs, verbose=verbose)
             th_list.append(th_i)
         self.th_total = np.vstack(th_list)
 
@@ -809,7 +893,8 @@ class R2OMCMultiObs(InferenceBase):
         # th_accepted: (N_th_accept, D)
         is_inside = distances < sample_kwargs["eps_4"] # (N_obs, N_th_total, N_seeds)
         is_accepted = is_inside.sum(-1).prod(0) > 0 # (N_th_total,)
-        print(f"Accepted samples: {is_accepted.sum()}/{self.th_total.shape[0]}")
+        if verbose >= 2:
+            print(f"Accepted samples: {is_accepted.sum()}/{self.th_total.shape[0]}")
 
         # find the weights of the accepted samples
         weight_inside = is_inside.sum(-1).prod(0) # (N_th_total,)
@@ -823,13 +908,14 @@ class R2OMCMultiObs(InferenceBase):
 
         # select samples based on weights
         if np.sum(w_norm > 0) < nof_samples:
-            print("Not enough samples with positive weight")
+            warnings.warn("Not enough samples with positive weight. Returning top-k by weight.")
             th_selected = self.th_total[np.argsort(w_norm)[::-1]][:nof_samples]
         else:
             indices = np.random.choice(np.arange(self.th_total.shape[0]), size=nof_samples, replace=False, p=w_norm)
             th_selected = self.th_total[indices]
 
-        print(f"Nof (selected/accepted/total) samples: ({th_selected.shape[0]}/{is_accepted.sum()}/{self.th_total.shape[0]})")
+        if verbose >= 1:
+            print(f"Step 7: {th_selected.shape[0]} samples returned ({is_accepted.sum()}/{self.th_total.shape[0]} accepted)")
         # self.N_th_per_obs = nof_samples
         # self.N_th_total = self.th_total.shape[0]
         # self.N_th_accept = is_accepted.sum()
