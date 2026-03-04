@@ -93,57 +93,95 @@ class SMCInference(InferenceBase):
         self.all_particles = [] # To store the accepted particles for plotting
 
     def fit(self, budget: int = 1_000, fit_kwargs: dict = None, verbose: int = 1):
+        """
+        ``budget`` = **total** simulator calls, split equally across rounds:
+            n_particles = budget // nof_rounds   (per-round particle count)
+
+        Three scheduling modes (checked in priority order):
+
+        1. ``quantile_sequence`` — explicit adaptive schedule. At each round the
+           threshold is set to the given quantile of the *current* distance
+           distribution.  E.g. ``[1.0, 0.5, 0.2, 0.1]`` keeps 100 % → 50 % →
+           20 % → 10 % of particles per round.
+
+        2. ``tolerance_sequence`` — explicit fixed absolute thresholds.
+
+        3. Auto (default) — provide ``nof_rounds`` (default 4) and
+           ``nof_samples`` (should match the value passed to ``sample()``).
+           A geometric schedule from 1.0 down to ``nof_samples / n_particles``
+           is computed, so the final round produces exactly ``nof_samples``
+           particles:
+
+               n_particles     = budget // nof_rounds
+               final_quantile  = nof_samples / n_particles
+               quantile_sequence = geomspace(1.0, final_quantile, nof_rounds)
+        """
         default_kwargs = {
-            "tolerance_sequence": [1.0, 0.5, 0.25, 0.1],
+            "nof_rounds":        4,
+            "nof_samples":       max(1, budget // 10),  # default: 10 % of budget
+            "quantile_sequence": None,
+            "tolerance_sequence": None,
         }
         default_kwargs.update(fit_kwargs or {})
-        self.tolerance_sequence = default_kwargs["tolerance_sequence"]
+        quantile_sequence  = default_kwargs["quantile_sequence"]
+        tolerance_sequence = default_kwargs["tolerance_sequence"]
+
+        # budget is split equally across rounds
+        nof_rounds   = len(quantile_sequence or tolerance_sequence or [None] * default_kwargs["nof_rounds"])
+        n_particles  = budget // nof_rounds
+
+        # determine schedule (priority: quantile_sequence > tolerance_sequence > auto)
+        if quantile_sequence is not None:
+            use_quantiles = True
+            schedule = quantile_sequence
+        elif tolerance_sequence is not None:
+            use_quantiles = False
+            schedule = tolerance_sequence
+        else:
+            use_quantiles = True
+            final_q  = default_kwargs["nof_samples"] / n_particles
+            schedule = list(np.geomspace(1.0, final_q, nof_rounds))
 
         # Initialize particles from the prior
-        self.particles = self.prior.sample_numpy(budget)
-
-        # Initialize weights uniformly
-        self.weights = np.ones(budget) / budget
+        self.particles = self.prior.sample_numpy(n_particles)
+        self.weights = np.ones(n_particles) / n_particles
 
         if verbose >= 2:
-            print("Starting Sequential Monte Carlo Inference")
+            mode = "quantile" if use_quantiles else "tolerance"
+            print(f"Starting SMCInference | budget={budget} | {nof_rounds} rounds × {n_particles} particles | {mode} schedule: {[round(s,3) for s in schedule]}")
 
-        for i, tolerance in enumerate(self.tolerance_sequence):
-            if verbose >= 2:
-                print(f"Round {i+1}/{len(self.tolerance_sequence)}, Tolerance: {tolerance}")
-
+        for i, sched_val in enumerate(schedule):
             # Simulate data for each particle
             sim = self.simulator.sample_numpy(self.particles)
-
-            # Compute distances from the observation
             distances = np.linalg.norm(self.observation - sim, axis=1)
 
-            # Accept particles where the distance is within the tolerance
-            accepted_indices = np.where(distances < tolerance)[0]
+            # Determine threshold for this round
+            threshold = np.quantile(distances, sched_val) if use_quantiles else sched_val
+
+            if verbose >= 2:
+                print(f"Round {i+1}/{nof_rounds}, threshold={threshold:.4f}")
+
+            # Accept particles within threshold
+            accepted_indices = np.where(distances < threshold)[0]
             accepted_particles = self.particles[accepted_indices]
             self.all_particles.append(accepted_particles)
 
-            # if no particles are accepted, break the loop
             if accepted_particles.size == 0:
-                warnings.warn(f"No accepted particles at tolerance {tolerance}. Stopping early.")
+                warnings.warn(f"No accepted particles at threshold {threshold:.4f}. Stopping early.")
                 break
 
-            # Update particles and weights
-            weights = np.exp(-distances[accepted_indices] / tolerance)
+            # Update weights and resample
+            weights = np.exp(-distances[accepted_indices] / threshold)
             weights /= np.sum(weights)
-
-            # Resample particles
             resample_indices = np.random.choice(
-                len(accepted_particles), size=budget, replace=True, p=weights)
+                len(accepted_particles), size=n_particles, replace=True, p=weights)
             resampled_particles = accepted_particles[resample_indices]
 
-            # Perturb the resampled particles
-            perturbation_std = tolerance * 0.5
-            particles = resampled_particles + np.random.normal(
+            # Perturb
+            perturbation_std = threshold * 0.5
+            self.particles = resampled_particles + np.random.normal(
                 0, perturbation_std, size=resampled_particles.shape)
-
-            self.particles = particles
-            self.weights = np.ones(budget) / budget
+            self.weights = np.ones(n_particles) / n_particles
 
             if verbose >= 2:
                 print(f"Round {i+1} complete. Accepted particles: {len(accepted_particles)}")
@@ -152,7 +190,8 @@ class SMCInference(InferenceBase):
         self.posterior = self.all_particles[-1]
 
         if verbose >= 1:
-            print(f"SMCInference: {len(self.posterior)} posterior particles after {len(self.all_particles)} rounds")
+            print(f"SMCInference: {len(self.posterior)} posterior particles after {len(self.all_particles)} rounds "
+                  f"({nof_rounds * n_particles} total simulator calls)")
 
         return self.all_particles
 
@@ -257,53 +296,93 @@ class SMCInferenceJAX(InferenceBase):
         self.all_particles = []
 
     def fit(self, budget: int = 1_000, fit_kwargs: dict = None, verbose: int = 1):
+        """
+        Three scheduling modes (checked in priority order):
+
+        1. ``quantile_sequence`` — explicit adaptive schedule (quantile of
+           current distances used as threshold each round).
+
+        2. ``tolerance_sequence`` — explicit fixed absolute thresholds.
+
+        3. Auto (default) — provide ``nof_rounds`` (default 4) and
+           ``nof_samples`` (should match the value passed to ``sample()``).
+           Computes a geometric schedule from 1.0 down to
+           ``nof_samples / budget``:
+
+               quantile_sequence = geomspace(1.0, nof_samples/budget, nof_rounds)
+
+           Rule of thumb: ``budget × final_quantile == nof_samples``.
+        """
         default_kwargs = {
-            "key": jax.random.PRNGKey(0),
-            "tolerance_sequence": [1.0, 0.5, 0.25, 0.1],
+            "key":               jax.random.PRNGKey(0),
+            "nof_rounds":        4,
+            "nof_samples":       max(1, budget // 10),  # default: 10 % of budget
+            "quantile_sequence": None,
+            "tolerance_sequence": None,
         }
         default_kwargs.update(fit_kwargs or {})
-        key = default_kwargs["key"]
-        self.tolerance_sequence = default_kwargs["tolerance_sequence"]
+        key                = default_kwargs["key"]
+        quantile_sequence  = default_kwargs["quantile_sequence"]
+        tolerance_sequence = default_kwargs["tolerance_sequence"]
+
+        # budget is split equally across rounds
+        nof_rounds  = len(quantile_sequence or tolerance_sequence or [None] * default_kwargs["nof_rounds"])
+        n_particles = budget // nof_rounds
+
+        # determine schedule (priority: quantile_sequence > tolerance_sequence > auto)
+        if quantile_sequence is not None:
+            use_quantiles = True
+            schedule = quantile_sequence
+        elif tolerance_sequence is not None:
+            use_quantiles = False
+            schedule = tolerance_sequence
+        else:
+            use_quantiles = True
+            final_q  = default_kwargs["nof_samples"] / n_particles
+            schedule = list(np.geomspace(1.0, final_q, nof_rounds))
 
         sim_fn = self.simulator.jax_cr_simulator_paired()
         obs = jnp.array(self.observation)  # (1, dim_y) — broadcasts over batch
 
         # Initialize particles from the prior
         key, subkey = jax.random.split(key)
-        particles = self.prior.sample_jax(subkey, budget)  # (budget, dim)
+        particles = self.prior.sample_jax(subkey, n_particles)
 
         if verbose >= 2:
-            print("Starting Sequential Monte Carlo Inference (JAX)")
+            mode = "quantile" if use_quantiles else "tolerance"
+            print(f"Starting SMCInferenceJAX | budget={budget} | {nof_rounds} rounds × {n_particles} particles | {mode} schedule: {[round(s,3) for s in schedule]}")
 
-        for i, tolerance in enumerate(self.tolerance_sequence):
+        for i, sched_val in enumerate(schedule):
+            seeds = jnp.arange(n_particles)
+            sim = sim_fn(particles, seeds)  # (n_particles, dim_y)
+            distances = jnp.linalg.norm(sim - obs, axis=1)  # (n_particles,)
+
+            # Determine threshold for this round
+            threshold = float(jnp.quantile(distances, sched_val)) if use_quantiles else sched_val
+
             if verbose >= 2:
-                print(f"Round {i+1}/{len(self.tolerance_sequence)}, Tolerance: {tolerance}")
+                print(f"Round {i+1}/{nof_rounds}, threshold={threshold:.4f}")
 
-            seeds = jnp.arange(budget)
-            sim = sim_fn(particles, seeds)  # (budget, dim_y)
-
-            distances = jnp.linalg.norm(sim - obs, axis=1)  # (budget,)
-
-            accepted_indices = jnp.where(distances < tolerance)[0]
+            accepted_indices = jnp.where(distances < threshold)[0]
             accepted_particles = particles[accepted_indices]
             self.all_particles.append(np.array(accepted_particles))
 
             if accepted_particles.shape[0] == 0:
-                warnings.warn(f"No accepted particles at tolerance {tolerance}. Stopping early.")
+                warnings.warn(f"No accepted particles at threshold {threshold:.4f}. Stopping early.")
                 break
 
-            weights = jnp.exp(-distances[accepted_indices] / tolerance)
+            weights = jnp.exp(-distances[accepted_indices] / threshold)
             weights = weights / jnp.sum(weights)
 
             # Resample
             key, subkey = jax.random.split(key)
             resample_indices = jax.random.choice(
-                subkey, accepted_particles.shape[0], shape=(budget,), replace=True, p=weights)
+                subkey, accepted_particles.shape[0], shape=(n_particles,), replace=True, p=weights)
             resampled = accepted_particles[resample_indices]
 
             # Perturb
             key, subkey = jax.random.split(key)
-            perturbation_std = tolerance * 0.5
+            perturbation_std = threshold * 0.5
             particles = resampled + jax.random.normal(subkey, shape=resampled.shape) * perturbation_std
 
             if verbose >= 2:
@@ -312,7 +391,8 @@ class SMCInferenceJAX(InferenceBase):
         self.posterior = self.all_particles[-1]
 
         if verbose >= 1:
-            print(f"SMCInferenceJAX: {len(self.posterior)} posterior particles after {len(self.all_particles)} rounds")
+            print(f"SMCInferenceJAX: {len(self.posterior)} posterior particles after {len(self.all_particles)} rounds "
+                  f"({nof_rounds * n_particles} total simulator calls)")
 
         return self.all_particles
 

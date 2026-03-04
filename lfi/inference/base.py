@@ -92,6 +92,7 @@ class InferenceBase:
             self,
             samples: typing.Union[None, np.ndarray] = None, # (N, Dy)
             samples_gt: typing.Union[None, np.ndarray] = None, # (N, Dy)
+            th_true: typing.Union[None, np.ndarray] = None, # (D,)
             subset_dims: typing.Union[None, list] = None,
             limits: typing.Union[None, list] = None,
             savefig: typing.Union[None, str] = None,
@@ -108,6 +109,7 @@ class InferenceBase:
             limits=limits,
             savefig=savefig,
             samples_gt=samples_gt,
+            th_true=th_true,
             title=title,
         )
         if show:

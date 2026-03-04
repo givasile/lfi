@@ -197,3 +197,34 @@ class BimodalGaussianDistractors(BaseSimulator):
         # concatenate informative and distractor parts
         y = torch.cat([yy, yy_distractors], dim=-1)
         return y
+
+
+class ShiftedBimodalGaussian(BaseSimulator):
+    """Asymmetric bimodal Gaussian simulator.
+
+    y | theta ~ 0.5 * N(theta, sigma^2 I) + 0.5 * N(theta + shift, sigma^2 I)
+
+    Sanity check for multi-observation inference:
+        obs_1 = 0     ->  single-obs posterior modes at theta=0  and theta=-shift
+        obs_2 = shift ->  single-obs posterior modes at theta=shift and theta=0
+        cross-filter  ->  only theta=0 is consistent with both observations
+    """
+    def __init__(self, dim, dim_y, sigma_noise=0.1, shift=1.5):
+        self.sigma_noise = sigma_noise
+        self.shift = shift
+        super().__init__("shifted_bimodal_gaussian", dim, dim_y)
+
+    def sample_numpy(self, theta):
+        mode = np.random.choice([0, 1], size=theta.shape[0])
+        mean = theta.copy()
+        mean[mode == 1] = theta[mode == 1] + self.shift
+        return np.random.normal(mean, self.sigma_noise)
+
+    def sample_jax(self, theta, seed):
+        key, subkey = jax.random.split(jax.random.PRNGKey(seed))
+        mode = jax.random.randint(subkey, shape=(1,), minval=0, maxval=2)
+        mean = jnp.where(mode == 0, theta, theta + self.shift)
+        key, subkey = jax.random.split(key)
+        return jax.random.multivariate_normal(
+            subkey, mean, jnp.eye(self.dim_y) * self.sigma_noise ** 2
+        )

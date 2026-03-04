@@ -4,6 +4,7 @@ from .gaussian import (
     GaussianNoiseDistractors,
     BimodalGaussian,
     BimodalGaussianDistractors,
+    ShiftedBimodalGaussian,
 )
 from .benchmark import TwoMoons, SLCP, SLCPDistractors
 from .image import ImageNoise, ImagePixelWiseTransform
@@ -15,6 +16,7 @@ __all__ = [
     "GaussianNoiseDistractors",
     "BimodalGaussian",
     "BimodalGaussianDistractors",
+    "ShiftedBimodalGaussian",
     "TwoMoons",
     "SLCP",
     "SLCPDistractors",

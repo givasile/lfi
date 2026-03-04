@@ -860,71 +860,131 @@ class R2OMCMultiObs(InferenceBase):
             r2omc.fit(budget, fit_kwargs, verbose=verbose)
 
     def sample(self, nof_samples: int = 100, sample_kwargs: Optional[dict] = None, verbose: int = 1):
-        # tidy up parameters
         default_kwargs = {
-            "sample_seed": 71,
-            "eps_3": 1.0,
+            "sample_seed":       71,
+            "eps_3":             1.0,   # passed through to single-obs R2OMC sampling
             "samples_per_region": 10,
-            "nof_samples_per_obs": nof_samples, # number of samples to draw per observation
-            "eps_4": 5.0,  # threshold to consider a sample accepted
+            "nof_samples_per_obs": nof_samples,  # candidates drawn per observation
+            "quantile":          0.5,   # fraction kept by step (i); None = skip step (i)
+            "temperature":       None,  # step (ii) softmax scale; None = auto (median of distances)
         }
         sample_kwargs = {**default_kwargs, **(sample_kwargs or {})}
         self.sample_kwargs = sample_kwargs
 
-        # gather samples from each R2OMC instance and stack them
+        nof_samples_per_obs = sample_kwargs["nof_samples_per_obs"]
+        quantile            = sample_kwargs["quantile"]
+        n_total             = nof_samples_per_obs * self.N_obs
+        n_after_filter      = int(np.floor(n_total * quantile)) if quantile is not None else n_total
+
+        # ── Sanity-check summary ───────────────────────────────────────────────
+        if verbose >= 1:
+            print(f"\n── R2OMCMultiObs sampling plan ──────────────────────────────")
+            print(f"  Observations          : {self.N_obs}")
+            print(f"  Samples per obs       : {nof_samples_per_obs}  "
+                  f"→  total candidate pool : {n_total}")
+            if quantile is not None:
+                print(f"  Step (i)  quantile    : {quantile}  "
+                      f"→  after minimax filter : ~{n_after_filter}")
+            else:
+                print(f"  Step (i)              : skipped (quantile=None)")
+            print(f"  Step (ii) resampling  : {n_after_filter} → {nof_samples} final samples")
+            if n_after_filter < nof_samples:
+                warnings.warn(
+                    f"Expected survivors after step (i) (~{n_after_filter}) is less than "
+                    f"nof_samples ({nof_samples}). Consider increasing `nof_samples_per_obs` "
+                    f"(currently {nof_samples_per_obs}) or raising `quantile` "
+                    f"(currently {quantile})."
+                )
+            print(f"─────────────────────────────────────────────────────────────\n")
+
+        # ── Draw candidates from each per-observation R2OMC ───────────────────
         th_list = []
         for i, r2omc_cur in enumerate(self.r2omc_list):
-            th_i = r2omc_cur.sample(nof_samples=sample_kwargs["nof_samples_per_obs"], sample_kwargs=sample_kwargs, verbose=verbose)
+            th_i = r2omc_cur.sample(
+                nof_samples=nof_samples_per_obs,
+                sample_kwargs=sample_kwargs,
+                verbose=verbose,
+            )
             th_list.append(th_i)
-        self.th_total = np.vstack(th_list)
+        self.th_total = np.vstack(th_list)  # (N_total, D)
 
-        # find which proposed samples are accepted
-        dist_func = self.r2omc_list[0].dist_2
-        nof_seeds_per_obs = self.r2omc_list[0].seeds.shape[0]
-        distances = np.zeros((self.N_obs, self.th_total.shape[0], nof_seeds_per_obs)) # (N_obs, N_th_total, N_seeds)
+        # ── Compute distance matrix ────────────────────────────────────────────
+        # distances[n, θ, seed] = MSE(sim(θ, seed), y_0[n])
+        dist_func      = self.r2omc_list[0].dist_2
+        nof_seeds      = self.r2omc_list[0].seeds.shape[0]
+        distances      = np.zeros((self.N_obs, self.th_total.shape[0], nof_seeds))
         for n, r2omc_cur in enumerate(self.r2omc_list):
-            distances_obs = dist_func(self.th_total, r2omc_cur.seeds, r2omc_cur.y_0) # (N_seeds, N_th_total)
-            distances_obs = distances_obs.T # (N_th_total, N_seeds)
-            distances[n] = distances_obs
-        self.distances = distances # (N_obs, N_th_total, N_seeds)
+            d = dist_func(self.th_total, r2omc_cur.seeds, r2omc_cur.y_0)  # (N_seeds, N_total)
+            distances[n] = d.T                                              # (N_total, N_seeds)
+        self.distances = distances  # (N_obs, N_total, N_seeds)
 
-        # seed_total = np.concatenate([r2omc_cur.seeds for r2omc_cur in self.r2omc_list])
-        # accepted = inside at least one proposal region for each observation
-        # th_accepted: (N_th_accept, D)
-        is_inside = distances < sample_kwargs["eps_4"] # (N_obs, N_th_total, N_seeds)
-        is_accepted = is_inside.sum(-1).prod(0) > 0 # (N_th_total,)
-        if verbose >= 2:
-            print(f"Accepted samples: {is_accepted.sum()}/{self.th_total.shape[0]}")
+        # ── Step (i): minimax quantile filter (optional) ──────────────────────
+        # score(θ) = max_n  min_seed  distances[n, θ, seed]
+        d_min  = distances.min(axis=2)          # (N_obs, N_total)  best seed per obs
+        score  = d_min.max(axis=0)              # (N_total,)        worst obs per theta
+        self.score = score
 
-        # find the weights of the accepted samples
-        weight_inside = is_inside.sum(-1).prod(0) # (N_th_total,)
-        weight_prior = np.exp(self.r2omc_list[0].prior.logpdf(self.th_total)) # (N_th_total,)
-        self.weight_inside = weight_inside
-        self.weight_prior = weight_prior
-        w_unnorm = weight_prior * weight_inside
-        self.w_unnorm = w_unnorm
-        w_norm = w_unnorm / w_unnorm.sum()
-        self.w_norm = w_norm
-
-        # select samples based on weights
-        if np.sum(w_norm > 0) < nof_samples:
-            warnings.warn("Not enough samples with positive weight. Returning top-k by weight.")
-            th_selected = self.th_total[np.argsort(w_norm)[::-1]][:nof_samples]
+        if quantile is not None:
+            threshold     = np.quantile(score, quantile)
+            mask_filter   = score <= threshold   # (N_total,)
         else:
-            indices = np.random.choice(np.arange(self.th_total.shape[0]), size=nof_samples, replace=False, p=w_norm)
-            th_selected = self.th_total[indices]
+            mask_filter   = np.ones(self.th_total.shape[0], dtype=bool)
+
+        th_filtered       = self.th_total[mask_filter]   # (N_filtered, D)
+        distances_filtered = distances[:, mask_filter, :] # (N_obs, N_filtered, N_seeds)
+        self.th_filtered  = th_filtered
 
         if verbose >= 1:
-            print(f"Step 7: {th_selected.shape[0]} samples returned ({is_accepted.sum()}/{self.th_total.shape[0]} accepted)")
-        # self.N_th_per_obs = nof_samples
-        # self.N_th_total = self.th_total.shape[0]
-        # self.N_th_accept = is_accepted.sum()
-        # self.N_th_select = th_selected.shape[0]
-        # # self.w_before = w_unnorm
-        # # self.w_after = w_norm
-        self.th_accepted = self.th_total[is_accepted]
+            print(f"Step (i) : {mask_filter.sum()}/{self.th_total.shape[0]} candidates kept "
+                  f"(quantile={quantile})")
+
+        # ── Step (ii): exponential weighted resampling ────────────────────────
+        # weight_inside(θ) = ∏_n  Σ_seed  exp(−distances[n, θ, seed] / temperature)
+        temperature = sample_kwargs["temperature"]
+        if temperature is None:
+            temperature = float(np.median(distances_filtered))
+        self.temperature = temperature
+
+        # log-sum-exp per observation for numerical stability, then sum logs across obs
+        # log_w_inside[θ] = Σ_n  log Σ_seed exp(−d[n,θ,seed] / T)
+        log_w_inside = np.sum(
+            np.log(np.sum(np.exp(-distances_filtered / temperature), axis=2) + 1e-300),
+            axis=0,
+        )  # (N_filtered,)
+
+        log_prior    = self.r2omc_list[0].prior.logpdf(th_filtered)  # (N_filtered,)
+        log_w        = log_prior + log_w_inside
+        log_w       -= log_w.max()          # shift for numerical stability
+        w            = np.exp(log_w)
+        w_norm       = w / w.sum()
+
+        self.weight_inside = np.exp(log_w_inside)
+        self.weight_prior  = np.exp(log_prior)
+        self.w_norm        = w_norm
+
+        # resample
+        n_positive = int(np.sum(w_norm > 0))
+        if n_positive < nof_samples:
+            warnings.warn(
+                f"Only {n_positive} candidates have positive weight after step (ii) "
+                f"(need {nof_samples}). Returning top-{nof_samples} by weight. "
+                f"To improve: increase `nof_samples_per_obs` (currently {nof_samples_per_obs}) "
+                f"or raise `quantile` (currently {quantile})."
+            )
+            th_selected = th_filtered[np.argsort(w_norm)[::-1]][:nof_samples]
+        else:
+            indices     = np.random.choice(len(th_filtered), size=nof_samples,
+                                           replace=False, p=w_norm)
+            th_selected = th_filtered[indices]
+
+        if verbose >= 1:
+            ess = 1.0 / np.sum(w_norm ** 2)
+            print(f"Step (ii): {nof_samples} samples returned  "
+                  f"(ESS={ess:.1f}, temperature={temperature:.4e})")
+
+        self.th_accepted = th_filtered[w_norm > 0]
         self.th_selected = th_selected
-        self.samples = th_selected
+        self.samples     = th_selected
         return th_selected
 
 

@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
 import typing
 
 def plot_pairwise_posterior(
@@ -11,7 +12,8 @@ def plot_pairwise_posterior(
         title: typing.Optional[str]=None,
         savefig: typing.Optional[str]=None,
         samples_gt: typing.Optional[np.ndarray]=None,
-        max_dims_to_plot: int = 10 
+        th_true: typing.Optional[np.ndarray]=None,
+        max_dims_to_plot: int = 10
 ):
     """
     Plots pairwise relationships and marginal distributions of posterior samples.
@@ -92,6 +94,29 @@ def plot_pairwise_posterior(
                     g.axes[i,j].set_ylim(limits)
                 else:
                     g.axes[i,j].set_xlim(limits)
+
+    # Overlay the true parameter as a red star on every subplot
+    if th_true is not None:
+        th_subset = [th_true[i] for i in subset_dims]
+        n = len(selected_vars)
+        for row in range(n):
+            for col in range(n):
+                ax = g.axes[row, col]
+                if row == col:
+                    ax.axvline(th_subset[col], color="red", ls="--", lw=1.5, zorder=5)
+                else:
+                    ax.scatter(th_subset[col], th_subset[row],
+                               marker="*", color="red", s=200, zorder=6)
+
+        # Add a "True θ" entry to the seaborn legend
+        star_handle = mlines.Line2D([], [], marker="*", color="red", markersize=10,
+                                    linestyle="None", label="True θ")
+        if g.legend is not None:
+            handles = list(g.legend.legend_handles)
+            labels  = [t.get_text() for t in g.legend.texts]
+            g.legend.remove()
+            g.fig.legend(handles + [star_handle], labels + ["True θ"],
+                         loc="upper right", bbox_to_anchor=(1.0, 1.0))
 
     # Save the figure if a file path is specified
     if savefig is not None:

@@ -1,32 +1,60 @@
 """
-Step-by-step R2OMC running example.
-Problem: theta ~ Uniform(-3, 3)^2, y = theta + N(0, 0.1), obs = (0, 0).
-Used as a reference script while refining r2omc.py.
+R2OMC on the Gaussian noise problem.
+Problem: theta ~ Uniform(-3, 3)^2, y = theta + N(0, 0.1), obs = (1.5, 1.5).
+True posterior: N((1.5, 1.5), 0.1^2 I).
 """
 import numpy as np
 import jax
+import matplotlib.pyplot as plt
 
 from lfi.priors import UniformPrior
 from lfi.simulators import GaussianNoise
 from lfi.inference.r2omc import R2OMC
-from lfi.inference.sbi import NPECSingleRound
+from lfi.evaluation import c2st
 
 # ── Setup ─────────────────────────────────────────────────────────────────────
 
-KEY      = jax.random.PRNGKey(21)
-prior    = UniformPrior(dim=2, low=-3, high=3)
-sim      = GaussianNoise(dim=2, dim_y=2, sigma_noise=0.1)
-obs      = np.ones((1, 2), dtype=np.float32) * 1.5
-BUDGET   = 200     # small for fast iteration; bump up for quality
+KEY        = jax.random.PRNGKey(21)
+DIM        = 2
+SIGMA      = 0.1
+BUDGET     = 2_000
+NOF_SAMPLES = 500
+
+prior  = UniformPrior(dim=DIM, low=-3, high=3)
+sim    = GaussianNoise(dim=DIM, dim_y=DIM, sigma_noise=SIGMA)
+obs    = np.ones((1, DIM), dtype=np.float32) * 1.5
+
+# ground truth: N((1.5, 1.5), sigma^2 I)
+rng = np.random.default_rng(42)
+gt_samples = rng.normal(loc=1.5, scale=SIGMA, size=(NOF_SAMPLES, DIM)).astype(np.float32)
+
+# ── Fit & sample ──────────────────────────────────────────────────────────────
 
 method = R2OMC(prior, sim, obs)
+samples = method.fit_and_sample(
+    budget=BUDGET,
+    nof_samples=NOF_SAMPLES,
+    fit_kwargs={"key": KEY},
+    sample_kwargs={},
+)
 
-# -- All steps together (for reference) ───────────────────────────────────────────
-for v in range(3):
-    print(f"\n=== verbose={v} ===")
-    samples = method.fit_and_sample(budget=BUDGET, nof_samples=100, fit_kwargs={"key": KEY}, sample_kwargs={}, verbose=v)
+# ── Evaluation ────────────────────────────────────────────────────────────────
 
+score = c2st(gt_samples, samples)
+print(f"\nC2ST: {score:.3f}  (0.5 = perfect, 1.0 = completely different)")
+print(f"posterior mean : {samples.mean(0).round(3)}  (true: [1.5, 1.5])")
+print(f"posterior std  : {samples.std(0).round(3)}   (true: [{SIGMA}, {SIGMA}])")
 
+# ── Plot ──────────────────────────────────────────────────────────────────────
+
+method.plot_posterior_samples(
+    samples=samples,
+    samples_gt=gt_samples,
+    limits=[-3, 3],
+    title=f"R2OMC — GaussianNoise  (C2ST={score:.3f})",
+    show=False,
+)
+plt.show(block=False)
 
 
 # # ── Step 1: find informative dims ─────────────────────────────────────────────
