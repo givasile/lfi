@@ -34,7 +34,7 @@ SEED        = 42
 DIM         = 4
 DIM_Y       = 20
 BUDGET      = 1_000
-NOF_SAMPLES = 100
+NOF_SAMPLES = 50
 
 prior = LogNormal(dim=DIM, mean=[-0.125, -3.0, -0.125, -3.0], std=0.5)
 sim   = LotkaVolterra(dim=DIM, dim_y=DIM_Y)
