@@ -730,6 +730,11 @@ class R2OMC(InferenceBase):
 
         sample_kwargs reference
         -----------------------
+            return_th_star (bool, default False)
+                If True, return th_star directly (one per box) skipping box
+                sampling entirely. nof_samples must equal nof_seeds_accept *
+                nof_th0. Useful when the prior support does not cover the full
+                box (e.g. LogNormal prior with blind boxes).
             sample_seed (int, default 71)
                 Random seed for reproducible sampling.
             eps_3 (float, default 1.0)
@@ -749,6 +754,7 @@ class R2OMC(InferenceBase):
             samples: np.ndarray of shape (nof_samples, D).
         """
         default_kwargs = {
+            "return_th_star": False,
             "sample_seed": 71,
             "eps_3": 1.0,
             "samples_per_region": 10,
@@ -756,6 +762,19 @@ class R2OMC(InferenceBase):
         }
         sample_kwargs = {**default_kwargs, **(sample_kwargs or {})}
         self.sample_kwargs = sample_kwargs
+
+        if sample_kwargs["return_th_star"]:
+            nof_boxes = self.nof_seeds_accept * self.nof_th0
+            if nof_samples != nof_boxes:
+                raise ValueError(
+                    f"return_th_star=True requires nof_samples == nof_seeds_accept * nof_th0 "
+                    f"({nof_boxes}), but got nof_samples={nof_samples}. "
+                    f"Pass nof_samples=method.nof_seeds_accept * method.nof_th0."
+                )
+            if verbose >= 1:
+                print(f"Step 7: returning {nof_boxes} th_star samples (one per box)")
+            self.samples = self.th_star.reshape(-1, self.D)
+            return self.samples
 
         if verbose >= 2:
             print("\nStep 7: Sample from the boxes")
