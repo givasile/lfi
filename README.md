@@ -6,11 +6,11 @@ The package includes classic ABC methods, neural posterior estimators (NPE, FMPE
 
 > **R2OMC paper:** [arxiv.org/abs/2511.13394](https://arxiv.org/abs/2511.13394)
 
-```mermaid
-graph LR;
-    A[Modeling:<br>Simulator · Prior · Observation] --> B[Inference:<br>R2OMC · NPE · ABC · ...];
-    B --> C[Analysis:<br>Posterior samples · Plots];
-    B --> D[Evaluation:<br>C2ST · other metrics];
+```mermaid 
+graph LR; 
+    A[🚀 Modeling:<br><br>- Simulator<br>- Prior<br>- Observation] --> B[🚀 Inference<br><br>- Inference Method];
+    B --> C[🚀 Analysis<br><br> -Plot posterior samples];
+    B --> D[🚀 Evaluation<br><br>- Ground Truth<br>- Metrics];
 ```
 
 ## Installation
