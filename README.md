@@ -12,10 +12,10 @@ The package has a lightweight base install (JAX + R2OMC) with optional extras fo
 |---|---|---|
 | Base (R2OMC / JAX) | `pip install lfi` | jax, optax, scipy, sklearn, ... |
 | ELFI-based inference | `pip install lfi[elfi]` | + elfi |
-| Torch CPU | see below | + torch (cpu), sbi |
-| Torch GPU | `pip install lfi[torch-gpu]` | + torch (gpu), sbi |
-| Full CPU | see below | + torch (cpu), sbi, elfi |
-| Full GPU | `pip install lfi[full-gpu]` | + torch (gpu), sbi, elfi |
+| Torch CPU | see below | + torch (cpu), torchvision, sbi |
+| Torch GPU | `pip install lfi[torch-gpu]` | + torch (gpu), torchvision, sbi |
+| Full CPU | see below | + torch (cpu), torchvision, sbi, elfi |
+| Full GPU | `pip install lfi[full-gpu]` | + torch (gpu), torchvision, sbi, elfi |
 
 For **CPU-only torch** variants, pre-install torch from the CPU wheel before installing `lfi`:
 
@@ -47,6 +47,26 @@ conda run -n lfi-full-cpu pip install -e ".[full-cpu]"
 ```
 
 > **Note on GPU JAX:** the base install uses CPU JAX. To enable GPU acceleration for R2OMC, run `pip install jax[cuda12]` after installing `lfi`.
+
+## R2OMC Example Scripts
+
+Ready-to-run scripts are in `examples/scripts/`. All require only the **base** install except the MNIST example which additionally requires the **torch** extras.
+
+| Script | Problem | Prior | Simulator | Notes |
+|--------|---------|-------|-----------|-------|
+| `r2omc_gaussian_noise.py` | Gaussian noise | Uniform | `GaussianNoise` | Simplest baseline |
+| `r2omc_two_moons.py` | Two Moons | Uniform | `TwoMoons` | Non-convex posterior |
+| `r2omc_slcp.py` | SLCP | Uniform | `SLCP` | Single & multi-obs (3×) |
+| `r2omc_slcp_distractors.py` | SLCP + distractors | Uniform | `SLCPDistractors` | Tests informative-dim detection |
+| `r2omc_lotka_volterra.py` | Lotka-Volterra ODE | LogNormal | `LotkaVolterra` | Requires base install |
+| `r2omc_mnist.py` | MNIST image denoising | Uniform | `ImagePixelWiseTransform` | Requires `lfi[torch-cpu]` or `lfi[torch-gpu]` |
+
+Run any script from the repo root:
+
+```bash
+python examples/scripts/r2omc_slcp.py
+python examples/scripts/r2omc_mnist.py   # needs torch extras
+```
 
 ## How It Works
 

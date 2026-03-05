@@ -38,12 +38,14 @@ dependencies = [
 #   pip install lfi[torch-cpu]
 torch-cpu = [
   "torch",
+  "torchvision",
   "sbi",
 ]
 # GPU torch:
 #   pip install lfi[torch-gpu]
 torch-gpu = [
   "torch",
+  "torchvision",
   "sbi",
 ]
 # ELFI-based inference:
@@ -56,6 +58,7 @@ elfi = [
 #   pip install lfi[full-cpu]
 full-cpu = [
   "torch",
+  "torchvision",
   "sbi",
   "elfi",
 ]
@@ -63,6 +66,7 @@ full-cpu = [
 #   pip install lfi[full-gpu]
 full-gpu = [
   "torch",
+  "torchvision",
   "sbi",
   "elfi",
 ]
