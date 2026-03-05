@@ -82,35 +82,6 @@ class ImageNoise(BaseSimulator):
 
         kernel = return_kernel(kernel_type="checkerboard", size=5, sigma=self.sigma_blur)
         blurred = jax.scipy.signal.convolve2d(image, kernel, mode='same', boundary='fill')
-        # blurred = image
-
-        # Alternative invertible transformations (uncomment to use):
-
-        # 1. Pixel scale compression: [0,1] -> [0.45,0.55]
-        # Invertible: y = x/10 + 0.5, inverse: x = 10*(y - 0.5)
-        # blurred = blurred / 10.0 + 0.5
-
-        # 2. Gamma correction (power law): y = x^gamma
-        # Invertible: y = x^gamma, inverse: x = y^(1/gamma)
-        # gamma = 0.8  # < 1 brightens, > 1 darkens
-        # blurred = jnp.power(jnp.clip(blurred, 0, 1), gamma)
-
-        # 3. Sigmoid contrast enhancement: y = 1/(1+exp(-k*(x-0.5)))
-        # Approximately invertible: x = 0.5 + (1/k)*log(y/(1-y))
-        # k = 5.0  # steepness parameter
-        # blurred = 1.0 / (1.0 + jnp.exp(-k * (blurred - 0.5)))
-
-        # 4. Linear contrast and brightness: y = a*x + b
-        # Invertible: y = a*x + b, inverse: x = (y-b)/a
-        # a, b = 0.2, 0.5  # contrast and brightness
-        # blurred = a * blurred + b
-        # blurred = blurred.at[0, 0].set(0.0)
-
-        # 5. Histogram equalization approximation (piecewise linear)
-        # Approximately invertible through lookup table
-        # breakpoints = jnp.array([0.0, 0.3, 0.7, 1.0])
-        # values = jnp.array([0.0, 0.6, 0.8, 1.0])
-        # blurred = jnp.interp(blurred, breakpoints, values)
 
         # Add Gaussian noise
         key, subkey = jax.random.split(key)
@@ -167,33 +138,8 @@ class ImagePixelWiseTransform(BaseSimulator):
         # Reshape to image dimensions
         image = theta.reshape((self.H, self.W))
 
-        # Invertible transformations (uncomment to use):
-
-        # 1. Pixel scale compression: [0,1] -> [0.45,0.55]
-        # Invertible: y = x/10 + 0.5, inverse: x = 10*(y - 0.5)
+        # Pixel scale compression: [0,1] -> [0.45, 0.55]
         image = image / 10.0 + 0.5
-
-        # 2. Gamma correction (power law): y = x^gamma
-        # Invertible: y = x^gamma, inverse: x = y^(1/gamma)
-        # gamma = 0.8  # < 1 brightens, > 1 darkens
-        # image = jnp.power(jnp.clip(image, 0, 1), gamma)
-
-        # 3. Sigmoid contrast enhancement: y = 1/(1+exp(-k*(x-0.5)))
-        # Approximately invertible: x = 0.5 + (1/k)*log(y/(1-y))
-        # k = 5.0  # steepness parameter
-        # image = 1.0 / (1.0 + jnp.exp(-k * (image - 0.5)))
-
-        # 4. Linear contrast and brightness: y = a*x + b
-        # Invertible: y = a*x + b, inverse: x = (y-b)/a
-        # a, b = 0.2, 0.5  # contrast and brightness
-        # image = a * image + b
-        # image = image.at[0, 0].set(0.0)
-
-        # 5. Histogram equalization approximation (piecewise linear)
-        # Approximately invertible through lookup table
-        # breakpoints = jnp.array([0.0, 0.3, 0.7, 1.0])
-        # values = jnp.array([0.0, 0.6, 0.8, 1.0])
-        # image = jnp.interp(image, breakpoints, values)
 
         # Add Gaussian noise
         key, subkey = jax.random.split(key)

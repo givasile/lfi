@@ -83,53 +83,47 @@ graph LR;
 Simple Example
 
 ```python
-import lfi
-import torch
 import numpy as np
+from lfi.priors import UniformPrior
+from lfi.simulators import GaussianNoise
+from lfi.inference.r2omc import R2OMC
 
 # modeling
-prior = lfi.priors.UniformPrior(dim=2, low=-1, high=1)
-simulator = lfi.simulators.GaussianNoise(dim=2, dim_y=2, sigma_noise=0.1)
+prior      = UniformPrior(dim=2, low=-1, high=1)
+simulator  = GaussianNoise(dim=2, dim_y=2, sigma_noise=0.1)
 observation = np.array([[0.5, 0.5]])
 
 # inference
-method = lfi.inference.from_sbi.NPE_C_SingleRound(
-    prior=prior,
-    simulator=simulator,
-    observation=observation
-)
-samples_inferred = method.fit_and_sample(budget=1000, nof_samples=100)
+method  = R2OMC(prior=prior, simulator=simulator, observation=observation)
+samples = method.fit_and_sample(budget=1000, nof_samples=100)
 
 # analysis
-method.plot_posterior_samples(samples_inferred)
-
-# evaluation
-samples_gt = lfi.ground_truth.Gaussian(
-    dim=2,
-    mu=np.array([0.5, 0.5]),
-    sigma=np.array([[0.1, 0.1]])
-).sample(100)
-
-lfi.evaluation.c2st(samples_inferred, samples_gt)
+method.plot_posterior_samples(th_true=np.array([0.5, 0.5]))
 ```
 
 ## Simulator
 
 Example usage:
 ```python
-simulator = lfi.simulators.GaussianNoise(sigma_noise=0.1)
+from lfi.simulators import GaussianNoise
+simulator = GaussianNoise(dim=2, dim_y=2, sigma_noise=0.1)
 ```
 
-Ready-to-use simulators are available in `lfi/simulators.py`
+Ready-to-use simulators are available in `lfi/simulators/`:
 
-| **Name**         | **Description**
-|------------------|------------------------
-| `gaussian_noise` | $y \sim \theta + \epsilon$
-| `bimodal_gaussian`| $y \sim 0.5 \mathcal{N}(y; \theta-3, \sigma I) + \mathcal{N}(y; \theta + 3, \sigma I)$
+| **Class** | **Description** |
+|-----------|-----------------|
+| `GaussianNoise` | $y = \theta + \epsilon$, $\epsilon \sim \mathcal{N}(0, \sigma^2 I)$ |
+| `BimodalGaussian` | $y \sim 0.5\,\mathcal{N}(\theta-3, \sigma I) + 0.5\,\mathcal{N}(\theta+3, \sigma I)$ |
+| `TwoMoons` | Two-moons benchmark (2D) |
+| `SLCP` | Simple Likelihood Complex Posterior (5D $\to$ 2D) |
+| `SLCPDistractors` | SLCP with additional noise output dims |
+| `LotkaVolterra` | Predator-prey ODE (4 params $\to$ 20 time-series outputs) |
+| `ImageNoise` | Clean image $\to$ checkerboard-convolved + noisy image |
+| `ImagePixelWiseTransform` | Clean image $\to$ pixel-compressed + noisy image |
 
-- To implement a simulator form scratch, inherit the `BaseSimulator` class and implement the required methods
-- There are four methods that you can impelement `sample_numpy`, `sample_pytorch`, `sample_jax` and `return_elfi_callable`.
-- There is no need to implement all of them. if you want to use a simulator with a specific inference method, you need to implement the corresponding method. Check the compatibility table below.
+- Inherit `BaseSimulator` and implement `sample_jax` (required for R2OMC) and optionally `sample_numpy`, `sample_pytorch`.
+- There is no need to implement all methods — only the one used by your chosen inference backend.
 
 Complatibility table:
 
@@ -178,7 +172,7 @@ This simple interface makes it easy to use different LFI methods unders a unifie
 
 #### Priors
 
-Should inherit the `BasePrior` class (./lfi.priors.py) and implement:
+Should inherit the `BasePrior` class (`lfi/priors.py`) and implement:
 
 - `sample_numpy`: `def sample_numpy(self, nof_samples:int) -> np.ndarray:`
 
@@ -198,12 +192,12 @@ Implemented Priors:
 
 #### Simulators
 
-Should inherit the `BaseSimulator` class (./lfi/simulators.py) and implement:
+Should inherit the `BaseSimulator` class (`lfi/simulators/base.py`) and implement:
 
-- `simulate_numpy`: `def simulate_numpy(self, theta: np.ndarray) -> np.ndarray:`
-- `simulate_pytorch`: `def simulate_pytorch(self, theta: torch.Tensor) -> torch.Tensor:`
-- `simulate_jax`: `def simulate_jax(self, theta: jnp.ndarray, keys: List[PRNGKey]) -> jnp.ndarray:`
-- `return_elfi_callable`: returns a callable with the signature `elfi_simulator(*th_params, batch_size=1, random_state=None): -> np.ndarray`, i.e., it takes D `elfi.Prior` nodes as first arguments, then `batch_size` and `random_state` as keywords arguments, and returns a numpy array of shape `(batch_size, D_y)`.
+- `sample_numpy`: `def sample_numpy(self, theta: np.ndarray) -> np.ndarray:`
+- `sample_pytorch`: `def sample_pytorch(self, theta: torch.Tensor) -> torch.Tensor:`
+- `sample_jax`: `def sample_jax(self, theta: jnp.ndarray, seed: int) -> jnp.ndarray:`
+- `return_elfi_callable`: returns a callable compatible with ELFI's model graph.
 
 Implemented simulators:
 
@@ -214,30 +208,7 @@ Implemented simulators:
 
 #### Observations
 
-A `numpy.ndarray` of shape `(N, D_y)` where `N` is the number of observations and `D_y` is the dimensionality of the observations. Currently, most methods support a single observation.
-
-A list of implemented observations can be found in `./lfi/observations.py`.
-
-| **Observation**   | **Description**   |  **Name**
-|-------------------|-------------------|-----------
-| Zeros             | Zero vector       | `zeros`
-| FromList          | List of observations  | `from_list`
-
-**Example**
-
-```python
-import lfi
-
-# Define the prior
-prior = lfi.priors.Uniform(low=-5, high=5, dim=2)
-
-# Define the simulator
-simulator = lfi.simulators.GaussianNoise(sigma_noise=0.1)
-
-# Define the observation
-observation = lfi.observations.Zeros()
-observation.sample(nof_obs=1, dim_y=2)
-```
+Pass observations as a `numpy.ndarray` of shape `(N, D_y)`, where `N` is the number of independent observations and `D_y` is the output dimension. For a single observation use shape `(1, D_y)`.
 
 #### Inference
  `method.fit_and_sample(budget, nof_samples, fit_kwargs={}, sample_kwargs={})`
