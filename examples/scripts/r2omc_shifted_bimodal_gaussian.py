@@ -1,6 +1,4 @@
 """
-Sanity check for R2OMCMultiObs cross-filtering.
-
 Simulator
 ---------
     y | theta ~ 0.5 * N(theta, sigma^2) + 0.5 * N(theta + shift, sigma^2)

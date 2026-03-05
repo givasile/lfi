@@ -1,5 +1,5 @@
 """
-R2OMC on the SLCP (Simple Likelihood, Complex Posterior) problem.
+R2OMC on the SLCP-Distractors problem.
 
 Simulator
 ---------
@@ -8,37 +8,38 @@ Simulator
     s1, s2  = theta[2]^2, theta[3]^2
     rho     = tanh(theta[4])
     Sigma   = [[s1^2, rho*s1*s2], [rho*s1*s2, s2^2]]
-    y | theta ~ N(mu, Sigma)          (dim_y = 2)
 
-Because the covariance is determined by theta[2:5], two draws from the same
-theta can look very different.  A single observation therefore leaves a wide
-posterior; combining multiple observations from the same theta constrains it
-much more tightly.
+    y_informative | theta ~ N(mu, Sigma)           (dim_y = 2)
+    y_distractors          ~ noise (independent of theta)
+    y = [y_informative, y_distractors]             (dim_y = 2 + DIM_DISTRACTORS)
+
+R2OMC Step 1 automatically detects the 2 informative output dims and ignores
+the distractors, so inference accuracy should match plain SLCP.
 """
 import numpy as np
-import jax
 
 from lfi.priors import UniformPrior
-from lfi.simulators import SLCP
+from lfi.simulators import SLCPDistractors
 from lfi.inference.r2omc import R2OMC, R2OMCMultiObs
 
 # ── Setup ─────────────────────────────────────────────────────────────────────
 
-SEED        = 42
-DIM         = 5
-DIM_Y       = 2
-N_OBS       = 3
-BUDGET      = 5_000
+SEED            = 42
+DIM             = 5
+DIM_DISTRACTORS = 8                    # noise output dims
+DIM_Y           = 2 + DIM_DISTRACTORS  # total output dim = 10
+N_OBS           = 3
+BUDGET          = 5_000
 
 prior = UniformPrior(dim=DIM, low=-3, high=3)
-sim   = SLCP(dim=DIM, dim_y=DIM_Y)
+sim   = SLCPDistractors(dim=DIM, dim_y=DIM_Y, dim_distractors=DIM_DISTRACTORS)
 
 # ── Sample theta_true and N_OBS independent observations ──────────────────────
 
 np.random.seed(SEED)
 theta_true = prior.sample_numpy(1)                                  # (1, 5)
-obs_list   = [sim.sample_numpy(theta_true) for _ in range(N_OBS)]  # list of (1, 2)
-obs_multi  = np.concatenate(obs_list, axis=0)                       # (N_OBS, 2)
+obs_list   = [sim.sample_numpy(theta_true) for _ in range(N_OBS)]  # list of (1, 10)
+obs_multi  = np.concatenate(obs_list, axis=0)                       # (N_OBS, 10)
 
 print(f"true theta   : {theta_true[0].round(3)}")
 for i, obs in enumerate(obs_list):
@@ -54,14 +55,9 @@ samples_single = method_single.fit_and_sample(
     fit_kwargs={"pcg_to_keep": 0.5},
     sample_kwargs={},
 )
+print(f"  informative dims detected: {method_single.informative_dims.tolist()}")
 
 # ── Multi-observation R2OMC ────────────────────────────────────────────────────
-# Fit once, then sample with two budgets to compare coverage vs accuracy.
-#
-# quantile=0.05 keeps only the top 5% of candidates by minimax score
-# (score = max_obs min_seed dist), discarding those inconsistent with any
-# single observation.  From the 15 000-candidate pool this yields ~750
-# candidates all genuinely consistent with all N_OBS observations.
 
 print(f"\n── Multi-observation ({N_OBS} obs) ──")
 method_multi = R2OMCMultiObs(prior, sim, obs_multi)
@@ -82,28 +78,28 @@ samples_750 = method_multi.sample(nof_samples=750, sample_kwargs=SAMPLE_KWARGS)
 
 method_single.plot_posterior_samples(
     th_true=theta_true[0],
-    title="SLCP — R2OMC — 1 observation",
+    title=f"SLCP+{DIM_DISTRACTORS} distractors — R2OMC — 1 observation",
     limits=[-3, 3],
 )
 
 method_multi.plot_posterior_samples(
     samples=samples_50,
     th_true=theta_true[0],
-    title=f"SLCP — R2OMCMultiObs — {N_OBS} obs — top 50",
+    title=f"SLCP+{DIM_DISTRACTORS} distractors — R2OMCMultiObs — {N_OBS} obs — top 50",
     limits=[-3, 3],
 )
 
 method_multi.plot_posterior_samples(
     samples=samples_300,
     th_true=theta_true[0],
-    title=f"SLCP — R2OMCMultiObs — {N_OBS} obs — top 300",
+    title=f"SLCP+{DIM_DISTRACTORS} distractors — R2OMCMultiObs — {N_OBS} obs — top 300",
     limits=[-3, 3],
 )
 
 method_multi.plot_posterior_samples(
     samples=samples_750,
     th_true=theta_true[0],
-    title=f"SLCP — R2OMCMultiObs — {N_OBS} obs — top 750",
+    title=f"SLCP+{DIM_DISTRACTORS} distractors — R2OMCMultiObs — {N_OBS} obs — top 750",
     limits=[-3, 3],
 )
 

@@ -942,7 +942,9 @@ class R2OMCMultiObs(InferenceBase):
         # weight_inside(θ) = ∏_n  Σ_seed  exp(−distances[n, θ, seed] / temperature)
         temperature = sample_kwargs["temperature"]
         if temperature is None:
-            temperature = float(np.median(distances_filtered))
+            d_min_filtered = distances_filtered.min(axis=2)          # (N_obs, N_filtered)
+            eps_1_mean     = float(np.mean([r.eps_1 for r in self.r2omc_list]))
+            temperature    = float(max(d_min_filtered.mean(), eps_1_mean))
         self.temperature = temperature
 
         # log-sum-exp per observation for numerical stability, then sum logs across obs
