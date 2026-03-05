@@ -1,6 +1,17 @@
 # LFI
 
-*A Python package for likelihood-free inference (LFI), with a focus on [R2OMC](https://arxiv.org/abs/2501.18932).*
+`lfi` is a Python package for **simulation-based (likelihood-free) inference (SBI/LFI)**. It provides a unified interface for defining simulators and priors, running inference, and analysing posterior samples — making it easy to compare methods or build new ones.
+
+The package includes classic ABC methods, neural posterior estimators (NPE, FMPE via [sbi](https://github.com/sbi-dev/sbi)), and its primary contribution: **R2OMC**, a gradient-based optimisation-then-sampling approach that scales to high-dimensional simulators and automatically identifies informative output dimensions.
+
+> **R2OMC paper:** [arxiv.org/abs/2511.13394](https://arxiv.org/abs/2511.13394)
+
+```mermaid
+graph LR;
+    A[Modeling:<br>Simulator · Prior · Observation] --> B[Inference:<br>R2OMC · NPE · ABC · ...];
+    B --> C[Analysis:<br>Posterior samples · Plots];
+    B --> D[Evaluation:<br>C2ST · other metrics];
+```
 
 ## Installation
 
