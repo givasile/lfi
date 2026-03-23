@@ -1,0 +1,217 @@
+\begin{thebibliography}{28}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Lintusaari et~al.(2017)Lintusaari, Gutmann, Dutta, Kaski, and
+  Corander]{lintusaari2017fundamentals}
+Jarno Lintusaari, Michael~U Gutmann, Ritabrata Dutta, Samuel Kaski, and Jukka
+  Corander.
+\newblock Fundamentals and recent developments in approximate bayesian
+  computation.
+\newblock \emph{Systematic biology}, 66\penalty0 (1):\penalty0 e66--e82, 2017.
+
+\bibitem[Sisson et~al.(2018)Sisson, Fan, and Beaumont]{sisson2018handbook}
+Scott~A Sisson, Yanan Fan, and Mark Beaumont.
+\newblock \emph{Handbook of approximate Bayesian computation}.
+\newblock CRC press, 2018.
+
+\bibitem[Cranmer et~al.(2020)Cranmer, Brehmer, and Louppe]{cranmer2020frontier}
+Kyle Cranmer, Johann Brehmer, and Gilles Louppe.
+\newblock The frontier of simulation-based inference.
+\newblock \emph{Proceedings of the National Academy of Sciences}, 117\penalty0
+  (48):\penalty0 30055--30062, 2020.
+
+\bibitem[Deistler et~al.(2025)Deistler, Boelts, Steinbach, Moss, Moreau,
+  Gloeckler, Rodrigues, Linhart, Lappalainen, Miller,
+  et~al.]{deistler2025simulation}
+Michael Deistler, Jan Boelts, Peter Steinbach, Guy Moss, Thomas Moreau, Manuel
+  Gloeckler, Pedro~LC Rodrigues, Julia Linhart, Janne~K Lappalainen,
+  Benjamin~Kurt Miller, et~al.
+\newblock Simulation-based inference: A practical guide.
+\newblock \emph{arXiv preprint arXiv:2508.12939}, 2025.
+
+\bibitem[Marin et~al.(2012)Marin, Pudlo, Robert, and Ryder]{Marin2012}
+Jean-Michel Marin, Pierre Pudlo, Christian~P. Robert, and Robin~J. Ryder.
+\newblock Approximate bayesian computational methods.
+\newblock \emph{Statistics and Computing}, 22\penalty0 (6):\penalty0
+  1167--1180, 2012.
+\newblock ISSN 1573-1375.
+\newblock \doi{10.1007/s11222-011-9288-2}.
+\newblock URL \url{https://doi.org/10.1007/s11222-011-9288-2}.
+
+\bibitem[Chen et~al.(2021)Chen, Zhang, Gutmann, Courville, and Zhu]{Chen2021a}
+Y.~Chen, D.~Zhang, M.~U. Gutmann, A.~Courville, and Z.~Zhu.
+\newblock Neural approximate sufficient statistics for implicit models.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}, 2021.
+\newblock URL \url{https://openreview.net/forum?id=SRDuJssQud}.
+
+\bibitem[Chen et~al.(2023)Chen, Gutmann, and Weller]{Chen2023}
+Yanzhi Chen, Michael~U. Gutmann, and Adrian Weller.
+\newblock Is learning summary statistics necessary for likelihood-free
+  inference?
+\newblock In Andreas Krause, Emma Brunskill, Kyunghyun Cho, Barbara Engelhardt,
+  Sivan Sabato, and Jonathan Scarlett, editors, \emph{Proceedings of the 40th
+  International Conference on Machine Learning}, volume 202 of
+  \emph{Proceedings of Machine Learning Research}, pages 4529--4544. PMLR,
+  23--29 Jul 2023.
+\newblock URL \url{https://proceedings.mlr.press/v202/chen23h.html}.
+
+\bibitem[Wood(2010)]{wood2010statistical}
+Simon~N Wood.
+\newblock Statistical inference for noisy nonlinear ecological dynamic systems.
+\newblock \emph{Nature}, 466\penalty0 (7310):\penalty0 1102--1104, 2010.
+
+\bibitem[Price et~al.(2018)Price, Drovandi, Lee, and Nott]{price2018bayesian}
+Leah~F Price, Christopher~C Drovandi, Anthony Lee, and David~J Nott.
+\newblock Bayesian synthetic likelihood.
+\newblock \emph{Journal of Computational and Graphical Statistics}, 27\penalty0
+  (1):\penalty0 1--11, 2018.
+
+\bibitem[Thomas et~al.(2022)Thomas, Dutta, Corander, Kaski, and
+  Gutmann]{thomas2022likelihood}
+Owen Thomas, Ritabrata Dutta, Jukka Corander, Samuel Kaski, and Michael~U
+  Gutmann.
+\newblock Likelihood-free inference by ratio estimation.
+\newblock \emph{Bayesian Analysis}, 17\penalty0 (1):\penalty0 1--31, 2022.
+
+\bibitem[Durkan et~al.(2020)Durkan, Murray, and
+  Papamakarios]{durkan2020contrastive}
+Conor Durkan, Iain Murray, and George Papamakarios.
+\newblock On contrastive learning for likelihood-free inference.
+\newblock In \emph{International conference on machine learning}, pages
+  2771--2781. PMLR, 2020.
+
+\bibitem[Greenberg et~al.(2019)Greenberg, Nonnenmacher, and
+  Macke]{greenberg2019automatic}
+David Greenberg, Marcel Nonnenmacher, and Jakob Macke.
+\newblock Automatic posterior transformation for likelihood-free inference.
+\newblock In \emph{International Conference on Machine Learning}, pages
+  2404--2414. PMLR, 2019.
+
+\bibitem[Papamakarios and Murray(2016)]{papamakarios2016fast}
+George Papamakarios and Iain Murray.
+\newblock Fast $\varepsilon$-free inference of simulation models with bayesian
+  conditional density estimation.
+\newblock \emph{Advances in neural information processing systems}, 29, 2016.
+
+\bibitem[Radev et~al.(2020)Radev, Mertens, Voss, Ardizzone, and
+  K{\"o}the]{radev2020bayesflow}
+Stefan~T Radev, Ulf~K Mertens, Andreas Voss, Lynton Ardizzone, and Ullrich
+  K{\"o}the.
+\newblock Bayesflow: Learning complex stochastic models with invertible neural
+  networks.
+\newblock \emph{IEEE transactions on neural networks and learning systems},
+  33\penalty0 (4):\penalty0 1452--1466, 2020.
+
+\bibitem[Wildberger et~al.(2023)Wildberger, Dax, Buchholz, Green, Macke, and
+  Sch{\"o}lkopf]{wildberger2023flow}
+Jonas Wildberger, Maximilian Dax, Simon Buchholz, Stephen Green, Jakob~H Macke,
+  and Bernhard Sch{\"o}lkopf.
+\newblock Flow matching for scalable simulation-based inference.
+\newblock \emph{Advances in Neural Information Processing Systems},
+  36:\penalty0 16837--16864, 2023.
+
+\bibitem[Papamakarios et~al.(2019)Papamakarios, Sterratt, and
+  Murray]{papamakarios2019sequential}
+George Papamakarios, David Sterratt, and Iain Murray.
+\newblock Sequential neural likelihood: Fast likelihood-free inference with
+  autoregressive flows.
+\newblock In \emph{The 22nd international conference on artificial intelligence
+  and statistics}, pages 837--848. PMLR, 2019.
+
+\bibitem[Saltelli et~al.(2008)Saltelli, Ratto, Andres, Campolongo, Cariboni,
+  Gatelli, Saisana, and Tarantola]{Saltelli2008}
+A.~Saltelli, M.~Ratto, T.~Andres, F.~Campolongo, J.~Cariboni, D.~Gatelli,
+  M.~Saisana, and S.~Tarantola.
+\newblock \emph{Global Sensitivity Analysis: The Primer}.
+\newblock John Wiley \& Sons, 2008.
+
+\bibitem[Monsalve-Bravo et~al.(2022)Monsalve-Bravo, Lawson, Drovandi, Burrage,
+  Brown, Baker, Vollert, Mengersen, McDonald-Madden, and
+  Adams]{MonsalveBravo2022}
+Gloria~M. Monsalve-Bravo, Brodie A.~J. Lawson, Christopher Drovandi, Kevin
+  Burrage, Kevin~S. Brown, Christopher~M. Baker, Sarah~A. Vollert, Kerrie
+  Mengersen, Eve McDonald-Madden, and Matthew~P. Adams.
+\newblock Analysis of sloppiness in model simulations: Unveiling parameter
+  uncertainty when mathematical models are fitted to data.
+\newblock \emph{Science Advances}, 8\penalty0 (38):\penalty0 eabm5952, 2022.
+\newblock \doi{10.1126/sciadv.abm5952}.
+\newblock URL \url{https://www.science.org/doi/abs/10.1126/sciadv.abm5952}.
+
+\bibitem[Lueckmann et~al.(2021)Lueckmann, Boelts, Greenberg, Goncalves, and
+  Macke]{lueckmann2021benchmarking}
+Jan-Matthis Lueckmann, Jan Boelts, David Greenberg, Pedro Goncalves, and Jakob
+  Macke.
+\newblock Benchmarking simulation-based inference.
+\newblock In \emph{International conference on artificial intelligence and
+  statistics}, pages 343--351. PMLR, 2021.
+
+\bibitem[Ikonomov and Gutmann(2020)]{ikonomov2020robust}
+Borislav Ikonomov and Michael~U Gutmann.
+\newblock Robust optimisation monte carlo.
+\newblock In \emph{International Conference on Artificial Intelligence and
+  Statistics}, pages 2819--2829. PMLR, 2020.
+
+\bibitem[Gkolemis et~al.(2023)Gkolemis, Gutmann, and
+  Pesonen]{gkolemis2023extendable}
+Vasilis Gkolemis, Michael Gutmann, and Henri Pesonen.
+\newblock An extendable python implementation of robust optimisation monte
+  carlo.
+\newblock \emph{arXiv preprint arXiv:2309.10612}, 2023.
+
+\bibitem[Dirmeier et~al.(2024)Dirmeier, Ulzega, Mira, and
+  Albert]{dirmeier2024simulation}
+Simon Dirmeier, Simone Ulzega, Antonietta Mira, and Carlo Albert.
+\newblock Simulation-based inference with the python package sbijax.
+\newblock \emph{arXiv preprint arXiv:2409.19435}, 2024.
+
+\bibitem[Meeds and Welling(2015)]{meeds2015optimization}
+Ted Meeds and Max Welling.
+\newblock Optimization monte carlo: Efficient and embarrassingly parallel
+  likelihood-free inference.
+\newblock \emph{Advances in Neural Information Processing Systems}, 28, 2015.
+
+\bibitem[Tejero-Cantero et~al.(2020)Tejero-Cantero, Boelts, Deistler,
+  Lueckmann, Durkan, Gonçalves, Greenberg, and Macke]{tejero-cantero2020sbi}
+Alvaro Tejero-Cantero, Jan Boelts, Michael Deistler, Jan-Matthis Lueckmann,
+  Conor Durkan, Pedro~J. Gonçalves, David~S. Greenberg, and Jakob~H. Macke.
+\newblock sbi: A toolkit for simulation-based inference.
+\newblock \emph{Journal of Open Source Software}, 5\penalty0 (52):\penalty0
+  2505, 2020.
+\newblock \doi{10.21105/joss.02505}.
+\newblock URL \url{https://doi.org/10.21105/joss.02505}.
+
+\bibitem[Gutmann et~al.(2018)Gutmann, Dutta, Kaski, and
+  Corander]{gutmann2018likelihood}
+Michael~U Gutmann, Ritabrata Dutta, Samuel Kaski, and Jukka Corander.
+\newblock Likelihood-free inference via classification.
+\newblock \emph{Statistics and Computing}, 28:\penalty0 411--425, 2018.
+
+\bibitem[LeCun et~al.(1998)LeCun, Bottou, Bengio, and
+  Haffner]{lecun1998gradient}
+Yann LeCun, L{\'e}on Bottou, Yoshua Bengio, and Patrick Haffner.
+\newblock Gradient-based learning applied to document recognition.
+\newblock \emph{Proceedings of the IEEE}, 86\penalty0 (11):\penalty0
+  2278--2324, 1998.
+
+\bibitem[Ramesh et~al.(2022)Ramesh, Lueckmann, Boelts, Tejero-Cantero,
+  Greenberg, Gon{\c{c}}alves, and Macke]{ramesh2022gatsbi}
+Poornima Ramesh, Jan-Matthis Lueckmann, Jan Boelts, {\'A}lvaro Tejero-Cantero,
+  David~S Greenberg, Pedro~J Gon{\c{c}}alves, and Jakob~H Macke.
+\newblock Gatsbi: Generative adversarial training for simulation-based
+  inference.
+\newblock \emph{arXiv preprint arXiv:2203.06481}, 2022.
+
+\bibitem[Hermans et~al.(2021)Hermans, Delaunoy, Rozet, Wehenkel, Gretton,
+  Cranmer, and Louppe]{hermans2021trust}
+Joeri Hermans, Arnaud Delaunoy, Francois Rozet, Antoine Wehenkel, Arthur
+  Gretton, Kyle Cranmer, and Gilles Louppe.
+\newblock A trust crisis in simulation-based inference? {Y}our posterior
+  approximations can be unfaithful.
+\newblock \emph{arXiv preprint arXiv:2110.06581}, 2021.
+
+\end{thebibliography}
