@@ -121,8 +121,8 @@
 % the style will print as headings an error message. Use the following
 % command to supply a shorter title of your paper so that it can be
 % used as headings.
-%
-%\runningtitle{I use this title instead because the last one was very long}
+
+% \runningtitle{I use this title instead because the last one was very long}
 
 % If your paper is accepted and the number of authors is large, the
 % style will print as headings an error message. Use the following
@@ -163,10 +163,10 @@ As simulators become more realistic, they also become more complex, often involv
 This complexity, in turn, poses significant challenges for parameter inference.
 
 % Backgroung in SBI (existing solutions) with a special focus on neural-based methods
-% TODO: add more references
 A variety of methods, collectively referred to as Likelihood-Free (LFI) or Simulation-Based (SBI) Inference \citep{lintusaari2017fundamentals, sisson2018handbook, cranmer2020frontier, deistler2025simulation}, have been developed to infer simulator parameters.
-These include sampling-based techniques, like Approximate Bayesian Computation \citep[ABC,][]{Marin2012}, and approaches based on summary statistics \citep{Chen2021a, Chen2023}, parametric modeling \citep{wood2010statistical, price2018bayesian}, and ratio estimation \citep{thomas2022likelihood, durkan2020contrastive}.
-More recently, substantial progress has been driven by neural methods, which use deep networks to estimate the posterior \citep{greenberg2019automatic, papamakarios2016fast, radev2020bayesflow, wildberger2023flow} or the likelihood \citep{papamakarios2019sequential} function.
+These include Approximate Bayesian Computation \citep[ABC,][]{Marin2012}, summary statistic-based approaches \citep{Chen2021a, Chen2023}, parametric modeling \citep{wood2010statistical, price2018bayesian}, ratio estimation \citep{thomas2022likelihood, durkan2020contrastive}, and surrogate model optimisation \citep[BOLFI,][]{gutmann2016bayesian}.
+Recently, neural-based methods have become prominent, with deep neural networks used to estimate the posterior \citep{greenberg2019automatic, papamakarios2016fast, radev2020bayesflow, wildberger2023flow} or the likelihood \citep{papamakarios2019sequential} function.
+State-of-the-art methods include Simformer~\citep{gloeckler2024allinone} and tabular-foundation-model SBI~\citep{vetter2025effortless}, which achieve high accuracy by learning arbitrary conditionals of the joint distribution.
 
 % Neural-based methods are computationally expensive    
 Neural-based approaches have greatly broadened the applicability of SBI to complex problems.
@@ -253,7 +253,8 @@ its latest implementation~\citep{gkolemis2023extendable} does not exploit gradie
 
  \rromc~is systematically compared to state-of-the-art SBI methods, demonstrating accurate posterior inference with substantially lower runtime across a wide range of scenarios.
 
- Code is available at \href{https://github.com/givasile/lfi}{github.com/givasile/lfi}.
+ Code for using R2OMC is publicaly available at \href{https://github.com/givasile/lfi}{github.com/givasile/lfi}.
+ To reproduce the experiments exactly, use the branch \href{https://github.com/givasile/lfi/tree/aistats2026}{github.com/givasile/lfi @ aistats2026}.
 
 \section{Background and Motivation}
 
@@ -505,9 +506,10 @@ Finally, the optimization does not explicitly incorporate the prior. This enable
 % Experiments Overview
 We assess \rromc~on: 
 (a) a Mixture of Gaussians (MoG) benchmark, 
-(b) the synthetic SBI benchmark~\citep{lueckmann2021benchmarking} and 
-(c) two image-based inference tasks. 
-Together, they span diverse challenges, including high-dimensionality, distractors, multiple observations, and complex posteriors.
+(b) the synthetic SBI benchmark~\citep{lueckmann2021benchmarking},
+(c) two image-based inference tasks and
+(d) the Lotka-Volterra model.
+Together, they span diverse challenges, including high-dimensionality, distractors, multiple observations, complex posteriors and real-world applications.
 
 % Methods used for comparison and problem set-up
 \textbf{Methods.} 
@@ -682,11 +684,10 @@ In contrast, \rromc~achieves accurate inference with just 100 simulations and a 
   \centering
   \begin{minipage}[t]{0.64\linewidth}
     \centering
-    \vspace{1.5em}    
+    \vspace{2em}
     \small
     \captionof{table}{Lotka-Volterra SBC results (150 repetitions, budget\,=\,1{,}000).}
     \label{tab:lv_sbc}
-    \vspace{1.5em}
     \begin{tabular}{lrrrrr}
       \toprule
       Parameter & SBC $\chi^2$ & $p$-value & Cov.\ 50\% & Cov.\ 90\% & Cov.\ 95\% \\
@@ -699,7 +700,7 @@ In contrast, \rromc~achieves accurate inference with just 100 simulations and a 
     \end{tabular}
   \end{minipage}%                        % <-- % immediately after \end{minipage}
   \hfill%
-  \begin{minipage}[t]{0.29\linewidth}
+  \begin{minipage}[t]{0.26\linewidth}
     \vspace{0pt}                         % <-- realigns [t] baseline after \captionof
     \centering
     \includegraphics[width=\linewidth]{figures/sbibm/lotka_volterra/coverage_calibration}
@@ -722,32 +723,36 @@ In contrast, \rromc~achieves accurate inference with just 100 simulations and a 
   \label{fig:lv_posterior}
 \end{figure}
 
-
-
-The Lotka-Volterra predator-prey model is a standard benchmark in the SBI literature~\citep{lueckmann2021benchmarking} that involves a system of differential equations (DEs) as the simulator.
-It provides a realistic test of applicability to scientific simulators where the data-generating process is governed by an ODE.
+The Lotka-Volterra predator-prey model is a standard benchmark in the SBI literature~\citep{lueckmann2021benchmarking}.
+It provides a realistic test case where the data-generating process is governed by a system of ODEs.
 
 \textbf{Setup.}
-The simulator integrates the system
-$\frac{dX}{dt} = \alpha X - \beta XY$, $\frac{dY}{dt} = -\gamma Y + \delta XY$
-with $(X(0), Y(0)) = (30, 1)$ and $T = 20$, producing a 20-dimensional time-series observation
+$X$ and $Y$ denote the prey and predator populations, with parameters $\alpha, \beta, \gamma, \delta$ governing their dynamics:
+\[
+\frac{dX}{dt} = \alpha X - \beta XY, \quad \frac{dY}{dt} = -\gamma Y + \delta XY
+\]
+Starting from $(X(0), Y(0)) = (30, 1)$ and integrating over $T = 20$ iterations,
+the simulator produces a 20-dimensional time-series observation
 $\yb = (x_{1,1}, x_{2,1}, \ldots, x_{1,10}, x_{2,10})$ corrupted by log-normal noise.
-The four parameters follow independent log-normal priors:
+Paramters follow independent log-normal priors:
 $\alpha, \gamma \sim \mathrm{LogNormal}(-0.125, 0.5)$,
 $\beta, \delta \sim \mathrm{LogNormal}(-3, 0.5)$.
-We implement the simulator in \texttt{JAX} to maintain compatibility with \rromc's gradient-based optimisation.
+The simulator is implemented in \texttt{JAX} for compatibility with \rromc's gradient-based optimisation.
 
 \textbf{Evaluation via SBC.}
-Since our \texttt{JAX}-based ODE solver differs slightly from the Julia implementation used in~\citet{lueckmann2021benchmarking}, ground-truth posterior samples are not available for a direct \CtwoST~comparison.
+Since our \texttt{JAX}-based ODE solver differs slightly from the Julia implementation of~\citet{lueckmann2021benchmarking},
+ground-truth posterior samples are not available for a direct \CtwoST~comparison.
 We therefore assess calibration via Simulation-Based Calibration~\citep[SBC,][]{hermans2021trust}, running 150 independent repetitions with a budget of 1{,}000 simulator calls each.
-SBC generates $\thb^* \sim p(\thb)$, simulates $\yb^* \sim p(\yb|\thb^*)$, then draws $K$ posterior samples and records the rank of $\thb^*$ among them.
-A well-calibrated posterior yields \emph{uniformly distributed} ranks; we test this with a $\chi^2$ statistic (df\,=\,$K$).
+SBC draws $\thb^* \sim p(\thb)$, simulates $\yb^* \sim p(\yb|\thb^*)$, then draws $K$ posterior samples and records the rank of $\thb^*$ among them.
+A well-calibrated posterior yields \emph{uniformly distributed} ranks, which we test this with a $\chi^2$ statistic.
 We additionally report \emph{empirical coverage}: the fraction of repetitions in which $\thb^*$ falls inside the $\alpha$-level credible interval — a calibrated posterior achieves empirical coverage $\approx \alpha$ for all levels.
 
 \textbf{Results.}
-Figure~\ref{fig:lv_summary} (left) and Table~\ref{tab:lv_sbc} report the SBC $\chi^2$ and empirical coverage.
+Figure~\ref{fig:lv_summary}
+(Table~\ref{tab:lv_sbc} on the left and coverage calibration curve on the right)
+report the SBC $\chi^2$ statistics and the empirical coverage.
 All four parameters pass the uniformity test (p\,$>\,$0.54) and achieve near-nominal coverage, confirming well-calibrated posteriors within a budget of 1{,}000 calls.
-Figure~\ref{fig:lv_posterior} shows the pairwise posterior for a representative observation.
+Figure~\ref{fig:lv_posterior} shows the pairwise posterior, where the true parameter $\thb^*$ (black star) falls well within the posterior mass for all parameters, further indicating an accurate inference.
 
 
 \vspace{-2ex}
@@ -764,14 +769,10 @@ Our \texttt{JAX}-based implementation leverages auto-differentiation and vectori
 % Our \texttt{JAX}-based implementation leverages auto-differentiation and vectorization to significantly accelerate computation. 
 Across both novel experimental settings and the comprehensive SBI benchmark, \rromc~consistently achieves high accuracy—often approaching the optimal \texttt{C2ST} score of 0.5—while requiring only a fraction of the computational time of state-of-the-art methods.
 
-\vspace{-1ex}
 \section*{Acknowledgments}
 
 This research was funded from the European Union’s Horizon Europe research and
 innovation program under Grant Agreement No: 101135826 (\href{https://www.ai-dapt.eu/}{ai-dapt.eu}).
-
-
-\clearpage
 
 \bibliographystyle{unsrtnat}
 \bibliography{references}

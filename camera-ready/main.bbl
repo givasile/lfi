@@ -1,4 +1,4 @@
-\begin{thebibliography}{28}
+\begin{thebibliography}{31}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -85,6 +85,13 @@ Conor Durkan, Iain Murray, and George Papamakarios.
 \newblock In \emph{International conference on machine learning}, pages
   2771--2781. PMLR, 2020.
 
+\bibitem[Gutmann et~al.(2016)Gutmann, Cor, et~al.]{gutmann2016bayesian}
+Michael~U Gutmann, Jukka Cor, et~al.
+\newblock Bayesian optimization for likelihood-free inference of
+  simulator-based statistical models.
+\newblock \emph{Journal of Machine Learning Research}, 17\penalty0
+  (125):\penalty0 1--47, 2016.
+
 \bibitem[Greenberg et~al.(2019)Greenberg, Nonnenmacher, and
   Macke]{greenberg2019automatic}
 David Greenberg, Marcel Nonnenmacher, and Jakob Macke.
@@ -122,6 +129,21 @@ George Papamakarios, David Sterratt, and Iain Murray.
   autoregressive flows.
 \newblock In \emph{The 22nd international conference on artificial intelligence
   and statistics}, pages 837--848. PMLR, 2019.
+
+\bibitem[Gloeckler et~al.(2024)Gloeckler, Deistler, Weilbach, Wood, and
+  Macke]{gloeckler2024allinone}
+Manuel Gloeckler, Michael Deistler, Christian Weilbach, Frank Wood, and
+  Jakob~H. Macke.
+\newblock All-in-one simulation-based inference.
+\newblock In \emph{International Conference on Machine Learning}, pages
+  15735--15766. PMLR, 2024.
+
+\bibitem[Vetter et~al.(2025)Vetter, Gloeckler, Gedon, and
+  Macke]{vetter2025effortless}
+Julius Vetter, Manuel Gloeckler, Daniel Gedon, and Jakob~H. Macke.
+\newblock Effortless, simulation-efficient {B}ayesian inference using tabular
+  foundation models.
+\newblock \emph{arXiv preprint arXiv:2504.11087}, 2025.
 
 \bibitem[Saltelli et~al.(2008)Saltelli, Ratto, Andres, Campolongo, Cariboni,
   Gatelli, Saisana, and Tarantola]{Saltelli2008}
