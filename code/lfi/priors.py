@@ -8,7 +8,6 @@ import sbi
 import sbi.utils
 import jax
 import jax.numpy as jnp
-import elfi
 import tensorflow_datasets as tfds
 from sklearn.neighbors import KernelDensity
 

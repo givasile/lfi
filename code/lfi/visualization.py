@@ -11,7 +11,8 @@ def plot_pairwise_posterior(
         title: typing.Optional[str]=None,
         savefig: typing.Optional[str]=None,
         samples_gt: typing.Optional[np.ndarray]=None,
-        max_dims_to_plot: int = 10 
+        max_dims_to_plot: int = 10,
+        show_legend: bool = True,
 ):
     """
     Plots pairwise relationships and marginal distributions of posterior samples.
@@ -78,6 +79,10 @@ def plot_pairwise_posterior(
                     collection.set_alpha(0.2)  # More transparent
                     collection.set_sizes([10])  # Optional: Smaller points
         
+    # Show or hide legend
+    if not show_legend:
+        g.legend.remove()
+
     # Add the title if provided
     if title:
         g.fig.suptitle(title)

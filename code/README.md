@@ -17,8 +17,15 @@ requirements.txt
 ```bash
 conda create -n lfi python=3.10
 conda activate lfi
+# Step 1: install CPU-only PyTorch (prevents sbi from pulling CUDA)
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+# Step 2: install sbi (>=0.22) and pyabc before sbibm
+pip install sbi pyabc
+# Step 3: install sbibm without deps (it pins sbi<0.22, but sbi>=0.22 works)
+pip install sbibm --no-deps
+# Step 4: install remaining dependencies (run from this directory)
+cd code
 pip install -r requirements.txt
-pip install -e .
 ```
 
 ## Reproducing Experiments

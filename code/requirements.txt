@@ -1,19 +1,17 @@
-black
-elfi
+# Install in this order to avoid dependency conflicts:
+#   Step 1: pip install torch --index-url https://download.pytorch.org/whl/cpu
+#   Step 2: pip install sbi pyabc
+#   Step 3: pip install sbibm --no-deps   (sbibm pins sbi<0.22, but sbi>=0.22 works fine)
+#   Step 4: pip install -r requirements.txt
+
+jax[cpu]
 tensorflow-datasets
 torch
-flake8
-ipython
-jupyterlab
-loguru
-mkdocs
-python-dotenv
-mlflow
 numpy
 pandas
-sbibm
-sbi
-optax
+scipy
+scikit-learn
+seaborn
 matplotlib
-torchdiffeq
--e .
+optax
+.

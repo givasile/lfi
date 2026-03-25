@@ -23,7 +23,6 @@ INFERENCE_TO_CLASS = {
     'npe_a_single_round': lfi.inference.from_sbi.NPEASingleRound,
     'npe_c_single_round': lfi.inference.from_sbi.NPECSingleRound,
     'fmpe_single_round': lfi.inference.from_sbi.FMPESingleRound,
-    'elfi_rejection_sampling': lfi.inference.from_elfi.RejectionSampling,
     #'mdn': lfi.inference.custom.MixtureDensityNetwork,
 }
 
