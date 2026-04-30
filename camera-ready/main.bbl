@@ -1,4 +1,4 @@
-\begin{thebibliography}{31}
+\begin{thebibliography}{35}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -32,6 +32,13 @@ Michael Deistler, Jan Boelts, Peter Steinbach, Guy Moss, Thomas Moreau, Manuel
   Benjamin~Kurt Miller, et~al.
 \newblock Simulation-based inference: A practical guide.
 \newblock \emph{arXiv preprint arXiv:2508.12939}, 2025.
+
+\bibitem[Arruda et~al.(2025)Arruda, Bracher, K{\"o}the, Hasenauer, and
+  Radev]{arruda2025diffusion}
+Jonas Arruda, Niels Bracher, Ullrich K{\"o}the, Jan Hasenauer, and Stefan~T
+  Radev.
+\newblock Diffusion models in simulation-based inference: A tutorial review.
+\newblock \emph{arXiv preprint arXiv:2512.20685}, 2025.
 
 \bibitem[Marin et~al.(2012)Marin, Pudlo, Robert, and Ryder]{Marin2012}
 Jean-Michel Marin, Pierre Pudlo, Christian~P. Robert, and Robin~J. Ryder.
@@ -71,6 +78,13 @@ Leah~F Price, Christopher~C Drovandi, Anthony Lee, and David~J Nott.
 \newblock \emph{Journal of Computational and Graphical Statistics}, 27\penalty0
   (1):\penalty0 1--11, 2018.
 
+\bibitem[Pacchiardi et~al.(2024)Pacchiardi, Khoo, and
+  Dutta]{pacchiardi2024generalized}
+Lorenzo Pacchiardi, Sherman Khoo, and Ritabrata Dutta.
+\newblock Generalized bayesian likelihood-free inference.
+\newblock \emph{Electronic Journal of Statistics}, 18\penalty0 (2):\penalty0
+  3628--3686, 2024.
+
 \bibitem[Thomas et~al.(2022)Thomas, Dutta, Corander, Kaski, and
   Gutmann]{thomas2022likelihood}
 Owen Thomas, Ritabrata Dutta, Jukka Corander, Samuel Kaski, and Michael~U
@@ -91,6 +105,13 @@ Michael~U Gutmann, Jukka Cor, et~al.
   simulator-based statistical models.
 \newblock \emph{Journal of Machine Learning Research}, 17\penalty0
   (125):\penalty0 1--47, 2016.
+
+\bibitem[J{\"a}rvenp{\"a}{\"a} et~al.(2025)J{\"a}rvenp{\"a}{\"a}, Corander, and
+  Pesonen]{jarvenpaa2025surrogate}
+Marko J{\"a}rvenp{\"a}{\"a}, Jukka Corander, and Henri Pesonen.
+\newblock Surrogate-based abc matches generalized bayesian inference under
+  specific discrepancy and kernel choices.
+\newblock \emph{arXiv preprint arXiv:2502.11738}, 2025.
 
 \bibitem[Greenberg et~al.(2019)Greenberg, Nonnenmacher, and
   Macke]{greenberg2019automatic}
@@ -190,6 +211,14 @@ Vasilis Gkolemis, Michael Gutmann, and Henri Pesonen.
 Simon Dirmeier, Simone Ulzega, Antonietta Mira, and Carlo Albert.
 \newblock Simulation-based inference with the python package sbijax.
 \newblock \emph{arXiv preprint arXiv:2409.19435}, 2024.
+
+\bibitem[Quera-Bofarull et~al.(2023)Quera-Bofarull, Dyer, Calinescu, Farmer,
+  and Wooldridge]{quera2023blackbirds}
+Arnau Quera-Bofarull, Joel Dyer, Anisoara Calinescu, J~Doyne Farmer, and
+  Michael Wooldridge.
+\newblock Blackbirds: Black-box inference for differentiable simulators.
+\newblock \emph{Journal of Open Source Software}, 8\penalty0 (89):\penalty0
+  5776, 2023.
 
 \bibitem[Meeds and Welling(2015)]{meeds2015optimization}
 Ted Meeds and Max Welling.

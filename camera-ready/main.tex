@@ -54,6 +54,12 @@
     }
 % \usepackage{multirow}
 
+% section spacing control
+\newlength{\secvspace}
+\newlength{\subsecvspace}
+\setlength{\secvspace}{-1ex}
+\setlength{\subsecvspace}{-0.3ex}
+
 % custom commands
 \newcommand{\mub}{\boldsymbol{\alpha}}
 \newcommand{\thb}{\boldsymbol{\theta}}
@@ -156,7 +162,9 @@ A JAX-based implementation further enhances the performance through vectorizatio
 Extensive experiments, including high-dimensional parameter spaces, uninformative outputs, multiple observations and multimodal posteriors show that our method consistently matches, and often exceeds, the accuracy of state-of-the-art approaches, while reducing the runtime by a substantial margin.
 \end{abstract}
 
-\section{Introduction}
+\vspace{\secvspace}
+\section{INTRODUCTION}
+\vspace{\secvspace}
 
 % DONE: (i) General intro to LFI (ii) SBI is challenging when model becomes complex
 Parametric stochastic simulators are widely used to model complex processes across biology, physics, health sciences, and many other disciplines.
@@ -257,7 +265,9 @@ its latest implementation~\citep{gkolemis2023extendable} does not exploit gradie
  Code for using R2OMC is publicly available at \href{https://github.com/givasile/lfi}{github.com/givasile/lfi}.
  To reproduce the experiments exactly, use the branch \href{https://github.com/givasile/lfi/tree/aistats2026}{github.com/givasile/lfi @ aistats2026}.
 
-\section{Background and Motivation}
+\vspace{\secvspace}
+\section{BACKGROUND - MOTIVATION}
+\vspace{\secvspace}
 
 % Neural-based methods are computationally intensive
 Neural-based SBI methods are data-intensive, with their accuracy depending on access to large simulated datasets.
@@ -269,7 +279,9 @@ Moreover, modern frameworks, like \texttt{JAX}, are used in SBI~\citep{dirmeier2
 Appendix~\ref{app-sec:compute-budget} expands on both points. 
 This motivates us to develop a method that avoids the cost of training an external neural estimator.
  
+\vspace{\subsecvspace}
 \subsection{ROMC framework}
+\vspace{\subsecvspace}
 \label{subsec:ROMC}
 ROMC, introduced by \citet{ikonomov2020robust}, improves upon Optimization Monte Carlo of~\citet{meeds2015optimization} by addressing its robustness issues. 
 It belongs to the larger family of ABC methods that approximate the likelihood function as the probability of simulating an output $\epsilon$-close to the observation,
@@ -308,7 +320,9 @@ Next, it starts from the optimization end points $\thb_i^*$ to discover $\accreg
 The power of the ROMC framework stems from the possibility to use optimization, in particular gradient-based methods, to determine the optimization end points $\thb_i^*$, and hence the acceptance regions $\accregioni$ and the proposal distributions $q_i$. 
 However, ROMC has important limitations, which we analyze in the next subsection.
 
+\vspace{\subsecvspace}
 \subsection{ROMC challenges and limitations}
+\vspace{\subsecvspace}
 \label{sec:romc-limitations}
 
 ROMC suffers from three main limitations;
@@ -352,12 +366,16 @@ Current ROMC implementations \citep{gkolemis2023extendable} suffer from signific
 First, optimization relies on gradient-free methods, e.g., Bayesian optimization, which scale poorly with the number of parameters. % and require many simulator evaluations.
 Second, the construction of the acceptance regions $\accregioni$ with a line-search algorithm (see Appendix \ref{app-sec:methods}), requires repeated simulator evaluations per seed and per dimension, which also scales poorly with the parameter dimensions.
 
-\section{Proposed method: \rromc}
+\vspace{\secvspace}
+\section{PROPOSED METHOD: \rromc}
+\vspace{\secvspace}
 \label{sec:rromc}
 
 We here present our new method for Bayesian parameter inference in simulator models. The method uses gradients to obtain posterior samples even in high-dimensional parameter spaces. The method belongs to the ROMC framework so that we start with discussing how we deal with distractors and iid observations before discussing its implementation.
 
+\vspace{\subsecvspace}
 \subsection{Uninformative dimensions (distractors)}
+\vspace{\subsecvspace}
 \label{subsec:distractors}
 Distractors can negatively affect the quality of the posterior approximation. To counteract their influence, we measure the sensitivity of the output dimensions with respect to the parameters $\thb$ by computing the average norm of their derivative with respect to $\thb$, and checking that the value is above a minimal value (threshold) $\tau$, 
 \begin{equation}
@@ -373,7 +391,9 @@ The procedure is illustrated in Figure~\ref{fig:concept_image}, step (i).
 
 The threshold $\tau$ controls the sensitivity of the test. In our experiments, we set $\tau$ to machine precision; more sophisticated approaches consist in monitoring the distribution of the expected norm of the gradient, or by assessing false vs true positives under control conditions. This is possible since the mask $\mask$ can be computed prior to receiving observed data.
 
+\vspace{\subsecvspace}
 \subsection{Multiple iid observations}
+\vspace{\subsecvspace}
 \label{subsec:multiple-observations}
 
 The likelihood for multiple iid observations $\{\data_n\}_{n=1}^N$ is the product of the likelihoods for each data point. Approximating the likelihood for each data point as in (\ref{eq:omc_likelihood}) and multiplying-in the prior $p(\thb)$, we can obtain a formal expression for the approximate posterior
@@ -448,7 +468,9 @@ Figure~\ref{fig:concept_image}, steps (ii–iii), illustrates the proposed proce
 \end{figure*}
 
 
+\vspace{\subsecvspace}
 \subsection{\texttt{JAX} implementation}
+\vspace{\subsecvspace}
 \label{subsec:implementation}
 
 Algorithms~\ref{alg:r2omc} summarizes the key steps of \rromc: dealing with distractors (line 2); constructing per-data point proposal distributions $\{q_i^n\}_{i=1}^S$ (lines 3-6); combining them to form the overall proposal distribution $q(\thb)$ (line 7) and generating weighted samples (line 8).
@@ -483,7 +505,9 @@ Thus the total cost of obtaining the proposal distributions is of the order of $
 For generating the weighted samples, (\ref{eq:rromc_weight}) is evaluated on $P$ samples (line 8).
 The simulator is only used for computing $\prod_n^N \sum_i^S \mathbb{1}_{C_{\epsilon}^{i,n}}(\thb_p)$ which requires evaluating $S * N$ different distance functions on $P$ points each. Using \texttt{vmap} in each distance function, the total cost is $S * N$. Evaluating $q(\cdot)$ and $p(\cdot)$ does not require calling the simulator. Finally, if the simulator is expensive, the $S *N$ cost of checking whether the samples are in the acceptance regions can be avoided by using the hyperbox or another model for the acceptance region, see \citet{ikonomov2020robust}. 
 
+\vspace{\subsecvspace}
 \subsection{Limitations and Discussion}
+\vspace{\subsecvspace}
 
 While R2OMC enables efficient inference in many scenarios, it has several limitations.
 First, it requires differentiable simulators, making it a gray-box rather than a fully black-box method. 
@@ -501,7 +525,9 @@ Finally, the optimization does not explicitly incorporate the prior. This enable
 
 % These factors should be considered when applying \rromc~to SBI tasks.
 
-\section{Experiments}
+\vspace{\secvspace}
+\section{EXPERIMENTS}
+\vspace{\secvspace}
 \label{sec:experiments}
 
 % Experiments Overview
@@ -541,7 +567,9 @@ Appendix~\ref{app-sec:experiments} provides additional details on the setup, met
 \end{figure*}
 
 
+\vspace{\subsecvspace}
 \subsection{Mixture of Gaussians (MoG) benchmark}
+\vspace{\subsecvspace}
 \label{subsec:gaussian}
 
 % Why we use the MoG benchmark
@@ -578,8 +606,9 @@ In contrast, \rromc~achieves successful inference in a few seconds across all $D
 \end{figure}
 
 
-\vspace{-1ex}
+\vspace{\subsecvspace}
 \subsection{SBI benchmark}
+\vspace{\subsecvspace}
 \label{subsec:sbi-benchmark}
 
 The SBI benchmark~\citep{lueckmann2021benchmarking} is widely used to evaluate SBI methods.
@@ -629,8 +658,9 @@ whereas competing methods require minutes to hours (budgets of $10^5$ samples) t
 The pairwise posterior further demonstrates that \rromc~accurately captures both crescent-shaped modes. Additional results versus budget are reported in Appendix~\ref{app-sec:experiments}.
 
 
-\vspace{-1ex}
+\vspace{\subsecvspace}
 \subsection{Image-based inference}
+\vspace{\subsecvspace}
 \label{subsec:image-based}
 
 \begin{figure}
@@ -677,8 +707,9 @@ While direct comparisons are not performed here, prior work highlights that SBI 
 Methods like GATSBI~\citep{ramesh2022gatsbi} can succeed but require complex generative models with long, often unstable, training. 
 In contrast, \rromc~achieves accurate inference with just 100 simulations and a runtime of a few seconds.
 
-\vspace{-1ex}
+\vspace{\subsecvspace}
 \subsection{Lotka-Volterra}
+\vspace{\subsecvspace}
 \label{subsec:lotka-volterra}
 
 \begin{figure*}[!t]
@@ -757,10 +788,10 @@ report the SBC $\chi^2$ statistics and the empirical coverage.
 All four parameters were consistent with a uniform distribution under the $\chi^2$ test (p\,$>\,$0.54) and achieve near-nominal coverage, confirming well-calibrated posteriors within a budget of 1{,}000 calls.
 Figure~\ref{fig:lv_posterior} shows the pairwise posterior, where the true parameter $\thb^*$ (black star) falls well within the posterior mass for all parameters, further indicating an accurate inference.
 
-\vspace{-1ex}
-\section{Conclusion}
+\vspace{\secvspace}
+\section{CONCLUSION}
+\vspace{\secvspace}
 \label{sec:conclusion}
-\vspace{-1ex}
 We have presented \rromc, a new Bayesian inference method for differentiable simulator models that addresses two major challenges in simulation-based inference:
 scalability to high-dimensional parameter spaces and robustness to uninformative dimensions (distractors), all within fast runtimes.
 
@@ -771,13 +802,13 @@ Our \texttt{JAX}-based implementation leverages auto-differentiation and vectori
 % Our \texttt{JAX}-based implementation leverages auto-differentiation and vectorization to significantly accelerate computation. 
 Across diverse benchmarks, \rromc~consistently achieves high accuracy while requiring only a fraction of the computational time of state-of-the-art methods.
 
-\section*{Acknowledgments}
-
-This research was funded from the European Union’s Horizon Europe research and
-innovation program under Grant Agreement No: 101135826 (\href{https://www.ai-dapt.eu/}{ai-dapt.eu}).
+\acknowledgments{This research was funded from the European Union’s Horizon Europe research and
+innovation program under Grant Agreement No: 101135826 (\href{https://www.ai-dapt.eu/}{ai-dapt.eu}).}
 
 \bibliographystyle{unsrtnat}
 \bibliography{references}
+
+
 
 
 \section*{Checklist}

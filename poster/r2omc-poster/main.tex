@@ -1,0 +1,392 @@
+\documentclass[final]{beamer}
+%% Possible paper sizes: a0, a0b, a1, a2, a3, a4.
+%% Possible orientations: portrait, landscape
+%% Font sizes can be changed using the scale option.
+\usepackage[size=a0,orientation=portrait,scale=1.3]{beamerposter}
+
+\usetheme{gemini}
+\usecolortheme{seagull}
+\useinnertheme{rectangles}
+
+% ====================
+% Packages
+% ====================
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{bm,amsmath,amssymb}
+\usepackage{hyperref}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{wrapfig}
+\usepackage{listings}
+\usepackage{caption}
+\captionsetup{labelformat=empty, labelsep=none}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,
+    urlcolor=cyan,
+    pdftitle={R2OMC Poster - AISTATS 2026},
+    pdfpagemode=FullScreen,
+}
+
+% Listings style
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+\lstdefinestyle{mystyle}{
+  backgroundcolor=\color{backcolour}, commentstyle=\color{codegreen},
+  keywordstyle=\color{magenta},
+  numberstyle=\tiny\color{codegray},
+  stringstyle=\color{codepurple},
+  basicstyle=\ttfamily\footnotesize,
+  breakatwhitespace=false, breaklines=true, captionpos=b,
+  keepspaces=true, numbers=left, numbersep=5pt,
+  showspaces=false, showstringspaces=false, showtabs=false, tabsize=2
+}
+\lstset{style=mystyle}
+
+\newcommand{\thetab}{\bm{\theta}}
+\newcommand{\yb}{\mathbf{y}}
+\newcommand{\ub}{\mathbf{u}}
+
+% ====================
+% Lengths
+% ====================
+% 2 columns: (2+1)*sepwidth + 2*colwidth = paperwidth
+\newlength{\sepwidth}
+\newlength{\colwidth}
+\setlength{\sepwidth}{0.03\paperwidth}
+\setlength{\colwidth}{0.455\paperwidth}
+
+\newcommand{\separatorcolumn}{\begin{column}{\sepwidth}\end{column}}
+
+% ====================
+% Logos
+% ====================
+\logoright{\includegraphics[height=6.5cm]{logos/athena-278x300.png}}
+\logoleft{%
+  \begin{tabular}[c]{c}
+    \includegraphics[height=3.5cm]{logos/dit-logo.png}\\[0.5ex]
+    \includegraphics[height=3.5cm]{logos/uoe.jpg}
+  \end{tabular}%
+}
+
+% ====================
+% Footer
+% ====================
+\footercontent{
+  Fast and Robust SBI With Optimization Monte Carlo \hfill
+  AISTATS 2026, Tangier, Morocco \hfill
+  \href{mailto:vgkolemis@athenarc.gr}{\texttt{vgkolemis@athenarc.gr}}
+}
+
+% ====================
+% Custom defs (tcolorbox boxes + biblatex)
+% ====================
+\input{custom-defs.tex}
+\addbibresource{refs.bib}
+\renewcommand{\pgfuseimage}[1]{\includegraphics[scale=2.0]{#1}}
+
+% ====================
+% Title / Authors / Institute
+% ====================
+\title{Fast and Robust Simulation-Based Inference\\With Optimization Monte Carlo}
+
+\author{Vasilis Gkolemis\inst{1,2} \and
+  Christos Diou\inst{2} \and
+  Michael U.\ Gutmann\inst{3}
+}
+
+\institute[ATH-HUA-EDI]{
+  \inst{1} ATHENA Research Center \quad
+  \inst{2} Harokopio University of Athens \quad
+  \inst{3} University of Edinburgh
+}
+
+\date{April 2026}
+
+% ====================
+% Document
+% ====================
+\begin{document}
+
+\begin{frame}[t,fragile]
+  \begin{columns}[t] \separatorcolumn
+
+    %% =================== LEFT COLUMN ===================
+    \begin{column}{\colwidth}
+
+      \begin{alertblock}{R2OMC: In a nutshell}
+        \Centering
+        \Large{SBI with a \emph{differentiable} simulator? \\
+          $\Rightarrow$ R2OMC infers accurate posterior samples efficiently}
+      \end{alertblock}
+
+      \begin{block}{Speed vs.\ Accuracy vs.\ Transparency in SBI}
+        \textbf{Traditional LFI methods} (ABC, SMC-ABC, MCMC-ABC) are transparent
+        but do not scale beyond low-dimensional parameter spaces.
+
+        \textbf{Modern neural methods} (NPE, BayesFlow, FMPE) scale to high
+        dimensions but require large simulation budgets, long runtimes,
+        and sacrifice transparency.
+
+        \textbf{R2OMC} is fast (low simulation budget), scalable
+        (high-dimensional spaces), and transparent (no neural network).
+
+        \vspace{0.5em}
+        \begin{figure}[ht]
+          \centering
+          \setlength{\tabcolsep}{0.1pt}
+          \renewcommand{\arraystretch}{.6}
+          \begin{tabular}{c *{8}{c}}
+            & \scriptsize{Reference} & \scriptsize{R2OMC} & \scriptsize{NPE-low} & \scriptsize{NPE-high} & \scriptsize{BayesFlow-low} & \scriptsize{BayesFlow-high} & \scriptsize{FMPE-low} & \scriptsize{FMPE-high} \\
+            \rotatebox{90}{\scriptsize{\quad Simple}} &
+            \includegraphics[width=.12\textwidth]{../figures/concept_figure/simple/gt} &
+            \includegraphics[width=.12\textwidth]{../figures/concept_figure/simple/r2omc} &
+            \includegraphics[width=.12\textwidth]{../figures/concept_figure/simple/npec_low} &
+            \includegraphics[width=.12\textwidth]{../figures/concept_figure/simple/npec_high} &
+            \includegraphics[width=.12\textwidth]{../figures/concept_figure/simple/bayes_flow_low} &
+            \includegraphics[width=.12\textwidth]{../figures/concept_figure/simple/bayes_flow_high} &
+            \includegraphics[width=.12\textwidth]{../figures/concept_figure/simple/flow_matching_low} &
+            \includegraphics[width=.12\textwidth]{../figures/concept_figure/simple/flow_matching_high} \\
+            \rotatebox{90}{\scriptsize{Distractors}} &
+            \includegraphics[width=.12\textwidth]{../figures/concept_figure/distractors/gt} &
+            \includegraphics[width=.12\textwidth]{../figures/concept_figure/distractors/r2omc} &
+            \includegraphics[width=.12\textwidth]{../figures/concept_figure/distractors/npec_low} &
+            \includegraphics[width=.12\textwidth]{../figures/concept_figure/distractors/npec_high} &
+            \includegraphics[width=.12\textwidth]{../figures/concept_figure/distractors/bayes_flow_low} &
+            \includegraphics[width=.12\textwidth]{../figures/concept_figure/distractors/bayes_flow_high} &
+            \includegraphics[width=.12\textwidth]{../figures/concept_figure/distractors/flow_matching_low} &
+            \includegraphics[width=.12\textwidth]{../figures/concept_figure/distractors/flow_matching_high} \\
+            \rotatebox{90}{\scriptsize{\; High-dim}} &
+            \includegraphics[width=.12\textwidth]{../figures/concept_figure/high_dim/gt} &
+            \includegraphics[width=.12\textwidth]{../figures/concept_figure/high_dim/r2omc} &
+            \includegraphics[width=.12\textwidth]{../figures/concept_figure/high_dim/npec_low} &
+            \includegraphics[width=.12\textwidth]{../figures/concept_figure/high_dim/npec_high} &
+            \includegraphics[width=.12\textwidth]{../figures/concept_figure/high_dim/bayes_flow_low} &
+            \includegraphics[width=.12\textwidth]{../figures/concept_figure/high_dim/bayes_flow_high} &
+            \includegraphics[width=.12\textwidth]{../figures/concept_figure/high_dim/flow_matching_low} &
+            \includegraphics[width=.12\textwidth]{../figures/concept_figure/high_dim/flow_matching_high} \\
+          \end{tabular}
+          \caption{Two-Gaussian mixture: simple ($D\!=\!D_y\!=\!2$), distractors ($D\!=\!2, D_y\!=\!18$),
+          high-dim ($D\!=\!D_y\!=\!10$). R2OMC matches the reference at low runtime;
+          neural baselines need much higher budgets.}
+        \end{figure}
+      \end{block}
+
+      \begin{defbox}{R2OMC builds on top of OMC and ROMC}
+        \begin{itemize}
+          \item \textcolor{blue}{\textbf{OMC} (Meeds et al., 2015) and \textbf{ROMC} (Ikonomov et al., 2020):}
+            \begin{itemize}
+              \item fix random seeds $\ub_i$ and turn inference into $S$ deterministic problems
+              \item ABC likelihood: $L_\epsilon(\thetab) = \Pr\!\left(d(\yb,\yb^o) \le \epsilon \mid \thetab\right)$.
+              \item $\thetab^*_i = \arg\min_{\thetab}\; d\!\left(g(\thetab,\ub_i),\,\yb^o\right)$; samples drawn from proposals $q_i$ around each optimum.
+            \end{itemize}
+          \item \textcolor{red}{\textbf{Limitations of vanilla ROMC:}}
+            \begin{itemize}
+              \item No strategy for \textbf{distractors} -- inflated $\epsilon$, broad posteriors.
+              \item No strategy for \textbf{multiple iid observations}.
+              \item No optimized implementation -- can only tackle low-dim problems.
+            \end{itemize}
+        \end{itemize}
+      \end{defbox}
+
+      \begin{block}{R2OMC: Method overview}
+        \begin{figure}
+          \centering
+          \includegraphics[width=0.92\linewidth]{../figures/concept_image.png}
+        \end{figure}
+
+        \smallskip
+        \textbf{\textcolor{blue}{Gradient-based optimization.}} \\
+        Distances $d_n(\thetab) = \|g(\thetab,\ub_i) - \yb^o_n\|$ minimized via gradient descent; scales to high-dimensional $\thetab$.
+
+        \smallskip
+        \textbf{\textcolor{red}{Distractor filtering.}} \\
+        Average gradient norm per output dimension thresholded at $\tau$:
+        $\;I_i = \mathbb{E}_{p(\thetab)p(\ub)}\!\left[\,\|\nabla_{\thetab} g_i(\thetab,\ub)\|\,\right] > \tau.$
+        Optimization runs only on informative dimensions $\mathbf{m}_\tau$.
+
+        \smallskip
+        \textbf{\textcolor{magenta}{Multiple iid observations.}} \\
+        Per-observation proposals combined: $\;q(\thetab) = \tfrac{1}{NS}\sum_{n,i} q^n_i(\thetab)$,
+        with weights $\;w_p = \tfrac{p(\thetab_p)}{q(\thetab_p)}\prod_{n}\sum_{i}\mathbf{1}_{C^{i,n}_\epsilon}(\thetab_p)$
+        retaining samples consistent with \emph{all} observations.
+
+        \smallskip
+        \textbf{\textcolor{teal}{\texttt{JAX} implementation.}} \\
+        \texttt{grad} for Jacobians, \texttt{vmap} vectorizes over seeds and dimensions, \texttt{jit} fuses optimization steps.
+      \end{block}
+
+
+      \begin{block}{{\color{teal} How to use R2OMC}}
+\textbf{Install:} \quad \texttt{pip install git+https://github.com/givasile/lfi}
+
+\vspace{0.5em}
+\begin{lstlisting}[language=Python]
+from lfi import priors, simulators, inference
+
+prior     = priors.UniformPrior(low=-3, high=3, dim=2) # or your own prior
+simulator = simulators.TwoMoons(dim=2, dim_y=2)        # or your own simulator
+y_obs     = ...                                        # shape (N_obs, D_y)
+
+model = inference.r2omc.R2OMC(prior, simulator, y_obs)
+model.fit(budget=500)
+samples = model.sample(nof_samples=1000)
+\end{lstlisting}
+      \end{block}
+
+    \end{column}
+    \separatorcolumn
+
+    %% =================== RIGHT COLUMN ===================
+    \begin{column}{\colwidth}
+
+      \begin{block}{R2OMC: Paper \& Code}
+        \begin{itemize}
+          \item \textbf{Paper:} \quad \href{https://arxiv.org/abs/2504.11087}{\texttt{arXiv:2504.11087}}
+          \item \textbf{Code:} \quad \href{https://github.com/givasile/lfi}{\texttt{github.com/givasile/lfi}}
+        \end{itemize}
+      \end{block}
+
+
+      \begin{block}{Experiments: Gaussian \& SLCP benchmarks}
+        \begin{figure}
+          \centering
+          \hfill
+          \begin{subfigure}[t]{0.4\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{../figures/mog_benchmark/single_mode/runtime_frontier}
+          \end{subfigure}
+          \hfill
+          \begin{subfigure}[t]{0.4\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{../figures/mog_benchmark/single_mode_distractors/runtime_frontier}
+          \end{subfigure}
+          \hfill
+          \caption{Success Frontier on $S_{\mathtt{base}}$ (left) and $S_{\mathtt{base}}^{\mathtt{dist}}$ (right):
+          minimum runtime to reach C2ST$\,\le\,0.75$. R2OMC stays in seconds; neural-based methods blow up past one hour.}
+        \end{figure}
+        \begin{figure}
+          \centering
+          \hfill
+          \begin{subfigure}[t]{0.4\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{../figures/sbibm/slcp/c2st_vs_runtime}
+          \end{subfigure}
+          \hfill
+          \begin{subfigure}[t]{0.4\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{../figures/sbibm/slcp_distractors/c2st_vs_runtime}
+          \end{subfigure}
+          \hfill
+          \caption{C2ST vs.\ runtime on SLCP (left) and SLCP+distractors (right).
+          R2OMC reaches competitive accuracy in seconds; neural-based methods require high runtimes.}
+        \end{figure}
+      \end{block}
+
+      \begin{block}{Experiments: 784D image inference}
+        \vspace{-0.8em}
+        \begin{figure}
+          \centering
+          \resizebox{\linewidth}{!}{%
+            \setlength{\tabcolsep}{1pt}
+            \renewcommand{\arraystretch}{1.5}
+            \begin{tabular}{l *{10}{c}}
+              \scriptsize{Clean} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_0_image_clean.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_1_image_clean.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_2_image_clean.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_3_image_clean.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_4_image_clean.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_5_image_clean.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_6_image_clean.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_7_image_clean.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_8_image_clean.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_9_image_clean.png} \\
+              \scriptsize{Observed} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_0_image_observation.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_1_image_observation.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_2_image_observation.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_3_image_observation.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_4_image_observation.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_5_image_observation.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_6_image_observation.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_7_image_observation.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_8_image_observation.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_9_image_observation.png} \\
+              \scriptsize{Post.\ mean} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_0_posterior_mean.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_1_posterior_mean.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_2_posterior_mean.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_3_posterior_mean.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_4_posterior_mean.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_5_posterior_mean.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_6_posterior_mean.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_7_posterior_mean.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_8_posterior_mean.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_9_posterior_mean.png} \\
+              \scriptsize{Post.\ std} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_0_posterior_std.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_1_posterior_std.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_2_posterior_std.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_3_posterior_std.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_4_posterior_std.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_5_posterior_std.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_6_posterior_std.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_7_posterior_std.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_8_posterior_std.png} &
+              \includegraphics[width=.08\linewidth]{../figures/images/image_pixelwise/fig_9_posterior_std.png} \\
+            \end{tabular}
+          }
+          \caption{784D pixelwise-noise inference with $\sim$ 100 simulations on 10 MNIST digits.}
+        \end{figure}
+      \end{block}
+
+      \begin{block}{Experiments: Lotka--Volterra \& Two Moons}
+        \begin{figure}
+          \centering
+          % Row 1: Lotka-Volterra
+          \hfill
+          \begin{subfigure}[t]{0.4\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{../figures/sbibm/lotka_volterra/posterior_pairwise}
+          \end{subfigure}
+          \hfill
+          \begin{subfigure}[t]{0.4\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{../figures/sbibm/lotka_volterra/coverage_calibration}
+          \end{subfigure}
+          \hfill
+          \\[0.5em]
+          % Row 2: Two Moons
+          \hfill
+          \begin{subfigure}[t]{0.4\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{../figures/sbibm/two_moons/pairwise_posterior}
+          \end{subfigure}
+          \hfill
+          \begin{subfigure}[t]{0.4\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{../figures/sbibm/two_moons/c2st_vs_runtime}
+          \end{subfigure}
+          \hfill
+          \caption{\textbf{Lotka--Volterra} (top): pairwise posterior with true $\thetab^*$ ($\bigstar$)
+          within posterior mass; coverage calibration over 150 SBC repetitions follows the diagonal. \\
+          \textbf{Two Moons} (bottom): pairwise posterior and C2ST vs.\ runtime.}
+        \end{figure}
+      \end{block}
+
+    \end{column}
+    \separatorcolumn
+  \end{columns}
+
+
+\end{frame}
+
+\end{document}
