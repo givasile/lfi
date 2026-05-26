@@ -1,10 +1,19 @@
 # TODO — new machine
 
-## Setup (run once)
+## Setup (run once, from repo root)
 ```bash
-conda create -n lfi-bayesflow --clone lfi-aistats
+conda create -n lfi-bayesflow python=3.10 -y
 conda activate lfi-bayesflow
-pip install bayesflow
+
+# Base lfi env (same recipe as code/README.md)
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+pip install sbi pyabc
+pip install sbibm --no-deps
+pip install -r code/requirements.txt
+
+# BayesFlow (pinned to match the env used to draft the reply)
+pip install bayesflow==2.0.8
+
 # verify
 python -c "import os; os.environ['KERAS_BACKEND']='torch'; import bayesflow as bf; print(bf.__version__)"
 ```
