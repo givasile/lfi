@@ -352,3 +352,6 @@ experiments/mlruns
 scripts/sbi-logs
 scripts/concept_figure/sbi-logs
 scripts/mog_benchmark/sbi-logs
+
+# local Claude Code session/lock files
+.claude/
