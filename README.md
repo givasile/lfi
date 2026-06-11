@@ -14,6 +14,7 @@ We propose **R2OMC** (Robust and Rapid Optimization Monte Carlo), a simulation-b
 arXiv-submission/   - LaTeX source of the arXiv submission
 camera-ready/       - LaTeX source of the AISTATS 2026 camera-ready version
 code/               - Experiment code and lfi package (see code/README.md)
+bayesflow-code/     - Post-publication BayesFlow follow-up experiments (see below)
 paper-review/       - Reviewer comments and author responses
 ```
 
@@ -35,3 +36,23 @@ To use R2OMC in your own work, see the [`master` branch](https://github.com/giva
   year      = {2026}
 }
 ```
+
+## Additional BayesFlow Experiments (post-publication)
+
+Following Stefan Radev (BayesFlow author) question on whether our neural baseline 
+reflected the **current BayesFlow** framework, we re-ran the modern BayesFlow stack
+on the paper's main benchmark (the 20D Gaussian Mixture). 
+The results are added in the appendix.
+
+**Takeaways.** Modern BayesFlow is more sample-efficient than the originally
+reported baseline at low/medium dimension. However, accuracy still degrades
+sharply as the parameter dimension grows: for **D ≥ 15** it stays at
+**C2ST ≈ 0.82–0.95 across every budget up to 50k simulations**,
+confirming the paper's main claim that neural posterior estimators struggle to 
+scale with the parameter dimension at low-to-mid budgets.
+
+The sweep script is [`bayesflow-code/run_bayesflow_experiments.py`](bayesflow-code/run_bayesflow_experiments.py);
+per-cell raw C2ST / runtime / posterior samples are stored under
+`code/results/mog_benchmark/<setting>/D_<D>/real_bayesflow_<budget>/`.
+
+
